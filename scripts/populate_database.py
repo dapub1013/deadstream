@@ -161,12 +161,25 @@ class DatabasePopulator:
         fields = 'identifier,date,venue,coverage,avg_rating,num_reviews'
         
         try:
-            results = self.api_client.search(
+            response = self.api_client.search(
                 query=query,
                 fields=fields,
                 rows=500  # Max per year should be < 500
             )
+            
+            # ArchiveAPIClient.search() returns the full response dict
+            # We need to extract the 'docs' array from response['response']
+            if isinstance(response, dict) and 'response' in response:
+                results = response['response'].get('docs', [])
+            elif isinstance(response, list):
+                # Already a list of docs
+                results = response
+            else:
+                print(f"  Warning: Unexpected response format for {year}")
+                results = []
+            
             return results
+            
         except Exception as e:
             print(f"  Error fetching data for {year}: {e}")
             self.stats['errors'] += 1
@@ -283,7 +296,7 @@ class DatabasePopulator:
         try:
             total_years = end_year - start_year + 1
             print(f"Target: {total_years} years")
-            print(f"API Rate Limit: {self.api_client.requests_per_second} requests/second")
+            print(f"API Rate Limit: 2.0 requests/second (polite mode)")
             print()
             
             # Process each year
