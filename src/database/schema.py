@@ -15,6 +15,17 @@ Author: DeadStream Project
 Created: December 2025
 Phase: 3.1 - Database Schema Design
 """
+import os
+
+# Database file path
+# Location: ~/deadstream/data/shows.db
+DB_PATH = os.path.join(
+    os.path.dirname(__file__),  # src/database/
+    '..',  # src/
+    '..',  # deadstream/
+    'data',
+    'shows.db'
+)
 
 # SQL statement to create the shows table
 CREATE_SHOWS_TABLE = """
