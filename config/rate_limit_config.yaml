@@ -1,0 +1,56 @@
+# Rate Limit Configuration for Internet Archive API
+
+# Default settings (conservative to be polite)
+default:
+  requests_per_second: 2
+  max_retries: 3
+  timeout_seconds: 10
+  retry_backoff_base: 2  # Exponential backoff multiplier
+
+# Search API specific
+search_api:
+  requests_per_second: 2
+  max_concurrent: 1  # Don't run multiple searches simultaneously
+  cache_ttl_seconds: 300  # Cache results for 5 minutes
+
+# Metadata API specific  
+metadata_api:
+  requests_per_second: 5  # Can be slightly faster
+  max_concurrent: 3  # Can fetch a few at once
+  cache_ttl_seconds: 3600  # Cache for 1 hour
+
+# Streaming/Download
+streaming:
+  requests_per_second: null  # No specific limit
+  max_concurrent: 1  # Only one show playing at a time
+  chunk_size_kb: 1024  # Stream in 1MB chunks
+
+# Error handling
+errors:
+  on_rate_limit:
+    action: "wait_and_retry"
+    max_wait_seconds: 60
+  
+  on_timeout:
+    action: "retry"
+    max_retries: 3
+  
+  on_503:
+    action: "exponential_backoff"
+    base_wait_seconds: 5
+    max_wait_seconds: 60
+
+# Monitoring
+monitoring:
+  log_level: "INFO"
+  log_slow_requests: true
+  slow_threshold_seconds: 3.0
+  
+# Good citizen guidelines
+guidelines:
+  - "Space out requests when possible"
+  - "Cache results to minimize API calls"
+  - "Use specific queries to reduce server load"
+  - "Implement exponential backoff on errors"
+  - "Set meaningful User-Agent header"
+  - "Don't scrape aggressively"
