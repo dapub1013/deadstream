@@ -41,18 +41,25 @@ class ShowValidator:
         if not date_str:
             return None
         
-        # Try to parse the date
-        if not re.match(r'^\d{4}-\d{2}-\d{2}$', date_str):
-            # Try to fix common formats
-            if re.match(r'^\d{4}-\d{2}$', date_str):
-                # Year-month only, add day
-                date_str += '-01'
-            elif re.match(r'^\d{4}$', date_str):
-                # Year only, add month and day
-                date_str += '-01-01'
-            else:
-                print(f"  Warning: Invalid date format: {date_str}")
-                return None
+        # Handle ISO 8601 datetime format (e.g., "1978-04-18T00:00:00Z")
+        if 'T' in date_str:
+            # Extract just the date part (before the T)
+            date_str = date_str.split('T')[0]
+        
+        # Check if already in correct format
+        if re.match(r'^\d{4}-\d{2}-\d{2}$', date_str):
+            return date_str
+        
+        # Try to fix common formats
+        if re.match(r'^\d{4}-\d{2}$', date_str):
+            # Year-month only, add day
+            date_str += '-01'
+        elif re.match(r'^\d{4}$', date_str):
+            # Year only, add month and day
+            date_str += '-01-01'
+        else:
+            print(f"  Warning: Invalid date format: {date_str}")
+            return None
         
         return date_str
     
