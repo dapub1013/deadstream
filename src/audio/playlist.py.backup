@@ -167,43 +167,22 @@ class PlaylistBuilder:
         # Remove file extension
         title = re.sub(r'\.(mp3|flac|ogg)$', '', filename, flags=re.IGNORECASE)
         
-        # Remove common prefixes (identifier patterns like gd77-05-08)
+        # Remove common prefixes (identifier patterns)
         title = re.sub(r'^gd\d{2}-\d{2}-\d{2}', '', title)
         
-        # Remove common taper names and metadata
-        # Common patterns: eaton, miller, hicks, sb (soundboard), aud (audience), etc.
-        common_metadata = ['eaton', 'miller', 'hicks', 'weiner', 'bertrando', 
-                          'sbd', 'aud', 'mtx', 'matrix', 'flac16', 'flac24']
-        for meta in common_metadata:
-            title = re.sub(rf'{meta}[-_]?', '', title, flags=re.IGNORECASE)
-        
-        # Remove disc/track notation (d1t01, d2t03, etc.)
+        # Remove disc/track notation
         title = re.sub(r'd\d+t\d+', '', title)
-        
-        # Remove standalone numbers at start (often track numbers)
-        title = re.sub(r'^[-_\d]+', '', title)
         
         # Remove underscores and hyphens at start/end
         title = title.strip('_-')
         
-        # Replace underscores and multiple hyphens with spaces
-        title = re.sub(r'[_-]+', ' ', title)
-        
-        # Remove extra whitespace
-        title = ' '.join(title.split())
+        # Replace underscores with spaces
+        title = title.replace('_', ' ')
         
         # Capitalize words
         title = ' '.join(word.capitalize() for word in title.split())
         
-        # If title is empty or too short, use track number from filename
-        if not title or len(title) < 2:
-            track_match = re.search(r't(\d+)', filename.lower())
-            if track_match:
-                title = f"Track {int(track_match.group(1))}"
-            else:
-                title = filename
-        
-        return title
+        return title if title else filename
     
     @staticmethod
     def build_from_metadata(metadata: dict) -> Playlist:
@@ -247,34 +226,13 @@ class PlaylistBuilder:
         audio_files = []
         
         # Filter for audio files (MP3, FLAC, OGG)
-        # Prefer MP3 for streaming (smaller, widely supported)
-        mp3_files = []
-        flac_files = []
-        ogg_files = []
-        
         for file_info in files:
             file_format = file_info.get('format', '').upper()
-            filename = file_info.get('name', '')
-            
-            # Skip derivative files (64kb versions, VBR copies, spectral analysis, etc.)
-            if any(skip in filename.lower() for skip in ['64kb', '_vbr.', 'spectrogram', '.png', '.xml', '.txt']):
-                continue
-            
-            # Sort by format
-            if 'VBR MP3' in file_format or file_format == 'MP3':
-                mp3_files.append(file_info)
-            elif 'FLAC' in file_format:
-                flac_files.append(file_info)
-            elif 'OGG' in file_format or 'VORBIS' in file_format:
-                ogg_files.append(file_info)
-        
-        # Use MP3 if available (best for streaming), otherwise FLAC, otherwise OGG
-        if mp3_files:
-            audio_files = mp3_files
-        elif flac_files:
-            audio_files = flac_files
-        elif ogg_files:
-            audio_files = ogg_files
+            if any(fmt in file_format for fmt in ['MP3', 'FLAC', 'OGG', 'VORBIS']):
+                # Skip derivative files (like 64kb MP3 versions)
+                filename = file_info.get('name', '')
+                if '64kb' not in filename.lower() and '_vbr' not in filename.lower():
+                    audio_files.append(file_info)
         
         # Sort files by name (usually gives correct track order)
         audio_files.sort(key=lambda x: x.get('name', ''))
@@ -291,34 +249,16 @@ class PlaylistBuilder:
             url = f"https://archive.org/download/{identifier}/{filename}"
             
             # Extract track information
-            track_number = file_info.get('track', PlaylistBuilder.extract_track_number(filename))
+            track_number = PlaylistBuilder.extract_track_number(filename)
             set_name = PlaylistBuilder.detect_set(filename)
+            title = PlaylistBuilder.clean_title(filename)
             
-            # Use title from metadata if available, otherwise clean filename
-            title = file_info.get('title', '').strip()
-            if not title:
-                title = PlaylistBuilder.clean_title(filename)
-            
-            # Parse duration (can be "MM:SS" string or float seconds)
+            # Parse duration (may be string or float)
             duration_str = file_info.get('length', '0')
             try:
-                # Try as float first (seconds)
                 duration = float(duration_str)
             except (ValueError, TypeError):
-                # Parse as "MM:SS" format
-                try:
-                    if ':' in str(duration_str):
-                        parts = str(duration_str).split(':')
-                        if len(parts) == 2:
-                            minutes = int(parts[0])
-                            seconds = int(parts[1])
-                            duration = minutes * 60 + seconds
-                        else:
-                            duration = 0.0
-                    else:
-                        duration = 0.0
-                except:
-                    duration = 0.0
+                duration = 0.0
             
             # Create track
             track = Track(
