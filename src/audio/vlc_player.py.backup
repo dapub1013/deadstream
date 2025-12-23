@@ -14,7 +14,6 @@ import time
 from enum import Enum
 from typing import Optional, Callable
 from .playlist import Playlist
-from .position_tracker import PositionTracker, PlaybackPosition
 
 
 class PlayerState(Enum):
@@ -63,9 +62,6 @@ class VLCPlayer:
         # Create media player
         self.player = self.instance.media_player_new()
         
-        # Position Tracking
-        self.position_tracker = PositionTracker(self.player)
-
         # Playlist
         self.playlist: Optional[Playlist] = None
         
@@ -276,27 +272,19 @@ class VLCPlayer:
         print(f"Seeked to {position:.1f}s")
         return True
     
-    def get_position(self):
+    def get_position(self) -> float:
         """
-        Get current playback position.
+        Get current playback position in seconds.
         
         Returns:
-            PlaybackPosition object with time, duration, percentage
+            Position in seconds, or 0 if not playing
         """
-        return self.position_tracker.get_position()
+        if self.state == PlayerState.STOPPED:
+            return 0.0
+        
+        # VLC returns milliseconds
+        return self.player.get_time() / 1000.0
     
-    def get_position_display(self):
-        """
-        Get position formatted for display.
-        
-        Returns:
-            String like "3:45 / 11:22 (33%)" or None if not playing
-        """
-        pos = self.get_position()
-        if pos:
-            return f"{pos.current_time_formatted} / {pos.total_time_formatted} ({pos.percentage:.0f}%)"
-        return None
-
     def get_duration(self) -> float:
         """
         Get duration of current track in seconds.
