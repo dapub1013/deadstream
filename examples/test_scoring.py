@@ -31,7 +31,7 @@ def test_source_type_scoring():
     
     for case in test_cases:
         result = scorer._score_source_type(case['source'])
-        status = "âœ"" if result == case['expected'] else "âœ—"
+        status = "PASS" if result == case['expected'] else "FAIL"
         print(f"{status} Source '{case['source']}': {result} (expected {case['expected']})")
     
     print()
@@ -54,7 +54,7 @@ def test_format_scoring():
     
     for case in test_cases:
         result = scorer._score_format(case['format'])
-        status = "âœ"" if result == case['expected'] else "âœ—"
+        status = "PASS" if result == case['expected'] else "FAIL"
         print(f"{status} Format '{case['format']}': {result} (expected {case['expected']})")
     
     print()
@@ -126,7 +126,7 @@ def test_complete_scoring():
         print(f"  Breakdown:")
         print(f"    Source:  {result['source_score']}")
         print(f"    Format:  {result['format_score']}")
-        print(f"    Rating:  {result['rating_score']}")
+        print(f"    Rating:  {result['rating_score']:.2f}")
         print(f"    Lineage: {result['lineage_score']}")
         print(f"    Taper:   {result['taper_score']}")
         print()
@@ -209,9 +209,9 @@ def test_custom_weights():
     community_scorer = RecordingScorer(weights=community_weights)
     
     print(f"Same recording, different preferences:")
-    print(f"  Default:   {default_scorer.score_recording(test_recording)['total_score']}")
+    print(f"  Default:    {default_scorer.score_recording(test_recording)['total_score']}")
     print(f"  Audiophile: {audiophile_scorer.score_recording(test_recording)['total_score']}")
-    print(f"  Community: {community_scorer.score_recording(test_recording)['total_score']}")
+    print(f"  Community:  {community_scorer.score_recording(test_recording)['total_score']}")
     print()
 
 
