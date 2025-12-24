@@ -42,10 +42,11 @@ class ResilientPlayer:
         # Create VLC instance with verified settings
         self.instance = vlc.Instance(
             '--aout=alsa',           # ALSA audio output
+            '--alsa-audio-device=headphones'
             '--no-video',            # Audio only
             '--quiet',               # Suppress output
             '--verbose=0',           # No error messages
-            '--network-caching=8000' # 8 second buffer for streaming
+            '--network-caching=8000', # 8 second buffer for streaming
         )
         
         # Create media player
