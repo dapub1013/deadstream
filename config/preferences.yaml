@@ -1,0 +1,21 @@
+# DeadStream User Preferences
+# 
+# This file controls how recordings are scored and selected.
+# Weights must be between 0 and 1 and must sum to 1.0.
+#
+# You can use one of the presets by uncommenting it, or customize weights below.
+
+# Presets (uncomment one to use):
+# preset: balanced      # Equal consideration of all factors
+# preset: audiophile    # Prioritizes sound quality over community ratings
+# preset: crowd_favorite # Prioritizes what other Deadheads love
+
+# Custom weights (edit values below):
+weights:
+  source_type: 0.35      # Soundboard > audience (0-1)
+  format_quality: 0.25   # FLAC > MP3 quality (0-1)
+  community_rating: 0.20 # Archive.org user ratings (0-1)
+  lineage: 0.10          # Generations from master tape (0-1)
+  taper: 0.10            # Taper reputation (0-1)
+
+# Note: Weights must sum to 1.0
