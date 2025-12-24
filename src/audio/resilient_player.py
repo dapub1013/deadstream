@@ -67,10 +67,12 @@ class ResilientAudioPlayer:
                              (higher = more buffering, more resilience)
             max_retries: Maximum automatic retry attempts
         """
-        # VLC instance with network optimization
+        # VLC instance with network optimization and ALSA audio
         instance_args = [
+            '--aout=alsa',  # Use ALSA audio output (works with Pi headphones)
             '--no-video',  # Audio only
             '--quiet',  # Suppress VLC output
+            '--verbose=0',  # Suppress error messages
             f'--network-caching={network_cache_ms}',  # Buffer for network streams
             '--file-caching=1000',  # Lower cache for local files
         ]
@@ -267,23 +269,36 @@ class ResilientAudioPlayer:
         """
         print(f"Loading track: {url}")
         
-        # Stop current playback
-        self.stop()
+        try:
+            # Stop current playback
+            if self.player.is_playing():
+                self.player.stop()
+            
+            # Save URL for potential recovery
+            self.current_url = url
+            
+            # Create new media
+            self.current_media = self.instance.media_new(url)
+            if not self.current_media:
+                print("ERROR: Failed to create media object")
+                if self.on_error:
+                    self.on_error(f"Failed to load URL: {url}")
+                return
+            
+            self.player.set_media(self.current_media)
+            
+            # Reset recovery state
+            self.retry_count = 0
+            self.is_recovering = False
+            self.saved_position_ms = 0
+            
+            if auto_play:
+                self.play()
         
-        # Save URL for potential recovery
-        self.current_url = url
-        
-        # Create new media
-        self.current_media = self.instance.media_new(url)
-        self.player.set_media(self.current_media)
-        
-        # Reset recovery state
-        self.retry_count = 0
-        self.is_recovering = False
-        self.saved_position_ms = 0
-        
-        if auto_play:
-            self.play()
+        except Exception as e:
+            print(f"ERROR loading track: {e}")
+            if self.on_error:
+                self.on_error(f"Failed to load track: {e}")
     
     def play(self):
         """Start or resume playback"""
@@ -301,8 +316,11 @@ class ResilientAudioPlayer:
     
     def stop(self):
         """Stop playback"""
-        self.player.stop()
-        self._update_state(PlaybackState.STOPPED)
+        if self.player.is_playing() or self.player.get_state() != vlc.State.Stopped:
+            self.player.stop()
+        
+        if not self.is_recovering:
+            self._update_state(PlaybackState.STOPPED)
         print("Playback stopped")
     
     def seek_to_ms(self, position_ms: int):
