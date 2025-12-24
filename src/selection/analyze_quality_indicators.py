@@ -14,7 +14,7 @@ Learning goals:
 import sys
 sys.path.insert(0, '/home/david/deadstream')
 
-from src.database.queries import search_by_date
+from src.database.queries import get_show_by_date
 from src.api.metadata import get_metadata
 import time
 
@@ -30,7 +30,7 @@ def analyze_show_date(date):
     print(f"{'='*70}\n")
     
     # Get all recordings for this date
-    shows = search_by_date(date)
+    shows = get_show_by_date(date)
     
     if not shows:
         print("[INFO] No recordings found for this date")
