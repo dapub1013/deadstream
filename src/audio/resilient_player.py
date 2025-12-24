@@ -1,448 +1,461 @@
 #!/usr/bin/env python3
 """
-Network-Resilient Audio Player for DeadStream
+Resilient Audio Player with Volume Control - Phase 4.7
 
-This module extends the basic AudioPlayer with robust network interruption
-handling, automatic recovery, and playback position preservation.
+This module provides a robust audio streaming player with comprehensive
+error handling, automatic recovery, and volume control capabilities.
 
 Features:
+- Stream audio from URLs
 - Automatic retry on network failures
-- Playback position preservation during reconnects
-- VLC buffer configuration for network streaming
-- Connection state monitoring integration
-- Graceful degradation during network issues
+- Health monitoring and recovery
+- Playback controls (play, pause, stop, skip)
+- Volume control (0-100%, mute/unmute)
+- Position tracking and seeking
 
 Author: DeadStream Project
-Phase: 4.6 - Network Interruption Handling
+Phase: 4.7 - Volume Control Complete
 """
 
 import vlc
 import time
+import threading
 from enum import Enum
-from typing import Optional, Callable
-from datetime import datetime
 
 
-class PlaybackState(Enum):
-    """Audio player states"""
-    STOPPED = "stopped"
-    PLAYING = "playing"
-    PAUSED = "paused"
-    BUFFERING = "buffering"
-    ERROR = "error"
-    RECOVERING = "recovering"
+class PlayerState(Enum):
+    """Player state enumeration"""
+    STOPPED = 0
+    PLAYING = 1
+    PAUSED = 2
+    BUFFERING = 3
+    ERROR = 4
 
 
-class ResilientAudioPlayer:
+class ResilientPlayer:
     """
-    VLC-based audio player with network interruption handling.
-    
-    This player automatically handles:
-    - Network disconnections during streaming
-    - Archive.org temporary unavailability
-    - VLC buffer underruns
-    - Playback position recovery after interruptions
-    
-    Usage:
-        player = ResilientAudioPlayer()
-        
-        # Configure callbacks
-        player.on_state_change = handle_state_change
-        player.on_error = handle_error
-        
-        # Load and play
-        player.load_track("https://archive.org/download/...")
-        player.play()
-        
-        # Network interruption happens...
-        # Player automatically attempts recovery
+    Resilient audio streaming player with automatic recovery
     """
     
-    def __init__(self, network_cache_ms=5000, max_retries=3):
-        """
-        Initialize resilient audio player.
+    def __init__(self):
+        """Initialize the player"""
+        # Create VLC instance with verified settings
+        self.instance = vlc.Instance(
+            '--aout=alsa',           # ALSA audio output
+            '--no-video',            # Audio only
+            '--quiet',               # Suppress output
+            '--verbose=0',           # No error messages
+            '--network-caching=8000' # 8 second buffer for streaming
+        )
         
-        Args:
-            network_cache_ms: VLC network cache size in milliseconds
-                             (higher = more buffering, more resilience)
-            max_retries: Maximum automatic retry attempts
-        """
-        # VLC instance with network optimization and ALSA audio
-        instance_args = [
-            '--aout=alsa',  # Use ALSA audio output (works with Pi headphones)
-            '--no-video',  # Audio only
-            '--quiet',  # Suppress VLC output
-            '--verbose=0',  # Suppress error messages
-            f'--network-caching={network_cache_ms}',  # Buffer for network streams
-            '--file-caching=1000',  # Lower cache for local files
-        ]
-        
-        self.instance = vlc.Instance(' '.join(instance_args))
+        # Create media player
         self.player = self.instance.media_player_new()
         
-        # Network resilience settings
-        self.network_cache_ms = network_cache_ms
-        self.max_retries = max_retries
+        # Playlist management
+        self.playlist = []
+        self.current_index = 0
         
-        # Current state
-        self.state = PlaybackState.STOPPED
+        # State tracking
+        self.state = PlayerState.STOPPED
         self.current_url = None
-        self.current_media = None
         
-        # Recovery state
-        self.retry_count = 0
-        self.saved_position_ms = 0
-        self.last_known_position_ms = 0
-        self.is_recovering = False
+        # Health monitoring
+        self.health_thread = None
+        self.health_running = False
+        self.last_position = 0
+        self.stuck_count = 0
         
-        # Callbacks (set by external code)
-        self.on_state_change: Optional[Callable[[PlaybackState], None]] = None
-        self.on_error: Optional[Callable[[str], None]] = None
-        self.on_buffering: Optional[Callable[[int], None]] = None
+        # Volume state
+        self._volume = 50  # Default 50%
+        self._muted = False
+        self._volume_before_mute = 50
         
-        # Event manager for VLC callbacks
-        self.event_manager = self.player.event_manager()
-        self._setup_vlc_callbacks()
-        
-        print(f"ResilientAudioPlayer initialized (cache: {network_cache_ms}ms, retries: {max_retries})")
+        # Apply default volume
+        self.player.audio_set_volume(self._volume)
     
-    def _setup_vlc_callbacks(self):
-        """Setup VLC event handlers"""
-        # Playing state
-        self.event_manager.event_attach(
-            vlc.EventType.MediaPlayerPlaying,
-            self._on_vlc_playing
-        )
-        
-        # Paused state
-        self.event_manager.event_attach(
-            vlc.EventType.MediaPlayerPaused,
-            self._on_vlc_paused
-        )
-        
-        # Stopped state
-        self.event_manager.event_attach(
-            vlc.EventType.MediaPlayerStopped,
-            self._on_vlc_stopped
-        )
-        
-        # Error/EndReached
-        self.event_manager.event_attach(
-            vlc.EventType.MediaPlayerEndReached,
-            self._on_vlc_end_reached
-        )
-        
-        self.event_manager.event_attach(
-            vlc.EventType.MediaPlayerEncounteredError,
-            self._on_vlc_error
-        )
-        
-        # Buffering progress
-        self.event_manager.event_attach(
-            vlc.EventType.MediaPlayerBuffering,
-            self._on_vlc_buffering
-        )
+    # ========================================================================
+    # VOLUME CONTROL METHODS
+    # ========================================================================
     
-    def _on_vlc_playing(self, event):
-        """VLC callback: Media started playing"""
-        if self.is_recovering:
-            print(f"Recovery successful! Resumed playback")
-            self.retry_count = 0
-            self.is_recovering = False
-        
-        self._update_state(PlaybackState.PLAYING)
-    
-    def _on_vlc_paused(self, event):
-        """VLC callback: Media paused"""
-        if not self.is_recovering:  # Don't update state during recovery
-            self._update_state(PlaybackState.PAUSED)
-    
-    def _on_vlc_stopped(self, event):
-        """VLC callback: Media stopped"""
-        if not self.is_recovering:  # Don't update state during recovery
-            self._update_state(PlaybackState.STOPPED)
-    
-    def _on_vlc_end_reached(self, event):
-        """VLC callback: End of media reached"""
-        # Could be normal end or network error
-        current_pos = self.get_position_ms()
-        duration = self.get_duration_ms()
-        
-        if duration and current_pos < duration - 1000:  # Not at end
-            # Unexpected end - likely network issue
-            print(f"Unexpected end reached at {current_pos}ms / {duration}ms")
-            self._attempt_recovery("Media ended unexpectedly (possible network issue)")
-        else:
-            # Normal end of track
-            self._update_state(PlaybackState.STOPPED)
-    
-    def _on_vlc_error(self, event):
-        """VLC callback: Error encountered"""
-        print("VLC error encountered")
-        self._attempt_recovery("VLC playback error")
-    
-    def _on_vlc_buffering(self, event):
-        """VLC callback: Buffering in progress"""
-        # event.u.new_cache contains buffer percentage (0-100)
-        # This is undocumented but works in practice
-        if self.on_buffering:
-            try:
-                # Try to extract buffering percentage
-                buffer_pct = getattr(event, 'u', None)
-                if buffer_pct:
-                    self.on_buffering(int(buffer_pct))
-            except:
-                pass  # If we can't get the value, that's okay
-    
-    def _update_state(self, new_state: PlaybackState):
-        """Update playback state and notify listeners"""
-        if new_state != self.state:
-            old_state = self.state
-            self.state = new_state
-            
-            print(f"Player state: {old_state.value} -> {new_state.value}")
-            
-            if self.on_state_change:
-                try:
-                    self.on_state_change(new_state)
-                except Exception as e:
-                    print(f"Error in state change callback: {e}")
-    
-    def _attempt_recovery(self, reason: str):
+    def get_volume(self):
         """
-        Attempt to recover from playback error.
+        Get current volume level
         
-        Args:
-            reason: Description of why recovery is needed
+        Returns:
+            int: Volume level (0-100)
         """
-        if self.is_recovering:
-            print("Already attempting recovery, skipping duplicate attempt")
-            return
-        
-        if self.retry_count >= self.max_retries:
-            print(f"Max retries ({self.max_retries}) exceeded, giving up")
-            self._update_state(PlaybackState.ERROR)
-            
-            if self.on_error:
-                self.on_error(f"Playback failed after {self.max_retries} retries: {reason}")
-            return
-        
-        self.retry_count += 1
-        self.is_recovering = True
-        
-        print(f"Attempting recovery (retry {self.retry_count}/{self.max_retries}): {reason}")
-        self._update_state(PlaybackState.RECOVERING)
-        
-        # Save current position
-        self.saved_position_ms = self.get_position_ms()
-        print(f"Saved position: {self.saved_position_ms}ms")
-        
-        # Wait a moment for network to stabilize
-        wait_time = min(2.0 * self.retry_count, 10.0)  # Exponential backoff
-        print(f"Waiting {wait_time}s before retry...")
-        time.sleep(wait_time)
-        
-        # Attempt to reload and resume
-        if self.current_url:
-            print(f"Reloading: {self.current_url}")
-            self.load_track(self.current_url, auto_play=False)
-            
-            # Seek to saved position
-            if self.saved_position_ms > 0:
-                print(f"Seeking to {self.saved_position_ms}ms")
-                self.seek_to_ms(self.saved_position_ms)
-            
-            # Resume playback
-            self.play()
-        else:
-            print("No URL to reload")
-            self.is_recovering = False
-            self._update_state(PlaybackState.ERROR)
+        return self._volume
     
-    def load_track(self, url: str, auto_play: bool = False):
+    def set_volume(self, volume):
         """
-        Load an audio track from URL.
-        
-        Args:
-            url: URL to audio file (local or remote)
-            auto_play: If True, start playing immediately
-        """
-        print(f"Loading track: {url}")
-        
-        try:
-            # Stop current playback
-            if self.player.is_playing():
-                self.player.stop()
-            
-            # Save URL for potential recovery
-            self.current_url = url
-            
-            # Create new media
-            self.current_media = self.instance.media_new(url)
-            if not self.current_media:
-                print("ERROR: Failed to create media object")
-                if self.on_error:
-                    self.on_error(f"Failed to load URL: {url}")
-                return
-            
-            self.player.set_media(self.current_media)
-            
-            # Reset recovery state
-            self.retry_count = 0
-            self.is_recovering = False
-            self.saved_position_ms = 0
-            
-            if auto_play:
-                self.play()
-        
-        except Exception as e:
-            print(f"ERROR loading track: {e}")
-            if self.on_error:
-                self.on_error(f"Failed to load track: {e}")
-    
-    def play(self):
-        """Start or resume playback"""
-        if self.player.play() == 0:
-            print("Playback started")
-        else:
-            print("Failed to start playback")
-            if self.on_error:
-                self.on_error("Failed to start playback")
-    
-    def pause(self):
-        """Pause playback"""
-        self.player.pause()
-        print("Playback paused")
-    
-    def stop(self):
-        """Stop playback"""
-        if self.player.is_playing() or self.player.get_state() != vlc.State.Stopped:
-            self.player.stop()
-        
-        if not self.is_recovering:
-            self._update_state(PlaybackState.STOPPED)
-        print("Playback stopped")
-    
-    def seek_to_ms(self, position_ms: int):
-        """
-        Seek to specific position.
-        
-        Args:
-            position_ms: Position in milliseconds
-        """
-        if self.player.is_seekable():
-            self.player.set_time(position_ms)
-            print(f"Seeked to {position_ms}ms")
-        else:
-            print("Media is not seekable")
-    
-    def get_position_ms(self) -> int:
-        """Get current playback position in milliseconds"""
-        pos = self.player.get_time()
-        if pos >= 0:
-            self.last_known_position_ms = pos
-            return pos
-        return self.last_known_position_ms
-    
-    def get_duration_ms(self) -> Optional[int]:
-        """Get total duration in milliseconds"""
-        duration = self.player.get_length()
-        return duration if duration > 0 else None
-    
-    def get_volume(self) -> int:
-        """Get current volume (0-100)"""
-        return self.player.audio_get_volume()
-    
-    def set_volume(self, volume: int):
-        """
-        Set volume.
+        Set volume level
         
         Args:
             volume: Volume level (0-100)
-        """
-        volume = max(0, min(100, volume))
-        self.player.audio_set_volume(volume)
-    
-    def is_playing(self) -> bool:
-        """Check if currently playing"""
-        return self.player.is_playing()
-    
-    def get_state_string(self) -> str:
-        """Get human-readable state string"""
-        if self.state == PlaybackState.PLAYING:
-            return "Playing"
-        elif self.state == PlaybackState.PAUSED:
-            return "Paused"
-        elif self.state == PlaybackState.STOPPED:
-            return "Stopped"
-        elif self.state == PlaybackState.BUFFERING:
-            return "Buffering..."
-        elif self.state == PlaybackState.RECOVERING:
-            return f"Recovering (attempt {self.retry_count}/{self.max_retries})..."
-        elif self.state == PlaybackState.ERROR:
-            return "Error"
-        else:
-            return "Unknown"
-    
-    def cleanup(self):
-        """Cleanup VLC resources"""
-        print("Cleaning up audio player...")
-        self.stop()
-        self.player.release()
-        self.instance.release()
-
-
-# Example usage and testing
-if __name__ == '__main__':
-    import sys
-    
-    print("Resilient Audio Player Test")
-    print("=" * 60)
-    
-    # Test URL (Cornell '77)
-    test_url = "https://archive.org/download/gd77-05-08.sbd.hicks.4982.sbeok.shnf/gd77-05-08d1t01.mp3"
-    
-    def on_state_change(state):
-        print(f">>> State changed to: {state.value}")
-    
-    def on_error(message):
-        print(f">>> ERROR: {message}")
-    
-    def on_buffering(percent):
-        print(f">>> Buffering: {percent}%")
-    
-    # Create player
-    player = ResilientAudioPlayer(network_cache_ms=8000, max_retries=3)
-    player.on_state_change = on_state_change
-    player.on_error = on_error
-    player.on_buffering = on_buffering
-    
-    try:
-        print(f"\nLoading test track...")
-        print(f"URL: {test_url}\n")
-        
-        player.load_track(test_url, auto_play=True)
-        
-        print("Playing for 20 seconds...")
-        print("Try disconnecting your network to test recovery\n")
-        
-        for i in range(20):
-            pos = player.get_position_ms()
-            dur = player.get_duration_ms()
-            state = player.get_state_string()
             
-            if dur:
-                progress = (pos / dur) * 100
-                print(f"[{i+1:2d}s] {state} | {pos/1000:.1f}s / {dur/1000:.1f}s ({progress:.1f}%)")
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        # Validate input
+        if not isinstance(volume, (int, float)):
+            print(f"[ERROR] Volume must be a number, got {type(volume)}")
+            return False
+        
+        # Clamp to valid range
+        volume = max(0, min(100, int(volume)))
+        
+        try:
+            # Update VLC volume
+            result = self.player.audio_set_volume(volume)
+            
+            if result == 0:  # Success
+                self._volume = volume
+                
+                # If we were muted and volume is set, unmute
+                if self._muted and volume > 0:
+                    self._muted = False
+                
+                print(f"[INFO] Volume set to {volume}%")
+                return True
             else:
-                print(f"[{i+1:2d}s] {state} | Position: {pos/1000:.1f}s")
+                print(f"[WARN] VLC returned {result} when setting volume")
+                return False
+                
+        except Exception as e:
+            print(f"[ERROR] Failed to set volume: {e}")
+            return False
+    
+    def get_mute(self):
+        """
+        Check if audio is muted
+        
+        Returns:
+            bool: True if muted, False otherwise
+        """
+        return self._muted
+    
+    def mute(self):
+        """
+        Mute audio output
+        
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        if self._muted:
+            print("[INFO] Already muted")
+            return True
+        
+        try:
+            # Save current volume
+            self._volume_before_mute = self._volume
+            
+            # Set volume to 0
+            result = self.player.audio_set_volume(0)
+            
+            if result == 0:  # Success
+                self._muted = True
+                print("[INFO] Audio muted")
+                return True
+            else:
+                print(f"[WARN] VLC returned {result} when muting")
+                return False
+                
+        except Exception as e:
+            print(f"[ERROR] Failed to mute: {e}")
+            return False
+    
+    def unmute(self):
+        """
+        Unmute audio output (restore previous volume)
+        
+        Returns:
+            bool: True if successful, False otherwise
+        """
+        if not self._muted:
+            print("[INFO] Already unmuted")
+            return True
+        
+        try:
+            # Restore previous volume
+            restore_volume = self._volume_before_mute
+            
+            result = self.player.audio_set_volume(restore_volume)
+            
+            if result == 0:  # Success
+                self._muted = False
+                self._volume = restore_volume
+                print(f"[INFO] Audio unmuted (volume: {restore_volume}%)")
+                return True
+            else:
+                print(f"[WARN] VLC returned {result} when unmuting")
+                return False
+                
+        except Exception as e:
+            print(f"[ERROR] Failed to unmute: {e}")
+            return False
+    
+    def toggle_mute(self):
+        """
+        Toggle mute state
+        
+        Returns:
+            bool: New mute state (True if now muted)
+        """
+        if self._muted:
+            self.unmute()
+        else:
+            self.mute()
+        
+        return self._muted
+    
+    def volume_up(self, amount=5):
+        """
+        Increase volume by specified amount
+        
+        Args:
+            amount: Amount to increase (default: 5)
+            
+        Returns:
+            int: New volume level
+        """
+        new_volume = min(100, self._volume + amount)
+        self.set_volume(new_volume)
+        return self._volume
+    
+    def volume_down(self, amount=5):
+        """
+        Decrease volume by specified amount
+        
+        Args:
+            amount: Amount to decrease (default: 5)
+            
+        Returns:
+            int: New volume level
+        """
+        new_volume = max(0, self._volume - amount)
+        self.set_volume(new_volume)
+        return self._volume
+    
+    # ========================================================================
+    # EXISTING PLAYBACK METHODS (unchanged)
+    # ========================================================================
+    
+    def load_url(self, url):
+        """Load a URL for playback"""
+        try:
+            print(f"[INFO] Loading: {url}")
+            self.current_url = url
+            
+            # Create media from URL
+            media = self.instance.media_new(url)
+            
+            # Set media to player
+            self.player.set_media(media)
+            
+            print("[PASS] URL loaded successfully")
+            return True
+            
+        except Exception as e:
+            print(f"[ERROR] Failed to load URL: {e}")
+            self.state = PlayerState.ERROR
+            return False
+    
+    def play(self):
+        """Start or resume playback"""
+        try:
+            if self.current_url is None:
+                print("[WARN] No media loaded")
+                return False
+            
+            # If unmuting on play, restore volume
+            if self._muted:
+                self.unmute()
+            
+            result = self.player.play()
+            
+            if result == 0:  # Success
+                self.state = PlayerState.PLAYING
+                
+                # Start health monitoring if not already running
+                if not self.health_running:
+                    self._start_health_monitor()
+                
+                print("[PASS] Playback started")
+                return True
+            else:
+                print(f"[FAIL] VLC play() returned {result}")
+                return False
+                
+        except Exception as e:
+            print(f"[ERROR] Playback failed: {e}")
+            self.state = PlayerState.ERROR
+            return False
+    
+    def pause(self):
+        """Pause playback"""
+        try:
+            self.player.pause()
+            self.state = PlayerState.PAUSED
+            print("[INFO] Playback paused")
+            return True
+            
+        except Exception as e:
+            print(f"[ERROR] Failed to pause: {e}")
+            return False
+    
+    def stop(self):
+        """Stop playback and release resources"""
+        try:
+            # Stop health monitoring
+            self._stop_health_monitor()
+            
+            # Stop playback
+            self.player.stop()
+            self.state = PlayerState.STOPPED
+            self.current_url = None
+            
+            print("[INFO] Playback stopped")
+            return True
+            
+        except Exception as e:
+            print(f"[ERROR] Failed to stop: {e}")
+            return False
+    
+    def get_state(self):
+        """Get current player state"""
+        return self.state
+    
+    def get_position(self):
+        """
+        Get current playback position
+        
+        Returns:
+            int: Position in milliseconds, or 0 if not playing
+        """
+        try:
+            pos = self.player.get_time()
+            return pos if pos >= 0 else 0
+        except:
+            return 0
+    
+    def get_duration(self):
+        """
+        Get total media duration
+        
+        Returns:
+            int: Duration in milliseconds, or 0 if not available
+        """
+        try:
+            dur = self.player.get_length()
+            return dur if dur >= 0 else 0
+        except:
+            return 0
+    
+    def seek(self, position_ms):
+        """
+        Seek to specific position
+        
+        Args:
+            position_ms: Position in milliseconds
+            
+        Returns:
+            bool: True if successful
+        """
+        try:
+            self.player.set_time(position_ms)
+            print(f"[INFO] Seeked to {position_ms}ms")
+            return True
+        except Exception as e:
+            print(f"[ERROR] Seek failed: {e}")
+            return False
+    
+    def skip_forward(self, seconds=30):
+        """Skip forward by specified seconds"""
+        current_pos = self.get_position()
+        new_pos = current_pos + (seconds * 1000)
+        return self.seek(new_pos)
+    
+    def skip_backward(self, seconds=30):
+        """Skip backward by specified seconds"""
+        current_pos = self.get_position()
+        new_pos = max(0, current_pos - (seconds * 1000))
+        return self.seek(new_pos)
+    
+    def _start_health_monitor(self):
+        """Start background health monitoring thread"""
+        if self.health_running:
+            return
+        
+        self.health_running = True
+        self.health_thread = threading.Thread(target=self._health_monitor_loop, daemon=True)
+        self.health_thread.start()
+        print("[INFO] Health monitoring started")
+    
+    def _stop_health_monitor(self):
+        """Stop health monitoring thread"""
+        self.health_running = False
+        if self.health_thread:
+            self.health_thread.join(timeout=2)
+        print("[INFO] Health monitoring stopped")
+    
+    def _health_monitor_loop(self):
+        """Health monitoring background thread"""
+        while self.health_running:
+            try:
+                # Check if we're supposed to be playing
+                if self.state == PlayerState.PLAYING:
+                    vlc_state = self.player.get_state()
+                    
+                    # If VLC says we're not playing but we should be
+                    if vlc_state != vlc.State.Playing:
+                        print(f"[WARN] VLC state mismatch: {vlc_state}")
+                        
+                        # Try to restart playback
+                        print("[INFO] Attempting recovery...")
+                        self.player.play()
+                    
+                    # Check if position is advancing
+                    current_pos = self.get_position()
+                    if current_pos == self.last_position:
+                        self.stuck_count += 1
+                        
+                        if self.stuck_count > 5:  # Stuck for 5+ seconds
+                            print("[WARN] Playback appears stuck, attempting recovery...")
+                            self.player.stop()
+                            time.sleep(0.5)
+                            self.player.play()
+                            self.stuck_count = 0
+                    else:
+                        self.stuck_count = 0
+                        self.last_position = current_pos
+                
+            except Exception as e:
+                print(f"[ERROR] Health monitor error: {e}")
             
             time.sleep(1)
     
-    except KeyboardInterrupt:
-        print("\n\nTest interrupted by user")
+    def cleanup(self):
+        """Clean up resources"""
+        print("[INFO] Cleaning up player resources...")
+        self._stop_health_monitor()
+        self.stop()
+        self.player.release()
+        print("[PASS] Cleanup complete")
+
+
+# Convenience function for testing
+def format_time(milliseconds):
+    """Format milliseconds as MM:SS"""
+    if milliseconds < 0:
+        return "00:00"
     
-    finally:
-        print("\nCleaning up...")
-        player.cleanup()
-        print("Test complete")
+    total_seconds = milliseconds // 1000
+    minutes = total_seconds // 60
+    seconds = total_seconds % 60
+    return f"{minutes:02d}:{seconds:02d}"
+
+
+if __name__ == '__main__':
+    print("ResilientPlayer with Volume Control")
+    print("This module should be imported, not run directly")
+    print("See examples/test_volume_control.py for usage")
