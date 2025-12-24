@@ -58,18 +58,25 @@ class RecordingScorer:
         'unknown': 50
     }
     
-    def __init__(self, weights=None):
+    def __init__(self, weights=None, preference_manager=None):
         """
-        Initialize scorer with custom or default weights.
+        Initialize scorer with custom weights or from preference manager.
         
         Args:
             weights: Optional dict of scoring weights. Must sum to 1.0.
+            preference_manager: Optional PreferenceManager instance to load weights from.
+                               If both weights and preference_manager provided, weights takes precedence.
         """
-        if weights is None:
-            self.weights = self.DEFAULT_WEIGHTS.copy()
-        else:
+        if weights is not None:
+            # Explicit weights provided - use those
             self._validate_weights(weights)
             self.weights = weights
+        elif preference_manager is not None:
+            # Load from preference manager
+            self.weights = preference_manager.get_weights()
+        else:
+            # Use defaults
+            self.weights = self.DEFAULT_WEIGHTS.copy()
     
     def _validate_weights(self, weights):
         """Ensure weights are valid (sum to 1.0, all keys present)."""
