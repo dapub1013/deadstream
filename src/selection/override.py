@@ -29,7 +29,7 @@ import os
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-from src.database.queries import get_shows_by_date
+from src.database.queries import get_show_by_date
 from src.api.metadata import get_metadata, extract_audio_files
 from src.selection.scoring import RecordingScorer
 from typing import List, Dict, Optional
@@ -71,7 +71,7 @@ class RecordingSelector:
             - (plus score information if automatic scoring applied)
         """
         # Get all recordings for this date from database
-        recordings = get_shows_by_date(date)
+        recordings = get_show_by_date(date)
         
         if not recordings:
             print(f"[INFO] No recordings found for {date}")
