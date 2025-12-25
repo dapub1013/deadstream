@@ -48,6 +48,9 @@ class MainWindow(QMainWindow):
         # Connect signals for navigation
         self.connect_navigation()
         
+        # Initialize keyboard handler
+        self._setup_keyboard_handler()
+        
         # Start on player screen
         self.screen_manager.show_screen(ScreenManager.PLAYER_SCREEN)
         
@@ -154,6 +157,35 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(f"[ERROR] Failed to connect navigation: {e}")
     
+    def _setup_keyboard_handler(self):
+        """Set up keyboard shortcuts"""
+        from src.ui.keyboard_handler import KeyboardHandler
+        
+        self.keyboard_handler = KeyboardHandler()
+        
+        # Connect navigation signals
+        self.keyboard_handler.navigate_up.connect(self._handle_up)
+        self.keyboard_handler.navigate_down.connect(self._handle_down)
+        self.keyboard_handler.navigate_left.connect(self._handle_left)
+        self.keyboard_handler.navigate_right.connect(self._handle_right)
+        self.keyboard_handler.page_up.connect(self._handle_page_up)
+        self.keyboard_handler.page_down.connect(self._handle_page_down)
+        
+        # Connect playback signals
+        self.keyboard_handler.play_pause.connect(self._handle_play_pause)
+        self.keyboard_handler.next_track.connect(self._handle_next)
+        self.keyboard_handler.previous_track.connect(self._handle_previous)
+        self.keyboard_handler.volume_up.connect(self._handle_volume_up)
+        self.keyboard_handler.volume_down.connect(self._handle_volume_down)
+        
+        # Connect UI action signals
+        self.keyboard_handler.back.connect(self._handle_back)
+        self.keyboard_handler.select.connect(self._handle_select)
+        self.keyboard_handler.menu.connect(self._handle_menu)
+        self.keyboard_handler.quit_app.connect(self.close)
+        
+        print("[INFO] Keyboard handler configured")
+    
     def show_player(self):
         """Navigate to player screen"""
         self.screen_manager.show_screen(ScreenManager.PLAYER_SCREEN)
@@ -186,24 +218,126 @@ class MainWindow(QMainWindow):
             self.setWindowTitle(titles[screen_name])
     
     def keyPressEvent(self, event):
-        """Handle keyboard shortcuts"""
-        # ESC to exit fullscreen (for future use)
-        if event.key() == Qt.Key_Escape:
-            if self.isFullScreen():
-                self.showNormal()
-                print("[INFO] Exited fullscreen")
-        
-        # F11 to toggle fullscreen
-        elif event.key() == Qt.Key_F11:
-            if self.isFullScreen():
-                self.showNormal()
-                print("[INFO] Exited fullscreen")
+        """Handle keyboard events"""
+        # Try keyboard handler first
+        if not self.keyboard_handler.handle_key_press(event):
+            # If keyboard handler didn't handle it, use legacy shortcuts
+            # ESC to exit fullscreen
+            if event.key() == Qt.Key_Escape:
+                if self.isFullScreen():
+                    self.showNormal()
+                    print("[INFO] Exited fullscreen")
+            
+            # F11 to toggle fullscreen
+            elif event.key() == Qt.Key_F11:
+                if self.isFullScreen():
+                    self.showNormal()
+                    print("[INFO] Exited fullscreen")
+                else:
+                    self.showFullScreen()
+                    print("[INFO] Entered fullscreen")
+            
+            # Pass event to parent
             else:
-                self.showFullScreen()
-                print("[INFO] Entered fullscreen")
-        
-        # Pass event to parent
-        super().keyPressEvent(event)
+                super().keyPressEvent(event)
+    
+    # Navigation handlers
+    def _handle_up(self):
+        """Handle up key"""
+        print("[INFO] Keyboard: Up pressed")
+        # Forward to current view if it implements navigation
+        current_widget = self.screen_manager.currentWidget()
+        if hasattr(current_widget, 'handle_navigate_up'):
+            current_widget.handle_navigate_up()
+    
+    def _handle_down(self):
+        """Handle down key"""
+        print("[INFO] Keyboard: Down pressed")
+        current_widget = self.screen_manager.currentWidget()
+        if hasattr(current_widget, 'handle_navigate_down'):
+            current_widget.handle_navigate_down()
+    
+    def _handle_left(self):
+        """Handle left key"""
+        print("[INFO] Keyboard: Left pressed")
+        current_widget = self.screen_manager.currentWidget()
+        if hasattr(current_widget, 'handle_navigate_left'):
+            current_widget.handle_navigate_left()
+    
+    def _handle_right(self):
+        """Handle right key"""
+        print("[INFO] Keyboard: Right pressed")
+        current_widget = self.screen_manager.currentWidget()
+        if hasattr(current_widget, 'handle_navigate_right'):
+            current_widget.handle_navigate_right()
+    
+    def _handle_page_up(self):
+        """Handle page up key"""
+        print("[INFO] Keyboard: Page Up pressed")
+        current_widget = self.screen_manager.currentWidget()
+        if hasattr(current_widget, 'handle_page_up'):
+            current_widget.handle_page_up()
+    
+    def _handle_page_down(self):
+        """Handle page down key"""
+        print("[INFO] Keyboard: Page Down pressed")
+        current_widget = self.screen_manager.currentWidget()
+        if hasattr(current_widget, 'handle_page_down'):
+            current_widget.handle_page_down()
+    
+    # Playback handlers
+    def _handle_play_pause(self):
+        """Handle play/pause key"""
+        print("[INFO] Keyboard: Play/Pause pressed")
+        # This will be connected to audio player in later phase
+    
+    def _handle_next(self):
+        """Handle next track key"""
+        print("[INFO] Keyboard: Next track pressed")
+        # This will be connected to audio player in later phase
+    
+    def _handle_previous(self):
+        """Handle previous track key"""
+        print("[INFO] Keyboard: Previous track pressed")
+        # This will be connected to audio player in later phase
+    
+    def _handle_volume_up(self):
+        """Handle volume up key"""
+        print("[INFO] Keyboard: Volume up pressed")
+        # This will be connected to audio player in later phase
+    
+    def _handle_volume_down(self):
+        """Handle volume down key"""
+        print("[INFO] Keyboard: Volume down pressed")
+        # This will be connected to audio player in later phase
+    
+    # UI action handlers
+    def _handle_back(self):
+        """Handle back/escape key"""
+        print("[INFO] Keyboard: Back pressed")
+        # Go back in screen history if available
+        if hasattr(self.screen_manager, 'go_back'):
+            self.screen_manager.go_back()
+        else:
+            # Default behavior: go to player screen
+            self.show_player()
+    
+    def _handle_select(self):
+        """Handle select/enter key"""
+        print("[INFO] Keyboard: Select pressed")
+        current_widget = self.screen_manager.currentWidget()
+        if hasattr(current_widget, 'handle_select'):
+            current_widget.handle_select()
+    
+    def _handle_menu(self):
+        """Handle menu toggle key"""
+        print("[INFO] Keyboard: Menu pressed")
+        # Toggle between player and settings
+        current_screen = self.screen_manager.current_screen_name
+        if current_screen == ScreenManager.PLAYER_SCREEN:
+            self.show_settings()
+        else:
+            self.show_player()
 
 
 def main():
@@ -219,6 +353,24 @@ def main():
         print("[INFO] Application window displayed")
         print("[INFO] Use buttons to navigate between screens")
         print("[INFO] Press F11 to toggle fullscreen, ESC to exit fullscreen")
+        print("\n" + "="*60)
+        print("KEYBOARD SHORTCUTS:")
+        print("="*60)
+        print("Navigation:")
+        print("  Arrow Keys    - Navigate UI")
+        print("  Page Up/Down  - Scroll lists")
+        print("  Enter         - Select item")
+        print("  Escape        - Go back")
+        print("  M             - Toggle menu")
+        print("\nPlayback:")
+        print("  Space         - Play/Pause")
+        print("  N             - Next track")
+        print("  P             - Previous track")
+        print("  +/-           - Volume up/down")
+        print("\nSystem:")
+        print("  Q             - Quit")
+        print("  F11           - Toggle fullscreen")
+        print("="*60 + "\n")
         
         sys.exit(app.exec_())
         
