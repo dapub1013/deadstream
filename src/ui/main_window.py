@@ -1,284 +1,230 @@
 #!/usr/bin/env python3
 """
-DeadStream Main Window
-Main application window with screen management
+Main window for DeadStream application.
+Integrates screen manager and navigation system.
 """
-
-import os
 import sys
-from PyQt5.QtWidgets import (
-    QMainWindow, QWidget, QStackedWidget,
-    QVBoxLayout, QLabel, QPushButton
-)
-from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtWidgets import QMainWindow, QApplication
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPalette, QColor
 
 # Add project root to path
+import os
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, PROJECT_ROOT)
+
+from src.ui.screen_manager import ScreenManager
+from src.ui.player_screen import PlayerScreen
+from src.ui.browse_screen import BrowseScreen
+from src.ui.settings_screen import SettingsScreen
 
 
 class MainWindow(QMainWindow):
     """
-    Main application window for DeadStream
-    Manages screen transitions between Player, Browse, and Settings
+    Main application window with navigation system.
+    Manages screen transitions and overall application state.
     """
     
     def __init__(self):
+        """Initialize the main window"""
         super().__init__()
         
-        # Window configuration
+        print("[INFO] Initializing MainWindow")
+        
+        # Window setup
         self.setWindowTitle("DeadStream - Grateful Dead Concert Player")
+        self.setup_dark_theme()
         self.setup_window_size()
         
-        # Apply dark theme
-        self.apply_dark_theme()
+        # Create screen manager
+        self.screen_manager = ScreenManager()
         
-        # Create central widget and layout
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-        main_layout = QVBoxLayout(central_widget)
-        main_layout.setContentsMargins(0, 0, 0, 0)  # No margins
-        main_layout.setSpacing(0)  # No spacing
+        # Create screens
+        self.create_screens()
         
-        # Create stacked widget for screen management
-        self.screen_stack = QStackedWidget()
-        main_layout.addWidget(self.screen_stack)
+        # Set screen manager as central widget
+        self.setCentralWidget(self.screen_manager)
         
-        # Create placeholder screens (will be replaced in later tasks)
-        self.create_placeholder_screens()
+        # Connect signals for navigation
+        self.connect_navigation()
         
         # Start on player screen
-        self.screen_stack.setCurrentIndex(0)
+        self.screen_manager.show_screen(ScreenManager.PLAYER_SCREEN)
         
-        print("[INFO] Main window initialized")
+        print("[INFO] MainWindow initialization complete")
     
-    def setup_window_size(self):
-        """Configure window size based on environment"""
-        # For development: windowed mode at target resolution
-        # For production: fullscreen mode (Phase 12)
-        
-        # Get screen dimensions
-        screen = self.screen()
-        screen_geometry = screen.availableGeometry()
-        
-        # Target resolution: 1280x720 (7" touchscreen landscape)
-        target_width = 1280
-        target_height = 720
-        
-        # Ensure window fits on current screen
-        window_width = min(target_width, screen_geometry.width() - 100)
-        window_height = min(target_height, screen_geometry.height() - 100)
-        
-        # Center window
-        x = (screen_geometry.width() - window_width) // 2
-        y = (screen_geometry.height() - window_height) // 2
-        
-        self.setGeometry(x, y, window_width, window_height)
-        
-        # Set minimum size to prevent too-small windows
-        self.setMinimumSize(QSize(800, 480))
-        
-        print(f"[INFO] Window size: {window_width}x{window_height}")
-        print(f"[INFO] Screen size: {screen_geometry.width()}x{screen_geometry.height()}")
-    
-    def apply_dark_theme(self):
-        """Apply dark color scheme to the entire application"""
+    def setup_dark_theme(self):
+        """Apply dark theme to the application"""
+        # Set dark palette
         palette = QPalette()
-        
-        # Background colors (matching UI spec)
-        palette.setColor(QPalette.Window, QColor("#000000"))  # Black
-        palette.setColor(QPalette.WindowText, QColor("#ffffff"))  # White
-        palette.setColor(QPalette.Base, QColor("#111827"))  # Gray-900
-        palette.setColor(QPalette.AlternateBase, QColor("#1f2937"))  # Gray-800
-        palette.setColor(QPalette.Text, QColor("#ffffff"))  # White
-        palette.setColor(QPalette.Button, QColor("#1f2937"))  # Gray-800
-        palette.setColor(QPalette.ButtonText, QColor("#ffffff"))  # White
-        palette.setColor(QPalette.Highlight, QColor("#2563eb"))  # Blue-600
-        palette.setColor(QPalette.HighlightedText, QColor("#ffffff"))  # White
-        
-        # Disabled colors
-        palette.setColor(QPalette.Disabled, QPalette.Text, QColor("#6b7280"))  # Gray-500
-        palette.setColor(QPalette.Disabled, QPalette.ButtonText, QColor("#6b7280"))
+        palette.setColor(QPalette.Window, QColor(17, 24, 39))          # gray-900
+        palette.setColor(QPalette.WindowText, QColor(255, 255, 255))   # white
+        palette.setColor(QPalette.Base, QColor(31, 41, 55))            # gray-800
+        palette.setColor(QPalette.AlternateBase, QColor(17, 24, 39))   # gray-900
+        palette.setColor(QPalette.Text, QColor(255, 255, 255))         # white
+        palette.setColor(QPalette.Button, QColor(55, 65, 81))          # gray-700
+        palette.setColor(QPalette.ButtonText, QColor(255, 255, 255))   # white
         
         self.setPalette(palette)
         
         # Apply stylesheet for additional styling
         self.setStyleSheet("""
             QMainWindow {
-                background-color: #000000;
+                background-color: #111827;
             }
-            
             QPushButton {
-                background-color: #1f2937;
-                color: #ffffff;
+                background-color: #3B82F6;
+                color: white;
                 border: none;
                 border-radius: 8px;
-                padding: 12px 16px;
-                font-size: 16px;
-                font-weight: 600;
+                padding: 12px;
+                font-size: 14px;
+                font-weight: bold;
             }
-            
             QPushButton:hover {
-                background-color: #374151;
+                background-color: #2563EB;
             }
-            
             QPushButton:pressed {
-                background-color: #4b5563;
+                background-color: #1D4ED8;
             }
-            
-            QPushButton:disabled {
-                background-color: #1f2937;
-                color: #6b7280;
-            }
-            
             QLabel {
-                color: #ffffff;
+                color: white;
             }
         """)
         
         print("[INFO] Dark theme applied")
     
-    def create_placeholder_screens(self):
-        """
-        Create placeholder screens for development
-        These will be replaced with real screens in Phase 7-8
-        """
-        # Player screen placeholder
-        player_screen = self.create_placeholder("Player Screen", 
-                                               "Now Playing Interface\n(Phase 8)")
-        self.screen_stack.addWidget(player_screen)
+    def setup_window_size(self):
+        """Set window size based on screen"""
+        screen = QApplication.primaryScreen().geometry()
         
-        # Browse screen placeholder
-        browse_screen = self.create_placeholder("Browse Screen",
-                                               "Find Shows\n(Phase 7)")
-        self.screen_stack.addWidget(browse_screen)
+        # Development mode: windowed at 1280x720
+        window_width = min(1280, screen.width() - 100)
+        window_height = min(720, screen.height() - 100)
         
-        # Settings screen placeholder
-        settings_screen = self.create_placeholder("Settings Screen",
-                                                 "Device Configuration\n(Future Phase)")
-        self.screen_stack.addWidget(settings_screen)
+        self.setGeometry(50, 50, window_width, window_height)
         
-        print("[INFO] Placeholder screens created")
+        print(f"[INFO] Window size set to {window_width}x{window_height}")
     
-    def create_placeholder(self, title, subtitle):
-        """Create a placeholder screen with title and navigation buttons"""
-        screen = QWidget()
-        layout = QVBoxLayout(screen)
-        layout.setAlignment(Qt.AlignCenter)
-        
-        # Title
-        title_label = QLabel(title)
-        title_label.setStyleSheet("""
-            font-size: 30px;
-            font-weight: bold;
-            color: #ffffff;
-            margin-bottom: 10px;
-        """)
-        title_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(title_label)
-        
-        # Subtitle
-        subtitle_label = QLabel(subtitle)
-        subtitle_label.setStyleSheet("""
-            font-size: 18px;
-            color: #9ca3af;
-            margin-bottom: 30px;
-        """)
-        subtitle_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(subtitle_label)
-        
-        # Navigation buttons
-        button_layout = QVBoxLayout()
-        button_layout.setSpacing(10)
-        
-        # Only show relevant navigation buttons
-        if "Player" in title:
-            browse_btn = QPushButton("Browse Shows")
-            browse_btn.setMinimumSize(200, 60)
-            browse_btn.clicked.connect(lambda: self.switch_screen(1))
-            button_layout.addWidget(browse_btn)
-        
-        elif "Browse" in title:
-            player_btn = QPushButton("Back to Now Playing")
-            player_btn.setMinimumSize(200, 60)
-            player_btn.clicked.connect(lambda: self.switch_screen(0))
-            button_layout.addWidget(player_btn)
+    def create_screens(self):
+        """Create and add all screens to the screen manager"""
+        try:
+            # Create screen instances
+            self.player_screen = PlayerScreen()
+            self.browse_screen = BrowseScreen()
+            self.settings_screen = SettingsScreen()
             
-            settings_btn = QPushButton("Settings")
-            settings_btn.setMinimumSize(200, 60)
-            settings_btn.clicked.connect(lambda: self.switch_screen(2))
-            button_layout.addWidget(settings_btn)
-        
-        elif "Settings" in title:
-            back_btn = QPushButton("Back to Browse")
-            back_btn.setMinimumSize(200, 60)
-            back_btn.clicked.connect(lambda: self.switch_screen(1))
-            button_layout.addWidget(back_btn)
-        
-        layout.addLayout(button_layout)
-        
-        return screen
+            # Add to screen manager
+            self.screen_manager.add_screen(
+                ScreenManager.PLAYER_SCREEN,
+                self.player_screen
+            )
+            self.screen_manager.add_screen(
+                ScreenManager.BROWSE_SCREEN,
+                self.browse_screen
+            )
+            self.screen_manager.add_screen(
+                ScreenManager.SETTINGS_SCREEN,
+                self.settings_screen
+            )
+            
+            print("[INFO] All screens created and added")
+            
+        except Exception as e:
+            print(f"[ERROR] Failed to create screens: {e}")
     
-    def switch_screen(self, screen_index):
+    def connect_navigation(self):
+        """Connect navigation signals from screens to screen manager"""
+        try:
+            # Player screen navigation
+            self.player_screen.browse_requested.connect(self.show_browse)
+            
+            # Browse screen navigation
+            self.browse_screen.player_requested.connect(self.show_player)
+            self.browse_screen.settings_requested.connect(self.show_settings)
+            
+            # Settings screen navigation
+            self.settings_screen.browse_requested.connect(self.show_browse)
+            
+            # Screen manager change signal
+            self.screen_manager.screen_changed.connect(self.on_screen_changed)
+            
+            print("[INFO] Navigation signals connected")
+            
+        except Exception as e:
+            print(f"[ERROR] Failed to connect navigation: {e}")
+    
+    def show_player(self):
+        """Navigate to player screen"""
+        self.screen_manager.show_screen(ScreenManager.PLAYER_SCREEN)
+    
+    def show_browse(self):
+        """Navigate to browse screen"""
+        self.screen_manager.show_screen(ScreenManager.BROWSE_SCREEN)
+    
+    def show_settings(self):
+        """Navigate to settings screen"""
+        self.screen_manager.show_screen(ScreenManager.SETTINGS_SCREEN)
+    
+    def on_screen_changed(self, screen_name):
         """
-        Switch to a different screen
+        Handle screen change events
         
         Args:
-            screen_index: 0=Player, 1=Browse, 2=Settings
+            screen_name: Name of the new screen
         """
-        screen_names = ["Player", "Browse", "Settings"]
-        if 0 <= screen_index < len(screen_names):
-            self.screen_stack.setCurrentIndex(screen_index)
-            print(f"[INFO] Switched to {screen_names[screen_index]} screen")
-        else:
-            print(f"[ERROR] Invalid screen index: {screen_index}")
+        print(f"[INFO] Screen changed to: {screen_name}")
+        
+        # Update window title
+        titles = {
+            ScreenManager.PLAYER_SCREEN: "DeadStream - Now Playing",
+            ScreenManager.BROWSE_SCREEN: "DeadStream - Browse Shows",
+            ScreenManager.SETTINGS_SCREEN: "DeadStream - Settings"
+        }
+        
+        if screen_name in titles:
+            self.setWindowTitle(titles[screen_name])
     
     def keyPressEvent(self, event):
-        """Handle keyboard shortcuts for development/testing"""
-        # ESC to exit fullscreen (when implemented)
+        """Handle keyboard shortcuts"""
+        # ESC to exit fullscreen (for future use)
         if event.key() == Qt.Key_Escape:
             if self.isFullScreen():
                 self.showNormal()
-                print("[INFO] Exited fullscreen mode")
+                print("[INFO] Exited fullscreen")
         
         # F11 to toggle fullscreen
         elif event.key() == Qt.Key_F11:
             if self.isFullScreen():
                 self.showNormal()
-                print("[INFO] Exited fullscreen mode")
+                print("[INFO] Exited fullscreen")
             else:
                 self.showFullScreen()
-                print("[INFO] Entered fullscreen mode")
+                print("[INFO] Entered fullscreen")
         
-        # Numbers 1-3 to switch screens (for testing)
-        elif event.key() == Qt.Key_1:
-            self.switch_screen(0)  # Player
-        elif event.key() == Qt.Key_2:
-            self.switch_screen(1)  # Browse
-        elif event.key() == Qt.Key_3:
-            self.switch_screen(2)  # Settings
+        # Pass event to parent
+        super().keyPressEvent(event)
 
 
 def main():
-    """Test the main window"""
-    from PyQt5.QtWidgets import QApplication
-    
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    
-    print("\n" + "="*50)
-    print("DeadStream Main Window Test")
-    print("="*50)
-    print("Navigation:")
-    print("  - Click buttons to switch screens")
-    print("  - Press 1/2/3 keys to switch screens")
-    print("  - Press F11 to toggle fullscreen")
-    print("  - Press ESC to exit fullscreen")
-    print("="*50 + "\n")
-    
-    sys.exit(app.exec_())
+    """Main entry point for the application"""
+    try:
+        app = QApplication(sys.argv)
+        
+        print("[INFO] Starting DeadStream application")
+        
+        window = MainWindow()
+        window.show()
+        
+        print("[INFO] Application window displayed")
+        print("[INFO] Use buttons to navigate between screens")
+        print("[INFO] Press F11 to toggle fullscreen, ESC to exit fullscreen")
+        
+        sys.exit(app.exec_())
+        
+    except Exception as e:
+        print(f"[ERROR] Application failed to start: {e}")
+        sys.exit(1)
 
 
 if __name__ == '__main__':
