@@ -167,6 +167,11 @@ class RecordingSelector:
         """
         Display all available recordings for a show in readable format.
         
+        Note: Scoring requires metadata (source, format, etc.) that may not
+        be in the database yet. For Phase 5, we're using database fields only.
+        Full metadata scoring will work better in Phase 6+ when we fetch
+        API metadata on-demand.
+        
         Args:
             date: Show date in YYYY-MM-DD format
             show_scores: If True, display automatic scores for each recording
@@ -189,16 +194,16 @@ class RecordingSelector:
                 print(f"\n{i}. {rec['identifier']}")
                 print(f"   Score: {rec['total_score']:.1f}/100")
                 
-                # Show breakdown
-                print(f"   Source:    {rec['scores']['source']:.1f} "
+                # Show breakdown (using correct keys from scorer)
+                print(f"   Source:    {rec['source_score']:.1f} "
                       f"(weight: {self.scorer.weights['source_type']:.0%})")
-                print(f"   Format:    {rec['scores']['format']:.1f} "
+                print(f"   Format:    {rec['format_score']:.1f} "
                       f"(weight: {self.scorer.weights['format_quality']:.0%})")
-                print(f"   Rating:    {rec['scores']['rating']:.1f} "
+                print(f"   Rating:    {rec['rating_score']:.1f} "
                       f"(weight: {self.scorer.weights['community_rating']:.0%})")
-                print(f"   Lineage:   {rec['scores']['lineage']:.1f} "
+                print(f"   Lineage:   {rec['lineage_score']:.1f} "
                       f"(weight: {self.scorer.weights['lineage']:.0%})")
-                print(f"   Taper:     {rec['scores']['taper']:.1f} "
+                print(f"   Taper:     {rec['taper_score']:.1f} "
                       f"(weight: {self.scorer.weights['taper']:.0%})")
                 
                 # Show metadata
