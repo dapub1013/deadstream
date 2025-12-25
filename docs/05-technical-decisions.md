@@ -232,7 +232,15 @@ Track what works well and what doesn't:
 | 2025-12-20 | **Phase 3: Idempotent insert pattern for error recovery** | Use `INSERT OR IGNORE` for safe re-runs instead of checkpoint system. Simpler implementation, adequate for 15-30 minute process. Safe to re-run entire populate script if interrupted. Database handles duplicates automatically. |
 | 2025-12-20 | **Phase 3: Console-based progress indication** | Simple print statements for progress during database population. No extra dependencies, easy to debug, sufficient for 15-30 minute process. Can upgrade to progress bar later if desired. |
 | 2025-12-20 | **Phase 3: Manual testing + sample dataset approach** | Test with sample years (1977-1978) before full download. Manual testing adequate for CRUD operations. Unit tests deferred to Phase 9 if needed. Focus on getting working functionality first. |
-
+| 2025-12-21 | Phase 4: VLC configuration for Pi | --aout=alsa required for audio output via SSH; headless --no-xlib breaks audio to connected headphones |
+| 2025-12-22 | Phase 4: Network resilience architecture | Three-layer system: NetworkMonitor + ResilientPlayer + VLC buffering (--network-caching=5000) |
+| 2025-12-22 | Phase 4: Position tracking throttling | Poll VLC every 500ms to prevent excessive CPU usage while maintaining responsive UI updates |
+| 2025-12-23 | Phase 4: Database-driven URL selection | Hardcoded URLs become invalid (404s); get_test_url.py utility selects valid URLs from database |
+| 2025-12-23 | Phase 4: "Declare victory" principle | Stop debugging auxiliary test scripts when core functionality proven working |
+| 2025-12-24 | **Phase 5: Scoring algorithm weights** | Source type (35%), Format (25%), Community rating (20%), Lineage (10%), Taper (10%). Tested with famous shows, validated by comparison tool. |
+| 2025-12-24 | **Phase 5: YAML-based preferences** | User preferences stored in `config/preferences.yaml`. Three presets (balanced, audiophile, crowd_favorite). Validation ensures weights sum to 1.0. |
+| 2025-12-24 | **Phase 5: Manual override design** | ShowSelector supports both auto-selection and manual choice. UI concept documented for Phase 6-8 implementation. |
+| 2025-12-24 | **Phase 5: No machine learning for v1.0** | Hand-crafted weights sufficient for current use case. Could add ML in future to learn from user behavior. |
 ---
 
 ## Implementation Notes (Added During Phase 1)
@@ -315,7 +323,86 @@ CREATE INDEX idx_state ON shows(state);
 
 ---
 
-**Last Updated:** December 20, 2025 (Phase 3 Planning Complete)
+### Phase 3 Database Implementation (December 21, 2025)
+
+**Actual Results:**
+- Database populated: 12,268 shows (vs estimated 15,000)
+- Database size: 3.68 MB (smaller than estimated 5-10 MB)
+- Population time: 20 minutes (within 15-30 min estimate)
+- Data quality: 99.5% complete
+- Query performance: <100ms (exceeds target)
+
+**Implementation validated all planning decisions:**
+- Shows-only schema proved sufficient âœ“
+- Minimal field approach worked perfectly âœ“
+- Idempotent inserts were reliable âœ“
+- Console progress indication was adequate âœ“
+
+---
+
+**Last Updated:** December 24, 2025 (Phase 5 Complete)
+
+---
+
+### Phase 5 Smart Selection Design (December 24, 2025)
+
+**Scoring Algorithm:**
+```python
+# Component weights (sum to 1.0)
+source_type_weight = 0.35    # Soundboard vs audience
+format_weight = 0.25         # FLAC > MP3 320 > MP3 128
+community_rating_weight = 0.20  # avg_rating + num_reviews
+lineage_weight = 0.10        # Fewer generations = better
+taper_weight = 0.10          # Known tapers bonus
+```
+
+**Scoring Scale:** 0-100 for all components, weighted final score
+
+**Rationale:**
+- Source type most important (soundboard objectively better)
+- Format quality matters for listening experience
+- Community ratings provide validation
+- Lineage indicates quality preservation
+- Taper reputation correlates with quality
+
+**User Preferences:**
+- Location: `config/preferences.yaml`
+- Three presets: balanced, audiophile, crowd_favorite
+- Custom weight editing supported
+- Validation enforces sum = 1.0
+
+**Manual Override:**
+- ShowSelector.select_for_date() for auto-selection
+- ShowSelector.get_options_for_date() for manual choice
+- UI design documented in `manual-override-ui-concept.md`
+
+**Test Validation:**
+- Tested with Cornell '77 (10+ recordings)
+- Tested with various source types and qualities
+- All expected "best" recordings selected correctly
+- Comparison tool provides transparency
+
+**Implementation Details:**
+- `src/selection/scoring.py` - Core scoring algorithm (340 lines)
+- `src/selection/preferences.py` - Preference management (280 lines)
+- `src/selection/selector.py` - Show selection logic (150 lines)
+- `examples/compare_recordings.py` - Comparison tool (370 lines)
+
+**Performance:**
+- Single recording score: < 1ms
+- 10 recordings comparison: < 10ms
+- Database query: < 5ms
+- Memory overhead: < 1KB
+
+**Known Limitations (Acceptable for v1.0):**
+- Taper name detection limited to exact matches
+- Lineage parsing supports standard formats only
+- No caching of scores (recalculated on each request)
+- Single scoring profile active (can't mix presets)
+
+---
+
+**Last Updated:** December 24, 2025 (Phase 5 Complete)
 
 ## Open Questions
 
