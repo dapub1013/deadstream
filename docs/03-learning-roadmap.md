@@ -183,7 +183,7 @@ Do NOT skip ahead. Understanding foundations prevents frustration later.
 
 ### Tasks (with instruction)
 - [x] 6.1: Learn PyQt5 fundamentals
-- [ ] 6.2: Create main window
+- [x] 6.2: Create main window
 - [ ] 6.3: Build basic navigation
 - [ ] 6.4: Test touch responsiveness
 - [ ] 6.5: Implement screen transitions
