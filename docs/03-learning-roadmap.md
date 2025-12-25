@@ -182,7 +182,7 @@ Do NOT skip ahead. Understanding foundations prevents frustration later.
 - Qt Designer (optional)
 
 ### Tasks (with instruction)
-- [ ] 6.1: Learn PyQt5 fundamentals
+- [x] 6.1: Learn PyQt5 fundamentals
 - [ ] 6.2: Create main window
 - [ ] 6.3: Build basic navigation
 - [ ] 6.4: Test touch responsiveness
