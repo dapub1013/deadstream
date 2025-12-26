@@ -1,12 +1,12 @@
 """
-Browse Screen for DeadStream - WITH VENUE FILTER (Task 7.3)
+Browse Screen for DeadStream - WITH VENUE FILTER AND DATE BROWSER
 
-This version is corrected to match your existing ShowListWidget API.
+This version includes both Task 7.2 (Date Browser) and Task 7.3 (Venue Filter).
 
 Completed features:
 - Task 7.1: Show list view with top-rated shows
-- Task 7.2: Date browser (calendar-based browsing)
-- Task 7.3: Venue filter (NEW - CORRECTED VERSION)
+- Task 7.2: Date browser (calendar-based browsing) - NOW CONNECTED
+- Task 7.3: Venue filter
 
 Future tasks:
 - Task 7.4: Year selector
@@ -30,10 +30,14 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 
 # Import database queries
-from src.database.queries import get_top_rated_shows, get_most_played_venues, search_by_venue
+from src.database.queries import (
+    get_top_rated_shows, get_most_played_venues, 
+    search_by_venue, get_show_by_date
+)
 
-# Import show list widget
+# Import widgets
 from src.ui.widgets.show_list import ShowListWidget
+from src.ui.widgets.date_browser import DateBrowser
 
 
 class BrowseScreen(QWidget):
@@ -46,8 +50,8 @@ class BrowseScreen(QWidget):
     
     Browse modes:
     - Top Rated (default)
-    - Browse by Date (Task 7.2)
-    - Browse by Venue (Task 7.3 - NEW)
+    - Browse by Date (Task 7.2) - WORKING
+    - Browse by Venue (Task 7.3) - WORKING
     
     Signals:
     - show_selected: Emitted when user selects a show to play
@@ -149,7 +153,7 @@ class BrowseScreen(QWidget):
         top_rated_btn.clicked.connect(self.load_default_shows)
         layout.addWidget(top_rated_btn)
         
-        # Date Browser (Task 7.2)
+        # Date Browser (Task 7.2) - NOW WORKING
         date_btn = QPushButton("Browse by Date")
         date_btn.setStyleSheet("""
             QPushButton {
@@ -172,7 +176,7 @@ class BrowseScreen(QWidget):
         date_btn.clicked.connect(self.show_date_browser)
         layout.addWidget(date_btn)
         
-        # Venue Browser (NEW - Task 7.3)
+        # Venue Browser (Task 7.3)
         venue_btn = QPushButton("Browse by Venue")
         venue_btn.setStyleSheet("""
             QPushButton {
@@ -277,14 +281,95 @@ class BrowseScreen(QWidget):
             self.show_list.set_empty_state("Error loading shows")
     
     def show_date_browser(self):
-        """Show date browser dialog (Task 7.2)"""
-        # This would open a calendar dialog
-        # For now, just show a message
-        print("[INFO] Date browser - Task 7.2 implementation")
-        # TODO: Implement date browser dialog from Task 7.2
+        """Show date browser dialog (Task 7.2 - NOW WORKING)"""
+        
+        # Create dialog
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Browse by Date")
+        dialog.setModal(True)
+        dialog.setMinimumSize(800, 600)
+        
+        # Apply dark theme
+        dialog.setStyleSheet("""
+            QDialog {
+                background-color: #111827;
+            }
+        """)
+        
+        # Layout
+        layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Add date browser widget
+        date_browser = DateBrowser()
+        
+        # Connect date selection signal
+        def on_date_selected(date_str):
+            """Handle date selection from calendar"""
+            dialog.accept()
+            self.load_shows_by_date(date_str)
+        
+        date_browser.date_selected.connect(on_date_selected)
+        layout.addWidget(date_browser)
+        
+        # Close button
+        close_btn = QPushButton("Close")
+        close_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #374151;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 12px 24px;
+                font-size: 16px;
+            }
+            QPushButton:hover {
+                background-color: #4b5563;
+            }
+        """)
+        close_btn.clicked.connect(dialog.reject)
+        layout.addWidget(close_btn)
+        
+        # Show dialog
+        dialog.exec_()
+    
+    def load_shows_by_date(self, date_str):
+        """Load and display shows from a specific date (Task 7.2)"""
+        
+        try:
+            self.show_list.set_loading_state()
+            
+            # Get shows for this date
+            shows = get_show_by_date(date_str)
+            
+            if not shows:
+                # No shows found
+                self.update_header(
+                    "No Shows Found",
+                    f"No shows on {date_str}"
+                )
+                self.show_list.set_empty_state(f"No shows on {date_str}")
+                return
+            
+            # Update header
+            self.update_header(
+                f"Shows on {date_str}",
+                f"{len(shows)} recording(s) from this date"
+            )
+            
+            # Load shows into list
+            self.show_list.load_shows(shows)
+            self.current_shows = shows
+            
+            print(f"[OK] Loaded {len(shows)} shows from {date_str}")
+            
+        except Exception as e:
+            print(f"[ERROR] Failed to load date shows: {e}")
+            self.update_header("Error", f"Failed to load shows for {date_str}")
+            self.show_list.set_empty_state("Error loading shows")
     
     def show_venue_browser(self):
-        """Show venue browser dialog (Task 7.3 - NEW)"""
+        """Show venue browser dialog (Task 7.3)"""
         
         # Create dialog
         dialog = QDialog(self)
@@ -420,7 +505,7 @@ class BrowseScreen(QWidget):
         dialog.exec_()
     
     def load_shows_by_venue(self, venue_name):
-        """Load and display shows from a specific venue (Task 7.3 - NEW)"""
+        """Load and display shows from a specific venue (Task 7.3)"""
         
         try:
             self.show_list.set_loading_state()
