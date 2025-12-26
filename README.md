@@ -154,11 +154,23 @@ Complete user interface design specification:
 - Manual override capability
 - All tests passing, production-ready
 
-**Current Phase:** Phase 6 - Basic UI Framework (Ready to Start)
+**Phase 6: Basic UI Framework** (Complete - Dec 25, 2025)
+- See: `phase-6-completion-summary.md`
+- PyQt5 UI framework established
+- Touch-responsive navigation system
+- Screen transitions with animations
+- Comprehensive keyboard shortcuts
+
+**Current Phase:** Phase 7 - Player Screen (Starting)
+- [ ] 7.1: Design player screen layout
+- [ ] 7.2: Display show information
+- [ ] 7.3: Show current track info
+- [ ] 7.4: Implement playback controls
+- [ ] 7.5: Add progress bar
+- [ ] 7.6: Implement volume control
+- [ ] 7.7: Test full integration
 
 ### Next Phases
-- Phase 6: PyQt5 UI foundation
-- Phase 7: Browse interface
 - Phase 8: Playback interface
 - Phase 9: Integration and testing
 
