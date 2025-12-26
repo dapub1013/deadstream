@@ -162,8 +162,8 @@ Complete user interface design specification:
 - Comprehensive keyboard shortcuts
 
 **Current Phase:** Phase 7 - Player Screen (Starting)
-- [ ] 7.1: Design player screen layout
-- [ ] 7.2: Display show information
+- [x] 7.1: Design player screen layout
+- [x] 7.2: Display show information
 - [ ] 7.3: Show current track info
 - [ ] 7.4: Implement playback controls
 - [ ] 7.5: Add progress bar
