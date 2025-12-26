@@ -18,3 +18,7 @@ Future widgets:
 from .show_list import ShowListWidget, ShowCard
 
 __all__ = ['ShowListWidget', 'ShowCard']
+
+from .date_browser import DateBrowser
+
+__all__ = ['DateBrowser']

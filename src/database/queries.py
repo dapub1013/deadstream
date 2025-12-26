@@ -172,6 +172,56 @@ def search_by_month(year: int, month: int) -> List[Dict]:
     return search_by_date_range(start_date, end_date)
 
 
+def get_shows_by_month(year: int, month: int) -> List[Dict]:
+    """
+    Get all shows from a specific month.
+    
+    Args:
+        year: Year (e.g., 1977)
+        month: Month (1-12)
+        
+    Returns:
+        List of show dictionaries, sorted by date
+    """
+    with DatabaseConnection() as cursor:
+        # Calculate date range for month
+        start_date = f"{year}-{month:02d}-01"
+        
+        if month == 12:
+            end_date = f"{year + 1}-01-01"
+        else:
+            end_date = f"{year}-{month + 1:02d}-01"
+        
+        cursor.execute("""
+            SELECT * FROM shows
+            WHERE date >= ? AND date < ?
+            ORDER BY date ASC
+        """, (start_date, end_date))
+        
+        return [row_to_dict(row) for row in cursor.fetchall()]
+
+
+def get_show_dates_for_year(year: int) -> List[str]:
+    """
+    Get all dates that have shows for a given year.
+    Used by date browser to highlight dates in calendar.
+    
+    Args:
+        year: Year to search (e.g., 1977)
+        
+    Returns:
+        List of date strings in YYYY-MM-DD format
+    """
+    with DatabaseConnection() as cursor:
+        cursor.execute("""
+            SELECT DISTINCT date FROM shows
+            WHERE date LIKE ?
+            ORDER BY date ASC
+        """, (f"{year}%",))
+        
+        return [row[0] for row in cursor.fetchall()]
+
+
 def get_on_this_day(month: int, day: int) -> List[Dict]:
     """
     Get all shows that occurred on this day in history (across all years)
@@ -495,3 +545,21 @@ def search_shows(
         """, params)
         
         return [row_to_dict(row) for row in cursor.fetchall()]
+
+    """
+    Get all dates that have shows for a given year.
+    
+    Args:
+        year: Year to search (e.g., 1977)
+        
+    Returns:
+        List of date strings in YYYY-MM-DD format
+    """
+    with DatabaseConnection() as cursor:
+        cursor.execute("""
+            SELECT DISTINCT date FROM shows
+            WHERE date LIKE ?
+            ORDER BY date ASC
+        """, (f"{year}%",))
+        
+        return [row[0] for row in cursor.fetchall()]
