@@ -1,12 +1,12 @@
 """
 Browse Screen for DeadStream - WITH VENUE FILTER (Task 7.3)
 
-This screen allows users to browse and select Grateful Dead shows.
+This version is corrected to match your existing ShowListWidget API.
 
 Completed features:
 - Task 7.1: Show list view with top-rated shows
 - Task 7.2: Date browser (calendar-based browsing)
-- Task 7.3: Venue filter (NEW)
+- Task 7.3: Venue filter (NEW - CORRECTED VERSION)
 
 Future tasks:
 - Task 7.4: Year selector
@@ -42,7 +42,7 @@ class BrowseScreen(QWidget):
     
     Layout (from UI spec):
     - Left panel (40%): Navigation and browse modes
-    - Right panel (60%): Show list
+    - Right panel (60%): Show list with header
     
     Browse modes:
     - Top Rated (default)
@@ -196,7 +196,7 @@ class BrowseScreen(QWidget):
         layout.addWidget(venue_btn)
     
     def create_right_panel(self):
-        """Create right panel with show list"""
+        """Create right panel with header and show list"""
         panel = QFrame()
         panel.setStyleSheet("""
             QFrame {
@@ -208,13 +208,44 @@ class BrowseScreen(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         
-        # Show list widget (from Task 7.1)
+        # Header section (we'll update the labels when loading shows)
+        self.header_widget = QWidget()
+        self.header_widget.setStyleSheet("background-color: #1f2937;")
+        header_layout = QVBoxLayout(self.header_widget)
+        header_layout.setContentsMargins(24, 20, 24, 20)
+        header_layout.setSpacing(8)
+        
+        # Title label (will be updated)
+        self.header_title = QLabel("Top Rated Shows")
+        self.header_title.setStyleSheet("""
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        """)
+        header_layout.addWidget(self.header_title)
+        
+        # Subtitle label (will be updated)
+        self.header_subtitle = QLabel("Showing the highest-rated performances from the collection")
+        self.header_subtitle.setStyleSheet("""
+            color: #9ca3af;
+            font-size: 14px;
+        """)
+        self.header_subtitle.setWordWrap(True)
+        header_layout.addWidget(self.header_subtitle)
+        
+        layout.addWidget(self.header_widget)
+        
+        # Show list widget
         self.show_list = ShowListWidget()
         self.show_list.show_selected.connect(self.on_show_selected)
-        
-        layout.addWidget(self.show_list)
+        layout.addWidget(self.show_list, stretch=1)
         
         return panel
+    
+    def update_header(self, title, subtitle):
+        """Update the header labels"""
+        self.header_title.setText(title)
+        self.header_subtitle.setText(subtitle)
     
     # ========================================================================
     # BROWSE MODE HANDLERS
@@ -222,17 +253,28 @@ class BrowseScreen(QWidget):
     
     def load_default_shows(self):
         """Load top-rated shows (default view)"""
-        shows = get_top_rated_shows(limit=50, min_reviews=5)
-        
-        self.show_list.set_header(
-            "Top Rated Shows",
-            f"{len(shows)} shows with 5+ reviews"
-        )
-        
-        self.show_list.load_shows(shows)
-        self.current_shows = shows
-        
-        print(f"[OK] Loaded {len(shows)} top-rated shows")
+        try:
+            self.show_list.set_loading_state()
+            
+            shows = get_top_rated_shows(limit=50, min_reviews=5)
+            
+            if shows:
+                self.current_shows = shows
+                self.update_header(
+                    "Top Rated Shows",
+                    f"Showing {len(shows)} highest-rated performances"
+                )
+                self.show_list.load_shows(shows)
+                print(f"[OK] Loaded {len(shows)} top-rated shows")
+            else:
+                self.update_header("No Shows Found", "No rated shows in database")
+                self.show_list.set_empty_state("No rated shows found")
+                print("[WARN] No shows found in database")
+                
+        except Exception as e:
+            print(f"[ERROR] Failed to load shows: {e}")
+            self.update_header("Error", "Failed to load shows")
+            self.show_list.set_empty_state("Error loading shows")
     
     def show_date_browser(self):
         """Show date browser dialog (Task 7.2)"""
@@ -380,35 +422,48 @@ class BrowseScreen(QWidget):
     def load_shows_by_venue(self, venue_name):
         """Load and display shows from a specific venue (Task 7.3 - NEW)"""
         
-        # Get shows for this venue
-        shows = search_by_venue(venue_name, exact_match=False)
-        
-        if not shows:
-            # No shows found
-            self.show_list.set_header(
-                "No Shows Found",
-                f"Venue: {venue_name}"
+        try:
+            self.show_list.set_loading_state()
+            
+            # Get shows for this venue
+            shows = search_by_venue(venue_name, exact_match=False)
+            
+            if not shows:
+                # No shows found
+                self.update_header(
+                    "No Shows Found",
+                    f"No shows found at {venue_name}"
+                )
+                self.show_list.set_empty_state(f"No shows at {venue_name}")
+                return
+            
+            # Update header
+            self.update_header(
+                f"{len(shows)} Shows at {venue_name}",
+                "Sorted by date (oldest to newest)"
             )
-            self.show_list.load_shows([])
-            return
-        
-        # Update header
-        self.show_list.set_header(
-            f"{len(shows)} Shows at {venue_name}",
-            "Sorted by date (oldest to newest)"
-        )
-        
-        # Load shows into list
-        self.show_list.load_shows(shows)
-        self.current_shows = shows
-        
-        print(f"[OK] Loaded {len(shows)} shows from {venue_name}")
+            
+            # Load shows into list
+            self.show_list.load_shows(shows)
+            self.current_shows = shows
+            
+            print(f"[OK] Loaded {len(shows)} shows from {venue_name}")
+            
+        except Exception as e:
+            print(f"[ERROR] Failed to load venue shows: {e}")
+            self.update_header("Error", f"Failed to load shows for {venue_name}")
+            self.show_list.set_empty_state("Error loading shows")
     
     # ========================================================================
     # EVENT HANDLERS
     # ========================================================================
     
-    def on_show_selected(self, show):
+    def on_show_selected(self, show_data):
         """Handle show selection from list"""
-        print(f"[INFO] Show selected: {show['date']} - {show['venue']}")
-        self.show_selected.emit(show)
+        print(f"\n[INFO] Show selected:")
+        print(f"  Date: {show_data['date']}")
+        print(f"  Venue: {show_data.get('venue', 'Unknown')}")
+        print(f"  Identifier: {show_data['identifier']}")
+        
+        # Emit signal to parent
+        self.show_selected.emit(show_data)
