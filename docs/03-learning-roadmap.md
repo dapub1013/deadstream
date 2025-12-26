@@ -187,7 +187,7 @@ Do NOT skip ahead. Understanding foundations prevents frustration later.
 - [x] 6.3: Build basic navigation
 - [x] 6.4: Test touch responsiveness
 - [x] 6.5: Implement screen transitions
-- [ ] 6.6: Add keyboard input (for testing)
+- [x] 6.6: Add keyboard input (for testing)
 
 ### Deliverables
 - UI framework
