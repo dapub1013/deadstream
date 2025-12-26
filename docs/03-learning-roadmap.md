@@ -210,7 +210,7 @@ Do NOT skip ahead. Understanding foundations prevents frustration later.
 - User input validation
 
 ### Tasks (with instruction)
-- [ ] 7.1: Build show list view
+- [x] 7.1: Build show list view
 - [ ] 7.2: Implement date browser
 - [ ] 7.3: Add venue filter
 - [ ] 7.4: Create year selector
