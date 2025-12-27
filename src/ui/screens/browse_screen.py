@@ -1,15 +1,16 @@
+#!/usr/bin/env python3
 """
-Browse Screen for DeadStream - WITH VENUE FILTER AND DATE BROWSER
+Browse Screen for DeadStream - WITH YEAR SELECTOR
 
-This version includes both Task 7.2 (Date Browser) and Task 7.3 (Venue Filter).
+This version includes Tasks 7.1-7.4.
 
 Completed features:
 - Task 7.1: Show list view with top-rated shows
-- Task 7.2: Date browser (calendar-based browsing) - NOW CONNECTED
+- Task 7.2: Date browser (calendar-based browsing)
 - Task 7.3: Venue filter
+- Task 7.4: Year selector (NEW)
 
 Future tasks:
-- Task 7.4: Year selector
 - Task 7.5: Search functionality
 - Task 7.6: Random show button
 """
@@ -32,12 +33,13 @@ from PyQt5.QtGui import QFont
 # Import database queries
 from src.database.queries import (
     get_top_rated_shows, get_most_played_venues, 
-    search_by_venue, get_show_by_date
+    search_by_venue, get_show_by_date, search_by_year, get_show_count
 )
 
 # Import widgets
 from src.ui.widgets.show_list import ShowListWidget
 from src.ui.widgets.date_browser import DateBrowser
+from src.ui.widgets.year_browser import YearBrowser
 
 
 class BrowseScreen(QWidget):
@@ -50,8 +52,9 @@ class BrowseScreen(QWidget):
     
     Browse modes:
     - Top Rated (default)
-    - Browse by Date (Task 7.2) - WORKING
-    - Browse by Venue (Task 7.3) - WORKING
+    - Browse by Date (Task 7.2)
+    - Browse by Venue (Task 7.3)
+    - Browse by Year (Task 7.4 - NEW)
     
     Signals:
     - show_selected: Emitted when user selects a show to play
@@ -112,7 +115,6 @@ class BrowseScreen(QWidget):
         layout.addStretch()
         
         # Stats section
-        from src.database.queries import get_show_count
         show_count = get_show_count()
         
         stats_label = QLabel(f"{show_count:,} shows available")
@@ -153,7 +155,7 @@ class BrowseScreen(QWidget):
         top_rated_btn.clicked.connect(self.load_default_shows)
         layout.addWidget(top_rated_btn)
         
-        # Date Browser (Task 7.2) - NOW WORKING
+        # Date Browser (Task 7.2)
         date_btn = QPushButton("Browse by Date")
         date_btn.setStyleSheet("""
             QPushButton {
@@ -198,6 +200,29 @@ class BrowseScreen(QWidget):
         """)
         venue_btn.clicked.connect(self.show_venue_browser)
         layout.addWidget(venue_btn)
+        
+        # Year Browser (Task 7.4 - NEW)
+        year_btn = QPushButton("Browse by Year")
+        year_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #a855f7;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 16px;
+                font-size: 16px;
+                font-weight: bold;
+                text-align: left;
+            }
+            QPushButton:hover {
+                background-color: #9333ea;
+            }
+            QPushButton:pressed {
+                background-color: #7e22ce;
+            }
+        """)
+        year_btn.clicked.connect(self.show_year_browser)
+        layout.addWidget(year_btn)
     
     def create_right_panel(self):
         """Create right panel with header and show list"""
@@ -239,9 +264,10 @@ class BrowseScreen(QWidget):
         
         layout.addWidget(self.header_widget)
         
-        # Show list widget
+        # Show list widget (from Task 7.1)
         self.show_list = ShowListWidget()
         self.show_list.show_selected.connect(self.on_show_selected)
+        
         layout.addWidget(self.show_list, stretch=1)
         
         return panel
@@ -277,11 +303,13 @@ class BrowseScreen(QWidget):
                 
         except Exception as e:
             print(f"[ERROR] Failed to load shows: {e}")
+            import traceback
+            traceback.print_exc()
             self.update_header("Error", "Failed to load shows")
             self.show_list.set_empty_state("Error loading shows")
     
     def show_date_browser(self):
-        """Show date browser dialog (Task 7.2 - NOW WORKING)"""
+        """Show date browser dialog (Task 7.2)"""
         
         # Create dialog
         dialog = QDialog(self)
@@ -320,8 +348,191 @@ class BrowseScreen(QWidget):
                 color: white;
                 border: none;
                 border-radius: 8px;
+                padding: 12px;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #4b5563;
+            }
+        """)
+        close_btn.clicked.connect(dialog.reject)
+        layout.addWidget(close_btn)
+        
+        # Show dialog
+        dialog.exec_()
+    
+    def show_venue_browser(self):
+        """Show venue browser dialog (Task 7.3)"""
+        
+        # Create dialog
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Browse by Venue")
+        dialog.setModal(True)
+        dialog.setMinimumSize(600, 700)
+        
+        # Apply dark theme
+        dialog.setStyleSheet("""
+            QDialog {
+                background-color: #111827;
+            }
+        """)
+        
+        # Layout
+        layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Header
+        header = QLabel("Select a Venue")
+        header.setFont(QFont("Arial", 20, QFont.Bold))
+        header.setStyleSheet("color: white; margin-bottom: 10px;")
+        layout.addWidget(header)
+        
+        # Subtitle
+        subtitle = QLabel("Showing most-played venues")
+        subtitle.setFont(QFont("Arial", 12))
+        subtitle.setStyleSheet("color: #9ca3af; margin-bottom: 20px;")
+        layout.addWidget(subtitle)
+        
+        # Get venues
+        venues = get_most_played_venues(limit=100)
+        
+        # Venue list
+        venue_list = QListWidget()
+        venue_list.setStyleSheet("""
+            QListWidget {
+                background-color: #1f2937;
+                border: 1px solid #374151;
+                border-radius: 8px;
+                color: white;
+                font-size: 14px;
+            }
+            QListWidget::item {
+                padding: 12px;
+                border-bottom: 1px solid #374151;
+            }
+            QListWidget::item:hover {
+                background-color: #374151;
+            }
+            QListWidget::item:selected {
+                background-color: #3b82f6;
+            }
+        """)
+        
+        for venue_name, show_count in venues:
+            item = QListWidgetItem(f"{venue_name} ({show_count} shows)")
+            item.setData(Qt.UserRole, venue_name)  # Store venue name
+            venue_list.addItem(item)
+        
+        layout.addWidget(venue_list)
+        
+        # Buttons
+        button_layout = QHBoxLayout()
+        
+        close_btn = QPushButton("Close")
+        close_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #374151;
+                color: white;
+                border: none;
+                border-radius: 8px;
                 padding: 12px 24px;
-                font-size: 16px;
+                font-size: 14px;
+            }
+            QPushButton:hover {
+                background-color: #4b5563;
+            }
+        """)
+        close_btn.clicked.connect(dialog.reject)
+        button_layout.addWidget(close_btn)
+        
+        button_layout.addStretch()
+        
+        select_btn = QPushButton("Select Venue")
+        select_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #10b981;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 12px 24px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #059669;
+            }
+            QPushButton:disabled {
+                background-color: #374151;
+                color: #6b7280;
+            }
+        """)
+        select_btn.setEnabled(False)  # Disabled until selection
+        
+        def on_selection_changed():
+            """Enable button when venue selected"""
+            select_btn.setEnabled(venue_list.currentItem() is not None)
+        
+        venue_list.itemSelectionChanged.connect(on_selection_changed)
+        
+        def on_select():
+            """Load shows for selected venue"""
+            current_item = venue_list.currentItem()
+            if current_item:
+                venue_name = current_item.data(Qt.UserRole)
+                dialog.accept()
+                self.load_shows_by_venue(venue_name)
+        
+        select_btn.clicked.connect(on_select)
+        venue_list.itemDoubleClicked.connect(lambda: on_select())  # Double-click to select
+        
+        button_layout.addWidget(select_btn)
+        layout.addLayout(button_layout)
+        
+        # Show dialog
+        dialog.exec_()
+    
+    def show_year_browser(self):
+        """Show year browser dialog (Task 7.4 - NEW)"""
+        
+        # Create dialog
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Browse by Year")
+        dialog.setModal(True)
+        dialog.setMinimumSize(800, 700)
+        
+        # Apply dark theme
+        dialog.setStyleSheet("""
+            QDialog {
+                background-color: #111827;
+            }
+        """)
+        
+        # Layout
+        layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Add year browser widget
+        year_browser = YearBrowser()
+        
+        # Connect year selection signal
+        def on_year_selected(year):
+            """Handle year selection from grid"""
+            dialog.accept()
+            self.load_shows_by_year(year)
+        
+        year_browser.year_selected.connect(on_year_selected)
+        layout.addWidget(year_browser)
+        
+        # Close button
+        close_btn = QPushButton("Close")
+        close_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #374151;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 12px;
+                font-size: 14px;
             }
             QPushButton:hover {
                 background-color: #4b5563;
@@ -368,142 +579,6 @@ class BrowseScreen(QWidget):
             self.update_header("Error", f"Failed to load shows for {date_str}")
             self.show_list.set_empty_state("Error loading shows")
     
-    def show_venue_browser(self):
-        """Show venue browser dialog (Task 7.3)"""
-        
-        # Create dialog
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Browse by Venue")
-        dialog.setModal(True)
-        dialog.setMinimumSize(600, 500)
-        
-        # Apply dark theme
-        dialog.setStyleSheet("""
-            QDialog {
-                background-color: #111827;
-            }
-            QLabel {
-                color: white;
-            }
-            QListWidget {
-                background-color: #1f2937;
-                color: white;
-                border: 2px solid #374151;
-                border-radius: 8px;
-                padding: 8px;
-                font-size: 16px;
-            }
-            QListWidget::item {
-                padding: 12px;
-                border-bottom: 1px solid #374151;
-            }
-            QListWidget::item:selected {
-                background-color: #10b981;
-                border-radius: 4px;
-            }
-            QListWidget::item:hover {
-                background-color: #374151;
-            }
-            QPushButton {
-                border: none;
-                border-radius: 8px;
-                padding: 12px 24px;
-                font-size: 16px;
-            }
-        """)
-        
-        # Layout
-        layout = QVBoxLayout(dialog)
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(16)
-        
-        # Header
-        header = QLabel("Select a Venue")
-        header.setStyleSheet("""
-            font-size: 24px;
-            font-weight: bold;
-            color: white;
-        """)
-        layout.addWidget(header)
-        
-        # Subtitle
-        subtitle = QLabel("Showing most popular venues")
-        subtitle.setStyleSheet("""
-            font-size: 14px;
-            color: #9ca3af;
-            margin-bottom: 8px;
-        """)
-        layout.addWidget(subtitle)
-        
-        # Venue list
-        venue_list = QListWidget()
-        
-        # Load venues from database
-        venues = get_most_played_venues(limit=30)
-        
-        for venue, count in venues:
-            item = QListWidgetItem(f"{venue} ({count} shows)")
-            item.setData(Qt.UserRole, venue)  # Store venue name for later
-            venue_list.addItem(item)
-        
-        layout.addWidget(venue_list)
-        
-        # Buttons
-        button_layout = QHBoxLayout()
-        
-        cancel_btn = QPushButton("Cancel")
-        cancel_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #374151;
-                color: white;
-            }
-            QPushButton:hover {
-                background-color: #4b5563;
-            }
-        """)
-        cancel_btn.clicked.connect(dialog.reject)
-        button_layout.addWidget(cancel_btn)
-        
-        select_btn = QPushButton("View Shows")
-        select_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #10b981;
-                color: white;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #059669;
-            }
-            QPushButton:disabled {
-                background-color: #374151;
-                color: #6b7280;
-            }
-        """)
-        select_btn.setEnabled(False)  # Disabled until selection
-        
-        def on_selection_changed():
-            """Enable button when venue selected"""
-            select_btn.setEnabled(venue_list.currentItem() is not None)
-        
-        venue_list.itemSelectionChanged.connect(on_selection_changed)
-        
-        def on_select():
-            """Load shows for selected venue"""
-            current_item = venue_list.currentItem()
-            if current_item:
-                venue_name = current_item.data(Qt.UserRole)
-                dialog.accept()
-                self.load_shows_by_venue(venue_name)
-        
-        select_btn.clicked.connect(on_select)
-        venue_list.itemDoubleClicked.connect(lambda: on_select())  # Double-click to select
-        
-        button_layout.addWidget(select_btn)
-        layout.addLayout(button_layout)
-        
-        # Show dialog
-        dialog.exec_()
-    
     def load_shows_by_venue(self, venue_name):
         """Load and display shows from a specific venue (Task 7.3)"""
         
@@ -539,16 +614,76 @@ class BrowseScreen(QWidget):
             self.update_header("Error", f"Failed to load shows for {venue_name}")
             self.show_list.set_empty_state("Error loading shows")
     
+    def load_shows_by_year(self, year):
+        """Load and display shows from a specific year (Task 7.4 - NEW)"""
+        
+        try:
+            self.show_list.set_loading_state()
+            
+            # Get shows for this year
+            shows = search_by_year(year)
+            
+            if not shows:
+                # No shows found
+                self.update_header(
+                    "No Shows Found",
+                    f"No shows from {year}"
+                )
+                self.show_list.set_empty_state(f"No shows from {year}")
+                return
+            
+            # Update header - include legendary year indicator
+            from src.ui.widgets.year_browser import YearBrowser
+            is_legendary = year in YearBrowser.LEGENDARY_YEARS
+            
+            if is_legendary:
+                title = f"[LEGENDARY] {year} ({len(shows)} shows)"
+            else:
+                title = f"{year} ({len(shows)} shows)"
+            
+            self.update_header(
+                title,
+                "All shows from this year, sorted by date"
+            )
+            
+            # Load shows into list
+            self.show_list.load_shows(shows)
+            self.current_shows = shows
+            
+            print(f"[OK] Loaded {len(shows)} shows from {year}")
+            
+        except Exception as e:
+            print(f"[ERROR] Failed to load year shows: {e}")
+            self.update_header("Error", f"Failed to load shows for {year}")
+            self.show_list.set_empty_state("Error loading shows")
+    
     # ========================================================================
     # EVENT HANDLERS
     # ========================================================================
     
-    def on_show_selected(self, show_data):
+    def on_show_selected(self, show):
         """Handle show selection from list"""
-        print(f"\n[INFO] Show selected:")
-        print(f"  Date: {show_data['date']}")
-        print(f"  Venue: {show_data.get('venue', 'Unknown')}")
-        print(f"  Identifier: {show_data['identifier']}")
-        
-        # Emit signal to parent
-        self.show_selected.emit(show_data)
+        print(f"[INFO] Show selected: {show['date']} - {show['venue']}")
+        self.show_selected.emit(show)
+
+
+# Test code
+if __name__ == "__main__":
+    from PyQt5.QtWidgets import QApplication
+    
+    app = QApplication(sys.argv)
+    
+    # Apply dark theme
+    app.setStyleSheet("""
+        QWidget {
+            background-color: #000000;
+            color: #f3f4f6;
+        }
+    """)
+    
+    screen = BrowseScreen()
+    screen.setWindowTitle("Browse Screen Test - WITH YEAR BROWSER")
+    screen.setGeometry(100, 100, 1280, 720)
+    screen.show()
+    
+    sys.exit(app.exec_())
