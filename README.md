@@ -166,7 +166,7 @@ Complete user interface design specification:
 - [x] 7.2: Display show information
 - [x] 7.3: Show current track info
 - [x] 7.4: Implement playback controls
-- [ ] 7.5: Add progress bar
+- [x] 7.5: Add progress bar
 - [ ] 7.6: Implement volume control
 - [ ] 7.7: Test full integration
 
