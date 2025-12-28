@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 """
-Browse Screen for DeadStream - COMPLETE WITH SEARCH (Tasks 7.1-7.5)
+Browse Screen for DeadStream - WITH SEARCH AND RANDOM SHOW
 
-This screen allows users to browse and select Grateful Dead shows.
+This version includes Tasks 7.1-7.6 (COMPLETE Phase 7).
 
 Completed features:
 - Task 7.1: Show list view with top-rated shows
 - Task 7.2: Date browser (calendar-based browsing)
 - Task 7.3: Venue filter
 - Task 7.4: Year selector
-- Task 7.5: Search functionality (NEW)
-
-Future tasks:
-- Task 7.6: Random show button
+- Task 7.5: Search functionality
+- Task 7.6: Random show button (NEW)
 """
 
 import sys
@@ -33,15 +31,15 @@ from PyQt5.QtGui import QFont
 # Import database queries
 from src.database.queries import (
     get_top_rated_shows, get_most_played_venues, 
-    search_by_venue, get_show_by_date, search_by_year,
-    search_shows  # Task 7.5 - NEW
+    search_by_venue, get_show_by_date, search_by_year, 
+    get_show_count, get_random_show
 )
 
 # Import widgets
 from src.ui.widgets.show_list import ShowListWidget
 from src.ui.widgets.date_browser import DateBrowser
 from src.ui.widgets.year_browser import YearBrowser
-from src.ui.widgets.search_widget import SearchWidget  # Task 7.5 - NEW
+from src.ui.widgets.search_widget import SearchWidget
 
 
 class BrowseScreen(QWidget):
@@ -57,7 +55,8 @@ class BrowseScreen(QWidget):
     - Browse by Date (Task 7.2)
     - Browse by Venue (Task 7.3)
     - Browse by Year (Task 7.4)
-    - Search (Task 7.5 - NEW)
+    - Search Shows (Task 7.5)
+    - Random Show (Task 7.6 - NEW)
     
     Signals:
     - show_selected: Emitted when user selects a show to play
@@ -90,7 +89,7 @@ class BrowseScreen(QWidget):
         self.setLayout(main_layout)
     
     def create_left_panel(self):
-        """Create left navigation panel with browse modes"""
+        """Create left panel with browse mode buttons"""
         panel = QFrame()
         panel.setStyleSheet("""
             QFrame {
@@ -100,29 +99,37 @@ class BrowseScreen(QWidget):
         """)
         
         layout = QVBoxLayout(panel)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(12)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(16)
         
         # Title
         title = QLabel("Browse Shows")
-        title.setFont(QFont("Arial", 18, QFont.Bold))
-        title.setStyleSheet("color: white;")
+        title.setStyleSheet("""
+            QLabel {
+                color: white;
+                font-size: 24px;
+                font-weight: bold;
+                padding-bottom: 8px;
+                border-bottom: 2px solid #374151;
+            }
+        """)
         layout.addWidget(title)
         
-        # Browse mode buttons
-        browse_layout = self.create_browse_mode_buttons()
-        layout.addLayout(browse_layout)
+        # Add browse mode buttons
+        browse_buttons = self.create_browse_mode_buttons()
+        layout.addLayout(browse_buttons)
         
+        # Add stretch to push buttons to top
         layout.addStretch()
         
         return panel
     
     def create_browse_mode_buttons(self):
-        """Create browse mode button list"""
+        """Create buttons for different browse modes"""
         layout = QVBoxLayout()
         layout.setSpacing(12)
         
-        # Top Rated (default view)
+        # Top Rated (default)
         top_rated_btn = QPushButton("Top Rated Shows")
         top_rated_btn.setStyleSheet("""
             QPushButton {
@@ -139,13 +146,14 @@ class BrowseScreen(QWidget):
                 background-color: #4b5563;
             }
             QPushButton:pressed {
-                background-color: #6b7280;
+                background-color: #1f2937;
             }
         """)
+        top_rated_btn.setMinimumHeight(60)
         top_rated_btn.clicked.connect(self.load_default_shows)
         layout.addWidget(top_rated_btn)
         
-        # Date Browser (Task 7.2)
+        # Browse by Date
         date_btn = QPushButton("Browse by Date")
         date_btn.setStyleSheet("""
             QPushButton {
@@ -165,10 +173,11 @@ class BrowseScreen(QWidget):
                 background-color: #1d4ed8;
             }
         """)
+        date_btn.setMinimumHeight(60)
         date_btn.clicked.connect(self.show_date_browser)
         layout.addWidget(date_btn)
         
-        # Venue Browser (Task 7.3)
+        # Browse by Venue
         venue_btn = QPushButton("Browse by Venue")
         venue_btn.setStyleSheet("""
             QPushButton {
@@ -188,10 +197,11 @@ class BrowseScreen(QWidget):
                 background-color: #047857;
             }
         """)
+        venue_btn.setMinimumHeight(60)
         venue_btn.clicked.connect(self.show_venue_browser)
         layout.addWidget(venue_btn)
         
-        # Year Browser (Task 7.4)
+        # Browse by Year
         year_btn = QPushButton("Browse by Year")
         year_btn.setStyleSheet("""
             QPushButton {
@@ -211,10 +221,11 @@ class BrowseScreen(QWidget):
                 background-color: #7e22ce;
             }
         """)
+        year_btn.setMinimumHeight(60)
         year_btn.clicked.connect(self.show_year_browser)
         layout.addWidget(year_btn)
         
-        # Search (Task 7.5 - NEW)
+        # Search Shows (Task 7.5)
         search_btn = QPushButton("Search Shows")
         search_btn.setStyleSheet("""
             QPushButton {
@@ -234,47 +245,74 @@ class BrowseScreen(QWidget):
                 background-color: #b45309;
             }
         """)
+        search_btn.setMinimumHeight(60)
         search_btn.clicked.connect(self.show_search_dialog)
         layout.addWidget(search_btn)
+        
+        # Random Show (Task 7.6 - NEW)
+        random_btn = QPushButton("Random Show")
+        random_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #ec4899;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                padding: 16px;
+                font-size: 16px;
+                font-weight: bold;
+                text-align: left;
+            }
+            QPushButton:hover {
+                background-color: #db2777;
+            }
+            QPushButton:pressed {
+                background-color: #be185d;
+            }
+        """)
+        random_btn.setMinimumHeight(60)
+        random_btn.clicked.connect(self.load_random_show)
+        layout.addWidget(random_btn)
         
         return layout
     
     def create_right_panel(self):
-        """Create right panel with header and show list"""
+        """Create right panel with show list"""
         panel = QFrame()
         panel.setStyleSheet("""
             QFrame {
-                background-color: #000000;
+                background-color: #111827;
             }
         """)
         
         layout = QVBoxLayout(panel)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(16)
         
-        # Header section (we'll update the labels when loading shows)
+        # Header widget (separate from ShowListWidget!)
         self.header_widget = QWidget()
-        self.header_widget.setStyleSheet("background-color: #1f2937;")
         header_layout = QVBoxLayout(self.header_widget)
-        header_layout.setContentsMargins(24, 20, 24, 20)
-        header_layout.setSpacing(8)
+        header_layout.setContentsMargins(0, 0, 0, 0)
+        header_layout.setSpacing(4)
         
-        # Title label (will be updated)
+        # Title label
         self.header_title = QLabel("Top Rated Shows")
         self.header_title.setStyleSheet("""
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
+            QLabel {
+                color: white;
+                font-size: 24px;
+                font-weight: bold;
+            }
         """)
         header_layout.addWidget(self.header_title)
         
-        # Subtitle label (will be updated)
-        self.header_subtitle = QLabel("Showing the highest-rated performances from the collection")
+        # Subtitle label
+        self.header_subtitle = QLabel("Shows with 5+ reviews")
         self.header_subtitle.setStyleSheet("""
-            color: #9ca3af;
-            font-size: 14px;
+            QLabel {
+                color: #9ca3af;
+                font-size: 16px;
+            }
         """)
-        self.header_subtitle.setWordWrap(True)
         header_layout.addWidget(self.header_subtitle)
         
         layout.addWidget(self.header_widget)
@@ -282,12 +320,12 @@ class BrowseScreen(QWidget):
         # Show list widget
         self.show_list = ShowListWidget()
         self.show_list.show_selected.connect(self.on_show_selected)
-        layout.addWidget(self.show_list, stretch=1)
+        layout.addWidget(self.show_list)
         
         return panel
     
     def update_header(self, title, subtitle):
-        """Update the header labels"""
+        """Update header title and subtitle"""
         self.header_title.setText(title)
         self.header_subtitle.setText(subtitle)
     
@@ -302,23 +340,20 @@ class BrowseScreen(QWidget):
             
             shows = get_top_rated_shows(limit=50, min_reviews=5)
             
-            if shows:
-                self.current_shows = shows
-                self.update_header(
-                    "Top Rated Shows",
-                    f"Showing {len(shows)} highest-rated performances"
-                )
-                self.show_list.load_shows(shows)
-                print(f"[OK] Loaded {len(shows)} top-rated shows")
-            else:
-                self.update_header("No Shows Found", "No rated shows in database")
-                self.show_list.set_empty_state("No rated shows found")
-                print("[WARN] No shows found in database")
-                
+            self.update_header(
+                "Top Rated Shows",
+                f"{len(shows)} shows with 5+ reviews"
+            )
+            
+            self.show_list.load_shows(shows)
+            self.current_shows = shows
+            
+            print(f"[OK] Loaded {len(shows)} top-rated shows")
+            
         except Exception as e:
-            print(f"[ERROR] Failed to load shows: {e}")
-            self.update_header("Error", "Failed to load shows")
-            self.show_list.set_empty_state("Error loading shows")
+            print(f"[ERROR] Failed to load top rated shows: {e}")
+            import traceback
+            traceback.print_exc()
     
     def show_date_browser(self):
         """Show date browser dialog (Task 7.2)"""
@@ -327,7 +362,7 @@ class BrowseScreen(QWidget):
         dialog = QDialog(self)
         dialog.setWindowTitle("Browse by Date")
         dialog.setModal(True)
-        dialog.setMinimumSize(800, 600)
+        dialog.setMinimumSize(400, 500)
         
         # Apply dark theme
         dialog.setStyleSheet("""
@@ -336,39 +371,16 @@ class BrowseScreen(QWidget):
             }
         """)
         
-        # Layout
+        # Create layout
         layout = QVBoxLayout(dialog)
-        layout.setContentsMargins(20, 20, 20, 20)
         
         # Add date browser widget
         date_browser = DateBrowser()
-        
-        # Connect date selection signal
-        def on_date_selected(date_str):
-            """Handle date selection from calendar"""
-            dialog.accept()
-            self.load_shows_by_date(date_str)
-        
-        date_browser.date_selected.connect(on_date_selected)
+        date_browser.date_selected.connect(lambda date: (
+            dialog.accept(),
+            self.load_shows_by_date(date)
+        ))
         layout.addWidget(date_browser)
-        
-        # Close button
-        close_btn = QPushButton("Close")
-        close_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #374151;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 12px;
-                font-size: 14px;
-            }
-            QPushButton:hover {
-                background-color: #4b5563;
-            }
-        """)
-        close_btn.clicked.connect(dialog.reject)
-        layout.addWidget(close_btn)
         
         # Show dialog
         dialog.exec_()
@@ -412,89 +424,53 @@ class BrowseScreen(QWidget):
             QPushButton {
                 border: none;
                 border-radius: 8px;
-                padding: 12px;
-                font-size: 14px;
+                padding: 12px 24px;
+                font-size: 16px;
+                font-weight: bold;
             }
-        """)
-        
-        # Layout
-        layout = QVBoxLayout(dialog)
-        layout.setContentsMargins(20, 20, 20, 20)
-        
-        # Title
-        title = QLabel("Select a Venue")
-        title.setFont(QFont("Arial", 18, QFont.Bold))
-        layout.addWidget(title)
-        
-        # Subtitle
-        subtitle = QLabel("Top venues by number of shows")
-        subtitle.setFont(QFont("Arial", 12))
-        subtitle.setStyleSheet("color: #9ca3af;")
-        layout.addWidget(subtitle)
-        
-        # Venue list
-        venue_list = QListWidget()
-        
-        try:
-            # Get most played venues
-            venues = get_most_played_venues(limit=50)
-            
-            for venue_data in venues:
-                venue_name = venue_data['venue']
-                show_count = venue_data['show_count']
-                city = venue_data.get('city', 'Unknown')
-                state = venue_data.get('state', '')
-                
-                # Format item text
-                item_text = f"{venue_name} - {city}, {state} ({show_count} shows)"
-                
-                # Create list item
-                item = QListWidgetItem(item_text)
-                item.setData(Qt.UserRole, venue_name)  # Store venue name for retrieval
-                venue_list.addItem(item)
-            
-            print(f"[OK] Loaded {len(venues)} venues")
-            
-        except Exception as e:
-            print(f"[ERROR] Failed to load venues: {e}")
-        
-        layout.addWidget(venue_list)
-        
-        # Button layout
-        button_layout = QHBoxLayout()
-        
-        # Close button
-        close_btn = QPushButton("Close")
-        close_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #374151;
-                color: white;
-            }
-            QPushButton:hover {
-                background-color: #4b5563;
-            }
-        """)
-        close_btn.clicked.connect(dialog.reject)
-        button_layout.addWidget(close_btn)
-        
-        # Select button
-        select_btn = QPushButton("View Shows")
-        select_btn.setStyleSheet("""
-            QPushButton {
+            QPushButton:enabled {
                 background-color: #10b981;
                 color: white;
-            }
-            QPushButton:hover {
-                background-color: #059669;
             }
             QPushButton:disabled {
                 background-color: #374151;
                 color: #6b7280;
             }
+            QPushButton:hover:enabled {
+                background-color: #059669;
+            }
         """)
+        
+        # Create layout
+        layout = QVBoxLayout(dialog)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(16)
+        
+        # Title
+        title = QLabel("Select a Venue")
+        title.setStyleSheet("font-size: 20px; font-weight: bold;")
+        layout.addWidget(title)
+        
+        # Venue list
+        venue_list = QListWidget()
+        
+        # Load venues
+        venues = get_most_played_venues(limit=100)
+        for venue_name, show_count in venues:
+            item = QListWidgetItem(f"{venue_name} ({show_count} shows)")
+            item.setData(Qt.UserRole, venue_name)
+            venue_list.addItem(item)
+        
+        layout.addWidget(venue_list)
+        
+        # Button layout
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        
+        # Select button
+        select_btn = QPushButton("Load Shows")
         select_btn.setEnabled(False)  # Disabled until selection
         
-        # Enable button when venue selected
         def on_selection_changed():
             """Enable button when venue selected"""
             select_btn.setEnabled(venue_list.currentItem() is not None)
@@ -510,7 +486,7 @@ class BrowseScreen(QWidget):
                 self.load_shows_by_venue(venue_name)
         
         select_btn.clicked.connect(on_select)
-        venue_list.itemDoubleClicked.connect(lambda: on_select())  # Double-click to select
+        venue_list.itemDoubleClicked.connect(lambda: on_select())
         
         button_layout.addWidget(select_btn)
         layout.addLayout(button_layout)
@@ -525,7 +501,7 @@ class BrowseScreen(QWidget):
         dialog = QDialog(self)
         dialog.setWindowTitle("Browse by Year")
         dialog.setModal(True)
-        dialog.setMinimumSize(800, 700)
+        dialog.setMinimumSize(600, 500)
         
         # Apply dark theme
         dialog.setStyleSheet("""
@@ -534,51 +510,28 @@ class BrowseScreen(QWidget):
             }
         """)
         
-        # Layout
+        # Create layout
         layout = QVBoxLayout(dialog)
-        layout.setContentsMargins(20, 20, 20, 20)
         
         # Add year browser widget
         year_browser = YearBrowser()
-        
-        # Connect year selection signal
-        def on_year_selected(year):
-            """Handle year selection from grid"""
-            dialog.accept()
+        year_browser.year_selected.connect(lambda year: (
+            dialog.accept(),
             self.load_shows_by_year(year)
-        
-        year_browser.year_selected.connect(on_year_selected)
+        ))
         layout.addWidget(year_browser)
-        
-        # Close button
-        close_btn = QPushButton("Close")
-        close_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #374151;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 12px;
-                font-size: 14px;
-            }
-            QPushButton:hover {
-                background-color: #4b5563;
-            }
-        """)
-        close_btn.clicked.connect(dialog.reject)
-        layout.addWidget(close_btn)
         
         # Show dialog
         dialog.exec_()
     
     def show_search_dialog(self):
-        """Show search dialog (Task 7.5 - NEW)"""
+        """Show search dialog (Task 7.5)"""
         
         # Create dialog
         dialog = QDialog(self)
         dialog.setWindowTitle("Search Shows")
         dialog.setModal(True)
-        dialog.setMinimumSize(600, 700)
+        dialog.setMinimumSize(600, 500)
         
         # Apply dark theme
         dialog.setStyleSheet("""
@@ -587,39 +540,16 @@ class BrowseScreen(QWidget):
             }
         """)
         
-        # Layout
+        # Create layout
         layout = QVBoxLayout(dialog)
-        layout.setContentsMargins(20, 20, 20, 20)
         
         # Add search widget
         search_widget = SearchWidget()
-        
-        # Connect search signal
-        def on_search(search_params):
-            """Handle search submission"""
-            dialog.accept()
-            self.load_search_results(search_params)
-        
-        search_widget.search_submitted.connect(on_search)
+        search_widget.search_executed.connect(lambda results: (
+            dialog.accept(),
+            self.load_search_results(results)
+        ))
         layout.addWidget(search_widget)
-        
-        # Close button
-        close_btn = QPushButton("Close")
-        close_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #374151;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 12px;
-                font-size: 14px;
-            }
-            QPushButton:hover {
-                background-color: #4b5563;
-            }
-        """)
-        close_btn.clicked.connect(dialog.reject)
-        layout.addWidget(close_btn)
         
         # Show dialog
         dialog.exec_()
@@ -656,6 +586,8 @@ class BrowseScreen(QWidget):
             
         except Exception as e:
             print(f"[ERROR] Failed to load date shows: {e}")
+            import traceback
+            traceback.print_exc()
             self.update_header("Error", f"Failed to load shows for {date_str}")
             self.show_list.set_empty_state("Error loading shows")
     
@@ -691,6 +623,8 @@ class BrowseScreen(QWidget):
             
         except Exception as e:
             print(f"[ERROR] Failed to load venue shows: {e}")
+            import traceback
+            traceback.print_exc()
             self.update_header("Error", f"Failed to load shows for {venue_name}")
             self.show_list.set_empty_state("Error loading shows")
     
@@ -734,66 +668,78 @@ class BrowseScreen(QWidget):
             
         except Exception as e:
             print(f"[ERROR] Failed to load year shows: {e}")
+            import traceback
+            traceback.print_exc()
             self.update_header("Error", f"Failed to load shows for {year}")
             self.show_list.set_empty_state("Error loading shows")
     
-    def load_search_results(self, search_params):
-        """Load and display search results (Task 7.5 - NEW)"""
+    def load_search_results(self, results):
+        """Load and display search results (Task 7.5)"""
+        
+        try:
+            # Update header
+            if not results:
+                self.update_header(
+                    "No Results",
+                    "No shows matched your search criteria"
+                )
+                self.show_list.set_empty_state("Try different search criteria")
+                return
+            
+            self.update_header(
+                f"Search Results ({len(results)} shows)",
+                "Sorted by rating (best first)"
+            )
+            
+            # Load shows into list
+            self.show_list.load_shows(results)
+            self.current_shows = results
+            
+            print(f"[OK] Loaded {len(results)} search results")
+            
+        except Exception as e:
+            print(f"[ERROR] Failed to load search results: {e}")
+            import traceback
+            traceback.print_exc()
+            self.update_header("Error", "Failed to load search results")
+            self.show_list.set_empty_state("Error loading shows")
+    
+    def load_random_show(self):
+        """Load a random show (Task 7.6 - NEW)"""
         
         try:
             self.show_list.set_loading_state()
             
-            # Get shows using search_shows function
-            shows = search_shows(
-                query=search_params.get('query'),
-                year=search_params.get('year'),
-                venue=None,  # Not using venue filter in search widget
-                state=search_params.get('state'),
-                min_rating=search_params.get('min_rating'),
-                limit=100
-            )
+            # Get a random show
+            show = get_random_show()
             
-            if not shows:
-                # No results
+            if not show:
+                # No show found
                 self.update_header(
-                    "No Results Found",
-                    "No shows matching your search criteria"
+                    "No Shows Found",
+                    "No shows in database"
                 )
-                self.show_list.set_empty_state("Try different search terms")
-                print("[INFO] Search returned no results")
+                self.show_list.set_empty_state("Database appears empty")
                 return
-            
-            # Build subtitle from search parameters
-            subtitle_parts = []
-            if search_params.get('query'):
-                subtitle_parts.append(f"Query: '{search_params['query']}'")
-            if search_params.get('year'):
-                subtitle_parts.append(f"Year: {search_params['year']}")
-            if search_params.get('state'):
-                subtitle_parts.append(f"State: {search_params['state']}")
-            if search_params.get('min_rating'):
-                subtitle_parts.append(f"Rating: {search_params['min_rating']}+")
-            
-            subtitle = " | ".join(subtitle_parts) if subtitle_parts else "All shows"
             
             # Update header
             self.update_header(
-                f"Search Results ({len(shows)} shows)",
-                subtitle
+                "Random Show",
+                f"{show['date']} at {show['venue']}, {show['city']}, {show['state']}"
             )
             
-            # Load shows
-            self.show_list.load_shows(shows)
-            self.current_shows = shows
+            # Load single show as a list
+            self.show_list.load_shows([show])
+            self.current_shows = [show]
             
-            print(f"[OK] Loaded {len(shows)} search results")
+            print(f"[OK] Loaded random show: {show['date']} - {show['venue']}")
             
         except Exception as e:
-            print(f"[ERROR] Search failed: {e}")
+            print(f"[ERROR] Failed to load random show: {e}")
             import traceback
             traceback.print_exc()
-            self.update_header("Search Error", "Failed to search shows")
-            self.show_list.set_empty_state("Error during search")
+            self.update_header("Error", "Failed to load random show")
+            self.show_list.set_empty_state("Error loading show")
     
     # ========================================================================
     # EVENT HANDLERS
@@ -820,7 +766,7 @@ if __name__ == "__main__":
     """)
     
     screen = BrowseScreen()
-    screen.setWindowTitle("Browse Screen Test - WITH SEARCH (Tasks 7.1-7.5)")
+    screen.setWindowTitle("Browse Screen Test - WITH RANDOM SHOW")
     screen.setGeometry(100, 100, 1280, 720)
     screen.show()
     

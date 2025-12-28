@@ -162,13 +162,12 @@ Complete user interface design specification:
 - Comprehensive keyboard shortcuts
 
 **Current Phase:** Phase 7 - Player Screen (Starting)
-- [x] 7.1: Design player screen layout
-- [x] 7.2: Display show information
-- [x] 7.3: Show current track info
-- [x] 7.4: Implement playback controls
-- [x] 7.5: Add progress bar
-- [ ] 7.6: Implement volume control
-- [ ] 7.7: Test full integration
+- [x] 7.1: Build show list view
+- [x] 7.2: Implement date browser
+- [x] 7.3: Add venue filter
+- [x] 7.4: Create year selector
+- [x] 7.5: Build search functionality
+- [x] 7.6: Add "random show" button
 
 ### Next Phases
 - Phase 8: Playback interface

@@ -215,7 +215,7 @@ Do NOT skip ahead. Understanding foundations prevents frustration later.
 - [x] 7.3: Add venue filter
 - [x] 7.4: Create year selector
 - [x] 7.5: Build search functionality
-- [ ] 7.6: Add "random show" button
+- [x] 7.6: Add "random show" button
 
 ### Deliverables
 - Browse screens
