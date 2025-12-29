@@ -161,16 +161,21 @@ Complete user interface design specification:
 - Screen transitions with animations
 - Comprehensive keyboard shortcuts
 
-**Current Phase:** Phase 7 - Player Screen (Starting)
-- [x] 7.1: Build show list view
-- [x] 7.2: Implement date browser
-- [x] 7.3: Add venue filter
-- [x] 7.4: Create year selector
-- [x] 7.5: Build search functionality
-- [x] 7.6: Add "random show" button
+**Phase 7: Browse Interface** (Complete - Dec 27, 2025)
+- See: `phase-7-completion-summary.md`
+
+**Current Phase:** Phase 8 - Settings Screen
+- [x] 8.1: Settings screen framework
+- [ ] 8.2: Network settings implementation
+- [ ] 8.3: About page creation
+- [ ] 8.4: Settings data persistence
+- [ ] 8.5: Audio settings (basic)
+- [ ] 8.6: Display settings (basic)
+- [ ] 8.7: Database settings (basic)
+- [ ] 8.8: Integration & testing
+
 
 ### Next Phases
-- Phase 8: Playback interface
 - Phase 9: Integration and testing
 
 ## License
