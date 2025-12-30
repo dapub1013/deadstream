@@ -17,6 +17,7 @@ Future widgets:
 
 from .show_list import ShowListWidget, ShowCard
 from .audio_settings_widget import AudioSettingsWidget
+from .display_settings_widget import DisplaySettingsWidget 
 
 __all__ = [
     'ShowListWidget',
@@ -25,6 +26,7 @@ __all__ = [
     'YearBrowser',
     'SearchWidget',
     'NetworkSettingsWidget',
-    'AboutWidget',
-    'AudioSettingsWidget'  # Add this
+    'AudioSettingsWidget',
+    'DisplaySettingsWidget',
+    'AboutWidget'
 ]

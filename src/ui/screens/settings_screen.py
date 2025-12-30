@@ -22,6 +22,7 @@ from PyQt5.QtGui import QFont
 
 # Import settings widgets
 from src.ui.widgets.about_widget import AboutWidget
+from src.ui.widgets.display_settings_widget import DisplaySettingsWidget 
 from src.ui.widgets.network_settings_widget import NetworkSettingsWidget
 from src.ui.widgets.audio_settings_widget import AudioSettingsWidget
 
@@ -203,11 +204,8 @@ class SettingsScreen(QWidget):
         self.audio_widget = AudioSettingsWidget()
         self.content_stack.addWidget(self.audio_widget)
 
-        # Display settings (placeholder)
-        self.display_widget = self._create_placeholder_widget(
-            "Display Settings",
-            "Brightness, theme, and display preferences (placeholder)"
-        )
+        # Display settings (implemented)
+        self.display_widget = DisplaySettingsWidget()
         self.content_stack.addWidget(self.display_widget)
         
         # Date & Time settings (placeholder)
