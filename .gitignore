@@ -41,3 +41,4 @@ data/downloads/
 # Temporary files
 tmp/
 temp/
+config/settings.yaml
