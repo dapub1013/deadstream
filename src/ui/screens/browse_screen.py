@@ -605,10 +605,10 @@ class BrowseScreen(QWidget):
         
         # Add search widget
         search_widget = SearchWidget()
-        search_widget.search_executed.connect(lambda results: (
-            dialog.accept(),
-            self.load_search_results(results)
-        ))
+        search_widget.search_submitted.connect(lambda params: (
+        dialog.accept(),
+        self.perform_search(params)
+))
         layout.addWidget(search_widget)
         
         # Show dialog
@@ -732,7 +732,41 @@ class BrowseScreen(QWidget):
             traceback.print_exc()
             self.update_header("Error", f"Failed to load shows for {year}")
             self.show_list.set_empty_state("Error loading shows")
-    
+
+    def perform_search(self, search_params):
+        """Perform database search based on parameters from SearchWidget"""
+        try:
+            self.show_list.set_loading_state()
+            
+            # Extract search parameters
+            query = search_params.get('query', '')
+            venue = search_params.get('venue', '')
+            year = search_params.get('year', None)
+            min_rating = search_params.get('min_rating', None)
+            
+            print(f"[INFO] Performing search: query={query}, venue={venue}, year={year}, rating={min_rating}")
+            
+            # Import search function
+            from src.database.queries import search_shows
+            
+            # Perform search
+            results = search_shows(
+                query=query,
+                venue=venue,
+                year=year,
+                min_rating=min_rating
+            )
+            
+            # Load results
+            self.load_search_results(results)
+        
+        except Exception as e:
+            print(f"[ERROR] Search failed: {e}")
+            import traceback
+            traceback.print_exc()
+            self.update_header("Search Error", "Failed to perform search")
+            self.show_list.set_empty_state("Search failed")
+
     def load_search_results(self, results):
         """Load and display search results (Task 7.5)"""
         
