@@ -275,7 +275,7 @@ COMPLETE - 2 weeks (December 13-27, 2025)
 
 ### Tasks (with instruction)
 - [x] 8.1: Settings screen framework with category navigation
-- [ ] 8.2: Network settings implementation
+- [x] 8.2: Network settings implementation
 - [ ] 8.3: About page (show info, database stats)
 - [ ] 8.4: Settings persistence system
 - [ ] 8.5: Audio output configuration
