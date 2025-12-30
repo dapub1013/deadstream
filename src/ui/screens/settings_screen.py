@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 """
 DeadStream Settings Screen Framework
-Phase 8, Task 8.1: Settings screen framework with category navigation
-
-This creates the settings screen layout with category buttons and content area.
-Categories: Network, Audio, Display, Date & Time, About
+Phase 8, Task 8.1-8.5: Settings screen framework with all categories
 """
 
 import sys
 import os
+
 
 # Set up project root path (4 levels up from src/ui/screens/)
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -24,6 +22,8 @@ from PyQt5.QtGui import QFont
 
 # Import settings widgets
 from src.ui.widgets.about_widget import AboutWidget
+from src.ui.widgets.network_settings_widget import NetworkSettingsWidget
+from src.ui.widgets.audio_settings_widget import AudioSettingsWidget
 
 class SettingsScreen(QWidget):
     """Settings screen with category navigation"""
@@ -198,14 +198,11 @@ class SettingsScreen(QWidget):
             "WiFi configuration will be implemented in Task 8.2"
         )
         self.content_stack.addWidget(self.network_widget)
-        
+
         # Audio settings (placeholder)
-        self.audio_widget = self._create_placeholder_widget(
-            "Audio Settings",
-            "Volume, quality, and audio preferences (placeholder)"
-        )
+        self.audio_widget = AudioSettingsWidget()
         self.content_stack.addWidget(self.audio_widget)
-        
+
         # Display settings (placeholder)
         self.display_widget = self._create_placeholder_widget(
             "Display Settings",

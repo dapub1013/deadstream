@@ -201,7 +201,7 @@ Complete user interface design specification:
 - [x] 8.2: Network settings implementation
 - [x] 8.3: About page
 - [x] 8.4: Settings persistence
-- [ ] 8.5: Audio output configuration
+- [x] 8.5: Audio output configuration
 - [ ] 8.6: Display settings
 - [ ] 8.7: Date & time settings
 - [ ] 8.8: Integration testing

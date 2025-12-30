@@ -278,7 +278,7 @@ COMPLETE - 2 weeks (December 13-27, 2025)
 - [x] 8.2: Network settings implementation
 - [x] 8.3: About page (show info, database stats)
 - [x] 8.4: Settings persistence system
-- [ ] 8.5: Audio output configuration
+- [x] 8.5: Audio output configuration
 - [ ] 8.6: Display settings (brightness, theme options)
 - [ ] 8.7: Date & time settings
 - [ ] 8.8: Integration testing and polish

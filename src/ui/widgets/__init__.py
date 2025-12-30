@@ -16,9 +16,15 @@ Future widgets:
 """
 
 from .show_list import ShowListWidget, ShowCard
+from .audio_settings_widget import AudioSettingsWidget
 
-__all__ = ['ShowListWidget', 'ShowCard']
-
-from .date_browser import DateBrowser
-
-__all__ = ['DateBrowser']
+__all__ = [
+    'ShowListWidget',
+    'ShowCard',
+    'DateBrowser',
+    'YearBrowser',
+    'SearchWidget',
+    'NetworkSettingsWidget',
+    'AboutWidget',
+    'AudioSettingsWidget'  # Add this
+]
