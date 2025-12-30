@@ -87,6 +87,28 @@ Complete record of all technical choices:
 
 **Reference this** when making implementation decisions.
 
+### 07-project-guidelines.md
+Project standards and best practices for development:
+- ASCII-only text encoding rules
+- Dynamic test URL patterns (no hardcoded URLs)
+- Verified VLC configuration
+- Error handling standards
+- File path conventions
+- Import patterns and package structure
+
+**Essential reference** when writing new code or encountering import errors.
+
+### 08-import-and-architecture-reference.md
+Comprehensive guide to the project's file structure and import system:
+- Complete directory structure (what exists vs. what doesn't)
+- Working import patterns by file location
+- Common import errors and solutions
+- Package vs. directory organization
+- Path manipulation for standalone files
+- Quick reference cards for new file creation
+
+**Read this FIRST** when encountering import errors or creating new files in subdirectories.
+
 ### ui-design-specification.md
 Complete user interface design specification:
 - All screen layouts and wireframes
@@ -110,11 +132,15 @@ Complete user interface design specification:
 ### For Development
 1. Check `03-learning-roadmap.md` to see your current phase
 2. Use `04-instruction-template.md` to request specific help
-3. Reference `ui-design-specification.md` when building UI components (Phase 6+)
-4. Document your own learning in the repository's `/docs/learning-notes/` folder
-5. Update `05-technical-decisions.md` when you make significant choices
+3. Reference `07-project-guidelines.md` for coding standards
+4. Reference `08-import-and-architecture-reference.md` when creating new files
+5. Reference `ui-design-specification.md` when building UI components (Phase 6+)
+6. Document your own learning in the repository's `/docs/learning-notes/` folder
+7. Update `05-technical-decisions.md` when you make significant choices
 
 ### For Troubleshooting
+- Check `08-import-and-architecture-reference.md` for import/module errors
+- Check `07-project-guidelines.md` for coding standard violations
 - Check `05-technical-decisions.md` for "Why we chose X"
 - Review `00-api-analysis.md` for API-related issues
 - Look at the roadmap for prerequisite phases you may have skipped
@@ -149,34 +175,36 @@ Complete user interface design specification:
 
 **Phase 5: Smart Show Selection** (Complete - Dec 24, 2025)
 - See: `phase-5-completion-summary.md`
-- Intelligent recording scoring algorithm
-- User preference system with presets
+- Quality scoring algorithm implemented
+- User preferences system
 - Manual override capability
-- All tests passing, production-ready
+- All features tested and working
 
-**Phase 6: Basic UI Framework** (Complete - Dec 25, 2025)
+**Phase 6: Main Application Framework** (Complete - Dec 25, 2025)
 - See: `phase-6-completion-summary.md`
-- PyQt5 UI framework established
-- Touch-responsive navigation system
-- Screen transitions with animations
-- Comprehensive keyboard shortcuts
+- Three-screen navigation (Player, Browse, Settings)
+- Screen manager with smooth transitions
+- Touch-optimized interface
+- All screens integrated
 
-**Phase 7: Browse Interface** (Complete - Dec 27, 2025)
+**Phase 7: Browse Features** (Complete - Dec 28, 2025)
 - See: `phase-7-completion-summary.md`
+- Date browser with calendar view
+- Venue filtering
+- Year selector with legendary year highlights
+- Full-text search
+- Random show selection
+- All browse modes tested
 
-**Current Phase:** Phase 8 - Settings Screen
-- [x] 8.1: Settings screen framework
+**Current Phase:** Phase 8 - Settings Implementation (In Progress)
+- [x] 8.1: Settings screen framework with category navigation
 - [ ] 8.2: Network settings implementation
-- [ ] 8.3: About page creation
-- [ ] 8.4: Settings data persistence
-- [ ] 8.5: Audio settings (basic)
-- [ ] 8.6: Display settings (basic)
-- [ ] 8.7: Database settings (basic)
-- [ ] 8.8: Integration & testing
-
-
-### Next Phases
-- Phase 9: Integration and testing
+- [ ] 8.3: About page
+- [ ] 8.4: Settings persistence
+- [ ] 8.5: Audio output configuration
+- [ ] 8.6: Display settings
+- [ ] 8.7: Date & time settings
+- [ ] 8.8: Integration testing
 
 ## License
 
