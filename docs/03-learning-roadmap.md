@@ -280,7 +280,7 @@ COMPLETE - 2 weeks (December 13-27, 2025)
 - [x] 8.4: Settings persistence system
 - [x] 8.5: Audio output configuration
 - [x] 8.6: Display settings (brightness, theme options)
-- [ ] 8.7: Date & time settings
+- [x] 8.7: Date & time settings
 - [ ] 8.8: Integration testing and polish
 
 ### Deliverables

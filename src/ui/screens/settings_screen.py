@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 DeadStream Settings Screen Framework
-Phase 8, Task 8.1-8.5: Settings screen framework with all categories
+Phase 8, Task 8.1-8.7: Settings screen framework with all categories
 """
 
 import sys
@@ -25,6 +25,7 @@ from src.ui.widgets.about_widget import AboutWidget
 from src.ui.widgets.display_settings_widget import DisplaySettingsWidget 
 from src.ui.widgets.network_settings_widget import NetworkSettingsWidget
 from src.ui.widgets.audio_settings_widget import AudioSettingsWidget
+from src.ui.widgets.database_settings_widget import DatabaseSettingsWidget
 
 class SettingsScreen(QWidget):
     """Settings screen with category navigation"""
@@ -138,6 +139,7 @@ class SettingsScreen(QWidget):
         categories = [
             ("network", "Network", "#3b82f6"),      # Blue
             ("audio", "Audio", "#8b5cf6"),          # Purple
+            ("database", "Database", "#ef4444"),    # Red - NEW
             ("display", "Display", "#10b981"),      # Green
             ("datetime", "Date & Time", "#f59e0b"), # Amber
             ("about", "About", "#6b7280")           # Gray
@@ -200,9 +202,13 @@ class SettingsScreen(QWidget):
         )
         self.content_stack.addWidget(self.network_widget)
 
-        # Audio settings (placeholder)
+        # Audio settings (implemented)
         self.audio_widget = AudioSettingsWidget()
         self.content_stack.addWidget(self.audio_widget)
+
+        # Database settings (implemented - Task 8.7)
+        self.database_widget = DatabaseSettingsWidget()
+        self.content_stack.addWidget(self.database_widget)
 
         # Display settings (implemented)
         self.display_widget = DisplaySettingsWidget()
@@ -254,6 +260,8 @@ class SettingsScreen(QWidget):
             self.content_stack.setCurrentWidget(self.network_widget)
         elif category_id == "audio":
             self.content_stack.setCurrentWidget(self.audio_widget)
+        elif category_id == "database":
+            self.content_stack.setCurrentWidget(self.database_widget)
         elif category_id == "display":
             self.content_stack.setCurrentWidget(self.display_widget)
         elif category_id == "datetime":
@@ -320,6 +328,7 @@ if __name__ == "__main__":
     print("[INFO] Settings screen framework loaded")
     print("[INFO] Current category:", settings.current_category)
     print("[INFO] Try clicking different category buttons")
+    print("[INFO] Database category now active - Task 8.7 complete")
     print("[INFO] Press Ctrl+C to quit")
     
     sys.exit(app.exec_())
