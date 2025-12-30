@@ -395,7 +395,6 @@ class NetworkSettingsWidget(QWidget):
                 }
                 QFrame:hover {
                     background-color: #374151;
-                    cursor: pointer;
                 }
             """)
         
