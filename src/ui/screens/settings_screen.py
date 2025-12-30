@@ -195,11 +195,8 @@ class SettingsScreen(QWidget):
         """)
         
         # Create all setting widgets upfront
-        # Network settings (placeholder)
-        self.network_widget = self._create_placeholder_widget(
-            "Network Settings",
-            "WiFi configuration will be implemented in Task 8.2"
-        )
+        # Network settings (implemented - Task 8.2)
+        self.network_widget = NetworkSettingsWidget()
         self.content_stack.addWidget(self.network_widget)
 
         # Audio settings (implemented)
