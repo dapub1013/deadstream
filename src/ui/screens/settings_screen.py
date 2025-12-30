@@ -10,6 +10,8 @@ Categories: Network, Audio, Display, Date & Time, About
 import sys
 import os
 
+from src.ui.widgets.network_settings_widget import NetworkSettingsWidget
+
 # Set up project root path
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
@@ -279,17 +281,11 @@ class SettingsScreen(QWidget):
     
     def _show_network_settings(self):
         """Show network settings content"""
-        # Placeholder - will be implemented in Task 8.2
-        label = QLabel("Network Settings")
-        label.setStyleSheet("color: #ffffff; font-size: 24px; font-weight: bold;")
-        self.content_layout.addWidget(label)
-        
-        placeholder = QLabel("WiFi configuration will be implemented in Task 8.2")
-        placeholder.setStyleSheet("color: #999999; font-size: 16px;")
-        self.content_layout.addWidget(placeholder)
-        
-        self.content_layout.addStretch()
+        from src.ui.widgets.network_settings_widget import NetworkSettingsWidget
     
+        network_widget = NetworkSettingsWidget()
+        self.content_layout.addWidget(network_widget)
+
     def _show_audio_settings(self):
         """Show audio settings content"""
         # Placeholder - will be implemented later
