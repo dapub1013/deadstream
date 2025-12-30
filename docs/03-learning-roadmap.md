@@ -10,6 +10,31 @@ Each phase builds on the previous. You will:
 
 Do NOT skip ahead. Understanding foundations prevents frustration later.
 
+## Quick Navigation by Phase Status
+
+### Completed Phases
+- ✅ Phase 1: Foundation & Setup
+- ✅ Phase 2: Internet Archive API Mastery
+- ✅ Phase 3: Database Foundation
+- ✅ Phase 4: Audio Playback Engine
+- ✅ Phase 5: Smart Show Selection
+- ✅ Phase 6: Main Application Framework
+- ✅ Phase 7: Browse Features
+
+### Current Phase
+- 🔄 Phase 8: Settings Implementation (Task 8.1 complete, 8.2-8.8 remaining)
+
+### Upcoming Phases
+- ⏳ Phase 9: Integration & Polish
+- ⏳ Phase 10: Hardware Integration
+- ⏳ Phase 11: Polish & Features
+- ⏳ Phase 12: Final Testing
+- ⏳ Phase 13: Deployment
+
+**Note:** Always complete all tasks in a phase before moving to the next. See individual phase completion summaries in `/docs` for detailed results.
+
+---
+
 ## Phase 1: Foundation & Setup
 **Goal:** Get your development environment ready
 
@@ -236,43 +261,49 @@ COMPLETE - 2 weeks (December 13-27, 2025)
 
 ---
 
-## Phase 8: Settings Screen
-**Goal:** Device configuration and preferences management
+## Phase 8: Settings Implementation
+**Goal:** Complete settings screen with all configuration options
+
+**IMPORTANT:** Before starting Phase 8 tasks, review `08-import-and-architecture-reference.md` to understand the project's import system and file structure. Many Phase 8 files are in subdirectories and require proper path manipulation.
 
 ### Learning Topics
-- Settings persistence (YAML/SQLite)
-- Network management (WiFi)
-- Settings validation
+- Settings UI design patterns
+- Configuration persistence (YAML)
+- Network configuration interfaces
 - System information display
-- Data storage patterns
+- Category-based navigation
 
 ### Tasks (with instruction)
-- [x] 8.1: Settings screen framework
+- [x] 8.1: Settings screen framework with category navigation
 - [ ] 8.2: Network settings implementation
-- [ ] 8.3: About page creation
-- [ ] 8.4: Settings data persistence
-- [ ] 8.5: Audio settings (basic)
-- [ ] 8.6: Display settings (basic)
-- [ ] 8.7: Database settings (basic)
-- [ ] 8.8: Integration & testing
+- [ ] 8.3: About page (show info, database stats)
+- [ ] 8.4: Settings persistence system
+- [ ] 8.5: Audio output configuration
+- [ ] 8.6: Display settings (brightness, theme options)
+- [ ] 8.7: Date & time settings
+- [ ] 8.8: Integration testing and polish
 
 ### Deliverables
-- Settings screen with category navigation
-- Network configuration UI
-- About page (version, stats, credits)
+- Complete settings interface
 - Settings persistence system
-- Audio/display/database settings (basic or placeholder)
+- Network configuration UI
+- System information display
+- All settings tested and working
+
+### Common Pitfalls
+- Import errors from incorrect file paths (see `08-import-and-architecture-reference.md`)
+- Forgetting path manipulation in subdirectory files
+- Assuming files exist (theme.py, color_button.py) that don't
 
 ### Estimated Time
-2-3 weeks (likely 1-1.5 weeks at current pace)
-
-### Status
-READY TO BEGIN
+2-3 weeks
 
 ---
 
 ## Phase 9: Player Screen
 **Goal:** Beautiful now-playing interface
+
+**BEFORE STARTING PHASE 9:** Phase 9 focuses on integration and polish. Review all completion summaries (Phases 1-8) and reference `08-import-and-architecture-reference.md` when connecting modules to ensure consistent import patterns.
 
 ### Learning Topics
 - Real-time UI updates
@@ -304,6 +335,8 @@ READY TO BEGIN
 
 ## Phase 10: Integration & Polish
 **Goal:** Make everything work together smoothly
+
+**PREREQUISITE:** Phases 1-9 must be complete and working. This phase involves hardware changes that could affect software functionality, so ensure all code is committed and tested before proceeding.
 
 ### Learning Topics
 - Integration testing

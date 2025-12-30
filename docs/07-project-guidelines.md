@@ -242,6 +242,56 @@ DB_PATH = os.path.join(
 
 ---
 
+---
+
+### 6. Import Patterns - Follow Established Structure
+
+**CRITICAL:** The project has a specific file structure and import system. Always consult `08-import-and-architecture-reference.md` before creating new files or importing modules.
+
+**Key Import Rules:**
+
+1. **Always use full paths from `src/`:**
+```python
+   # CORRECT
+   from src.database.queries import get_top_rated_shows
+   from src.ui.widgets.show_list import ShowListWidget
+   
+   # WRONG
+   from database.queries import get_top_rated_shows  # Missing 'src.'
+   from widgets.show_list import ShowListWidget       # Missing 'src.ui.'
+```
+
+2. **Files in subdirectories need path manipulation:**
+```python
+   # For files in src/ui/screens/ or src/ui/widgets/
+   import sys
+   import os
+   
+   PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+   if PROJECT_ROOT not in sys.path:
+       sys.path.insert(0, PROJECT_ROOT)
+   
+   # Now imports work normally
+   from src.database.queries import get_shows
+```
+
+3. **Never assume files exist without checking:**
+   - ❌ `src/screens/` - Does NOT exist
+   - ❌ `src/ui/theme.py` - Does NOT exist  
+   - ❌ `src/ui/color_button.py` - Does NOT exist
+   - ✅ `src/ui/screens/` - Exists (subdirectory under ui/)
+   - ✅ `src/ui/widgets/` - Exists (package with __init__.py)
+
+4. **Common import errors:**
+   - `ModuleNotFoundError: No module named 'screens'` → Use `src.ui.screens.module`
+   - `ModuleNotFoundError: No module named 'src'` → Add path manipulation
+   - `ModuleNotFoundError: No module named 'theme'` → File doesn't exist, define inline
+
+**For detailed import patterns, error solutions, and quick reference cards:**
+→ See `08-import-and-architecture-reference.md`
+
+---
+
 ## Quick Reference Checklist
 
 Before generating code, verify:
@@ -252,6 +302,9 @@ Before generating code, verify:
 - [ ] Error handling includes try/except
 - [ ] File paths are relative to project root
 - [ ] Print statements use `[PASS]`, `[FAIL]`, `[INFO]` markers
+- [ ] Import paths follow structure in `08-import-and-architecture-reference.md`
+- [ ] No imports reference non-existent files (theme.py, src/screens/, etc.)
+- [ ] Path manipulation added for files in subdirectories
 
 ---
 
@@ -273,6 +326,10 @@ Before generating code, verify:
 **Cause:** Import paths not set correctly  
 **Fix:** Add `sys.path.insert(0, PROJECT_ROOT)` at top of script
 
+### Issue: "ModuleNotFoundError: No module named 'X'"
+**Cause:** Import path doesn't match actual file structure  
+**Fix:** Consult `08-import-and-architecture-reference.md` for correct import patterns
+
 ---
 
 ## For AI Assistants
@@ -282,13 +339,16 @@ When generating code for this project:
 1. **Check existing code first** - `src/audio/resilient_player.py` has working VLC config
 2. **Use database for URLs** - Never hardcode Archive.org URLs
 3. **ASCII only** - No emojis or unicode in any output
-4. **Test before sharing** - Verify code would actually run
-5. **Follow established patterns** - Match existing code style
+4. **Verify file structure** - Check `08-import-and-architecture-reference.md` before importing
+5. **Test before sharing** - Verify code would actually run
+6. **Follow established patterns** - Match existing code style
+7. **No assumptions** - Don't assume files exist (theme.py, src/screens/, etc.)
 
 ---
 
 ## Document History
 
+- 2025-12-29: Added import patterns section, referenced 08-import-and-architecture-reference.md
 - 2025-12-23: Created - ASCII and URL standards
 - Future updates: Add here
 
