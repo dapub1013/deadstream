@@ -16,10 +16,13 @@ sys.path.insert(0, PROJECT_ROOT)
 
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-    QPushButton, QScrollArea, QFrame
+    QPushButton, QScrollArea, QFrame, QStackedWidget
 )
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
+
+# Import settings widgets
+from src.ui.widgets.about_widget import AboutWidget
 
 class SettingsScreen(QWidget):
     """Settings screen with category navigation"""
@@ -177,41 +180,71 @@ class SettingsScreen(QWidget):
         return btn
     
     def _create_content_area(self):
-        """Create the right content area with scroll"""
-        # Scroll area for content
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
-        scroll.setStyleSheet("""
-            QScrollArea {
+        """Create the right content area with stacked widgets"""
+        # Use QStackedWidget instead of clearing/recreating widgets
+        self.content_stack = QStackedWidget()
+        self.content_stack.setStyleSheet("""
+            QStackedWidget {
                 background-color: #121212;
                 border: none;
             }
-            QScrollBar:vertical {
-                background-color: #1a1a1a;
-                width: 12px;
-                border-radius: 6px;
-            }
-            QScrollBar::handle:vertical {
-                background-color: #333333;
-                border-radius: 6px;
-                min-height: 30px;
-            }
-            QScrollBar::handle:vertical:hover {
-                background-color: #444444;
-            }
         """)
         
-        # Content widget inside scroll area
-        self.content_widget = QWidget()
-        self.content_widget.setStyleSheet("background-color: #121212;")
-        self.content_layout = QVBoxLayout(self.content_widget)
-        self.content_layout.setContentsMargins(40, 30, 40, 30)
-        self.content_layout.setSpacing(20)
+        # Create all setting widgets upfront
+        # Network settings (placeholder)
+        self.network_widget = self._create_placeholder_widget(
+            "Network Settings",
+            "WiFi configuration will be implemented in Task 8.2"
+        )
+        self.content_stack.addWidget(self.network_widget)
         
-        scroll.setWidget(self.content_widget)
-        return scroll
+        # Audio settings (placeholder)
+        self.audio_widget = self._create_placeholder_widget(
+            "Audio Settings",
+            "Volume, quality, and audio preferences (placeholder)"
+        )
+        self.content_stack.addWidget(self.audio_widget)
+        
+        # Display settings (placeholder)
+        self.display_widget = self._create_placeholder_widget(
+            "Display Settings",
+            "Brightness, theme, and display preferences (placeholder)"
+        )
+        self.content_stack.addWidget(self.display_widget)
+        
+        # Date & Time settings (placeholder)
+        self.datetime_widget = self._create_placeholder_widget(
+            "Date & Time Settings",
+            "Time zone and date format preferences (placeholder)"
+        )
+        self.content_stack.addWidget(self.datetime_widget)
+        
+        # About page (implemented)
+        self.about_widget = AboutWidget()
+        self.content_stack.addWidget(self.about_widget)
+        
+        return self.content_stack
+    
+    def _create_placeholder_widget(self, title, description):
+        """Create a placeholder widget for settings not yet implemented"""
+        widget = QWidget()
+        widget.setStyleSheet("background-color: #121212;")
+        
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(40, 30, 40, 30)
+        layout.setSpacing(20)
+        
+        label = QLabel(title)
+        label.setStyleSheet("color: #ffffff; font-size: 24px; font-weight: bold;")
+        layout.addWidget(label)
+        
+        placeholder = QLabel(description)
+        placeholder.setStyleSheet("color: #999999; font-size: 16px;")
+        layout.addWidget(placeholder)
+        
+        layout.addStretch()
+        
+        return widget
     
     def show_category(self, category_id):
         """Show content for the selected category"""
@@ -220,23 +253,17 @@ class SettingsScreen(QWidget):
         # Update button styles
         self.update_button_styles()
         
-        # Clear existing content
-        while self.content_layout.count():
-            child = self.content_layout.takeAt(0)
-            if child.widget():
-                child.widget().deleteLater()
-        
-        # Add category-specific content
+        # Switch to the appropriate widget in the stack
         if category_id == "network":
-            self._show_network_settings()
+            self.content_stack.setCurrentWidget(self.network_widget)
         elif category_id == "audio":
-            self._show_audio_settings()
+            self.content_stack.setCurrentWidget(self.audio_widget)
         elif category_id == "display":
-            self._show_display_settings()
+            self.content_stack.setCurrentWidget(self.display_widget)
         elif category_id == "datetime":
-            self._show_datetime_settings()
+            self.content_stack.setCurrentWidget(self.datetime_widget)
         elif category_id == "about":
-            self._show_about_page()
+            self.content_stack.setCurrentWidget(self.about_widget)
     
     def update_button_styles(self):
         """Update category button styles based on selection"""
@@ -276,71 +303,6 @@ class SettingsScreen(QWidget):
                         border-color: {color};
                     }}
                 """)
-    
-    def _show_network_settings(self):
-        """Show network settings content"""
-        # Placeholder - will be implemented in Task 8.2
-        label = QLabel("Network Settings")
-        label.setStyleSheet("color: #ffffff; font-size: 24px; font-weight: bold;")
-        self.content_layout.addWidget(label)
-        
-        placeholder = QLabel("WiFi configuration will be implemented in Task 8.2")
-        placeholder.setStyleSheet("color: #999999; font-size: 16px;")
-        self.content_layout.addWidget(placeholder)
-        
-        self.content_layout.addStretch()
-    
-    def _show_audio_settings(self):
-        """Show audio settings content"""
-        # Placeholder - will be implemented later
-        label = QLabel("Audio Settings")
-        label.setStyleSheet("color: #ffffff; font-size: 24px; font-weight: bold;")
-        self.content_layout.addWidget(label)
-        
-        placeholder = QLabel("Volume, quality, and audio preferences (placeholder)")
-        placeholder.setStyleSheet("color: #999999; font-size: 16px;")
-        self.content_layout.addWidget(placeholder)
-        
-        self.content_layout.addStretch()
-    
-    def _show_display_settings(self):
-        """Show display settings content"""
-        # Placeholder - will be implemented later
-        label = QLabel("Display Settings")
-        label.setStyleSheet("color: #ffffff; font-size: 24px; font-weight: bold;")
-        self.content_layout.addWidget(label)
-        
-        placeholder = QLabel("Brightness, theme, and display preferences (placeholder)")
-        placeholder.setStyleSheet("color: #999999; font-size: 16px;")
-        self.content_layout.addWidget(placeholder)
-        
-        self.content_layout.addStretch()
-    
-    def _show_datetime_settings(self):
-        """Show date & time settings content"""
-        # Placeholder - will be implemented later
-        label = QLabel("Date & Time Settings")
-        label.setStyleSheet("color: #ffffff; font-size: 24px; font-weight: bold;")
-        self.content_layout.addWidget(label)
-        
-        placeholder = QLabel("Time zone and date format preferences (placeholder)")
-        placeholder.setStyleSheet("color: #999999; font-size: 16px;")
-        self.content_layout.addWidget(placeholder)
-        
-        self.content_layout.addStretch()
-    
-    def _show_about_page(self):
-        """Show about page content"""
-        # Placeholder - will be implemented in Task 8.3
-        label = QLabel("About DeadStream")
-        label.setStyleSheet("color: #ffffff; font-size: 24px; font-weight: bold;")
-        self.content_layout.addWidget(label)
-        
-        placeholder = QLabel("Version info and credits will be implemented in Task 8.3")
-        placeholder.setStyleSheet("color: #999999; font-size: 16px;")
-        self.content_layout.addWidget(placeholder)
-        
-        self.content_layout.addStretch()
 
 
 if __name__ == "__main__":
