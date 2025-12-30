@@ -15,7 +15,7 @@ sys.path.insert(0, PROJECT_ROOT)
 
 from src.ui.screen_manager import ScreenManager
 from src.ui.player_screen import PlayerScreen
-from src.ui.browse_screen import BrowseScreen
+from src.ui.screens.browse_screen import BrowseScreen
 from src.ui.settings_screen import SettingsScreen
 
 

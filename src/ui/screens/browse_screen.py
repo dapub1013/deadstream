@@ -62,8 +62,11 @@ class BrowseScreen(QWidget):
     - show_selected: Emitted when user selects a show to play
     """
     
+# Navigation signals
     show_selected = pyqtSignal(dict)  # Emits show dictionary
-    
+    player_requested = pyqtSignal()   # Navigate to player
+    settings_requested = pyqtSignal() # Navigate to settings
+
     def __init__(self, parent=None):
         """Initialize browse screen"""
         super().__init__(parent)
@@ -121,6 +124,10 @@ class BrowseScreen(QWidget):
         
         # Add stretch to push buttons to top
         layout.addStretch()
+        
+        # Navigation buttons at bottom
+        nav_layout = self.create_navigation_buttons()
+        layout.addLayout(nav_layout)
         
         return panel
     
@@ -323,7 +330,60 @@ class BrowseScreen(QWidget):
         layout.addWidget(self.show_list)
         
         return panel
-    
+
+    def create_navigation_buttons(self):
+        """Create navigation buttons (Player, Settings)"""
+        layout = QVBoxLayout()
+        layout.setSpacing(12)
+        
+        # Back to Player button
+        player_btn = QPushButton("Back to Player")
+        player_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #374151;
+                color: white;
+                border: 2px solid #4b5563;
+                border-radius: 8px;
+                padding: 12px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #4b5563;
+            }
+            QPushButton:pressed {
+                background-color: #6b7280;
+            }
+        """)
+        player_btn.setMinimumHeight(50)
+        player_btn.clicked.connect(self.player_requested.emit)
+        layout.addWidget(player_btn)
+        
+        # Settings button
+        settings_btn = QPushButton("Settings")
+        settings_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #374151;
+                color: white;
+                border: 2px solid #4b5563;
+                border-radius: 8px;
+                padding: 12px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #4b5563;
+            }
+            QPushButton:pressed {
+                background-color: #6b7280;
+            }
+        """)
+        settings_btn.setMinimumHeight(50)
+        settings_btn.clicked.connect(self.settings_requested.emit)
+        layout.addWidget(settings_btn)
+        
+        return layout
+
     def update_header(self, title, subtitle):
         """Update header title and subtitle"""
         self.header_title.setText(title)
@@ -337,24 +397,24 @@ class BrowseScreen(QWidget):
         """Load top-rated shows (default view)"""
         try:
             self.show_list.set_loading_state()
-            
+        
             shows = get_top_rated_shows(limit=50, min_reviews=5)
-            
+        
             self.update_header(
                 "Top Rated Shows",
                 f"{len(shows)} shows with 5+ reviews"
             )
-            
+        
             self.show_list.load_shows(shows)
             self.current_shows = shows
-            
+        
             print(f"[OK] Loaded {len(shows)} top-rated shows")
-            
+        
         except Exception as e:
             print(f"[ERROR] Failed to load top rated shows: {e}")
             import traceback
             traceback.print_exc()
-    
+
     def show_date_browser(self):
         """Show date browser dialog (Task 7.2)"""
         
