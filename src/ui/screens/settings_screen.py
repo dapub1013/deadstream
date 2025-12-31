@@ -32,6 +32,7 @@ class SettingsScreen(QWidget):
     
     # Signal emitted when back to browse is clicked
     back_clicked = pyqtSignal()
+    browse_requested = pyqtSignal()
     
     def __init__(self):
         super().__init__()
