@@ -115,12 +115,18 @@ def test_settings_screen_integration():
         # Test switching to settings screen
         try:
             window.screen_manager.show_screen('settings')
+            
+            # Give transition time to complete (animations take time)
+            QApplication.processEvents()  # Process any pending events
+            
             current_screen = window.screen_manager.currentWidget()
             
             if current_screen == window.settings_screen:
                 print("[PASS] Successfully switched to settings screen")
             else:
-                print("[FAIL] Screen switch did not work")
+                print(f"[FAIL] Screen switch did not work")
+                print(f"  Expected: {window.settings_screen}")
+                print(f"  Got: {current_screen}")
                 return False
                 
         except Exception as e:
@@ -130,22 +136,27 @@ def test_settings_screen_integration():
         # Test that settings screen has all category widgets
         settings_screen = window.settings_screen
         
-        # Check for category buttons in left panel
-        categories_exist = (
-            hasattr(settings_screen, 'network_button') and
-            hasattr(settings_screen, 'audio_button') and
-            hasattr(settings_screen, 'display_button') and
-            hasattr(settings_screen, 'datetime_button') and
-            hasattr(settings_screen, 'about_button')
+        # Check for category_buttons dictionary
+        if not hasattr(settings_screen, 'category_buttons'):
+            print("[FAIL] Settings screen has no category_buttons dictionary")
+            return False
+        
+        # Check that all expected categories exist
+        expected_categories = ['network', 'audio', 'database', 'display', 'datetime', 'about']
+        categories_exist = all(
+            cat in settings_screen.category_buttons 
+            for cat in expected_categories
         )
         
         if categories_exist:
-            print("[PASS] All category buttons exist")
+            print("[PASS] All category buttons exist in dictionary")
         else:
-            print("[FAIL] Some category buttons missing")
+            missing = [cat for cat in expected_categories 
+                      if cat not in settings_screen.category_buttons]
+            print(f"[FAIL] Missing category buttons: {missing}")
             return False
         
-        # Check for detail widgets
+        # Check for detail widgets (stored as attributes)
         details_exist = (
             hasattr(settings_screen, 'network_widget') and
             hasattr(settings_screen, 'audio_widget') and
@@ -187,23 +198,29 @@ def test_category_navigation():
         
         # Test each category
         categories = [
-            ('network', 'network_button', 'network_widget'),
-            ('audio', 'audio_button', 'audio_widget'),
-            ('display', 'display_button', 'display_widget'),
-            ('datetime', 'datetime_button', 'datetime_widget'),
-            ('about', 'about_button', 'about_widget')
+            ('network', 'network_widget'),
+            ('audio', 'audio_widget'),
+            ('database', 'database_widget'),
+            ('display', 'display_widget'),
+            ('datetime', 'datetime_widget'),
+            ('about', 'about_widget')
         ]
         
         all_passed = True
         
-        for name, button_attr, widget_attr in categories:
+        for name, widget_attr in categories:
             try:
-                # Click the category button
-                button = getattr(settings_screen, button_attr)
+                # Get the category button from dictionary
+                if name not in settings_screen.category_buttons:
+                    print(f"[FAIL] {name.title()} category button not found in dictionary")
+                    all_passed = False
+                    continue
+                
+                button = settings_screen.category_buttons[name]
                 button.click()
                 
-                # Verify the correct widget is shown
-                current_widget = settings_screen.details_stack.currentWidget()
+                # Verify the correct widget is shown in content_stack
+                current_widget = settings_screen.content_stack.currentWidget()
                 expected_widget = getattr(settings_screen, widget_attr)
                 
                 if current_widget == expected_widget:
@@ -239,7 +256,12 @@ def test_settings_values():
         
         # Check audio widget values
         print("\nAudio Settings:")
-        settings_screen.audio_button.click()
+        if 'audio' in settings_screen.category_buttons:
+            settings_screen.category_buttons['audio'].click()
+        else:
+            print("  [FAIL] Audio button not found")
+            return False
+            
         audio_widget = settings_screen.audio_widget
         
         if hasattr(audio_widget, 'volume_slider'):
@@ -253,7 +275,12 @@ def test_settings_values():
         
         # Check display widget values
         print("\nDisplay Settings:")
-        settings_screen.display_button.click()
+        if 'display' in settings_screen.category_buttons:
+            settings_screen.category_buttons['display'].click()
+        else:
+            print("  [FAIL] Display button not found")
+            return False
+            
         display_widget = settings_screen.display_widget
         
         if hasattr(display_widget, 'brightness_slider'):
@@ -267,7 +294,12 @@ def test_settings_values():
         
         # Check about widget
         print("\nAbout Information:")
-        settings_screen.about_button.click()
+        if 'about' in settings_screen.category_buttons:
+            settings_screen.category_buttons['about'].click()
+        else:
+            print("  [FAIL] About button not found")
+            return False
+            
         about_widget = settings_screen.about_widget
         
         # About widget should exist and have version info
@@ -299,10 +331,13 @@ def test_navigation_to_other_screens():
         
         # Start at settings
         window.screen_manager.show_screen('settings')
+        QApplication.processEvents()  # Let transition complete
         print("[INFO] Started at settings screen")
         
         # Navigate to browse
         window.screen_manager.show_screen('browse')
+        QApplication.processEvents()  # Let transition complete
+        
         if window.screen_manager.currentWidget() == window.browse_screen:
             print("[PASS] Navigation to browse screen works")
         else:
@@ -311,6 +346,8 @@ def test_navigation_to_other_screens():
         
         # Navigate back to settings
         window.screen_manager.show_screen('settings')
+        QApplication.processEvents()  # Let transition complete
+        
         if window.screen_manager.currentWidget() == window.settings_screen:
             print("[PASS] Navigation back to settings works")
         else:
@@ -319,6 +356,8 @@ def test_navigation_to_other_screens():
         
         # Navigate to player
         window.screen_manager.show_screen('player')
+        QApplication.processEvents()  # Let transition complete
+        
         if window.screen_manager.currentWidget() == window.player_screen:
             print("[PASS] Navigation to player screen works")
         else:
