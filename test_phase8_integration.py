@@ -96,19 +96,28 @@ def test_settings_screen_integration():
         app = QApplication(sys.argv)
         window = MainWindow()
         
-        # Verify settings screen exists
-        if hasattr(window.screen_manager, 'settings_screen'):
-            print("[PASS] Settings screen exists in screen manager")
-        else:
-            print("[FAIL] Settings screen not found")
+        # Debug: Print all window attributes
+        print("\n[DEBUG] Checking MainWindow attributes:")
+        for attr in ['player_screen', 'browse_screen', 'settings_screen']:
+            exists = hasattr(window, attr)
+            print(f"  window.{attr}: {exists}")
+        
+        # Verify settings screen exists on MainWindow (not screen_manager)
+        if not hasattr(window, 'settings_screen'):
+            print("[FAIL] Settings screen not found on window")
+            print("[INFO] This means create_screens() failed")
+            print("[INFO] Check console output above for import errors")
             return False
+        
+        print("[PASS] Settings screen exists in MainWindow")
+
         
         # Test switching to settings screen
         try:
             window.screen_manager.show_screen('settings')
             current_screen = window.screen_manager.currentWidget()
             
-            if current_screen == window.screen_manager.settings_screen:
+            if current_screen == window.settings_screen:
                 print("[PASS] Successfully switched to settings screen")
             else:
                 print("[FAIL] Screen switch did not work")
@@ -119,7 +128,7 @@ def test_settings_screen_integration():
             return False
         
         # Test that settings screen has all category widgets
-        settings_screen = window.screen_manager.settings_screen
+        settings_screen = window.settings_screen
         
         # Check for category buttons in left panel
         categories_exist = (
@@ -174,7 +183,7 @@ def test_category_navigation():
         app = QApplication(sys.argv)
         window = MainWindow()
         window.screen_manager.show_screen('settings')
-        settings_screen = window.screen_manager.settings_screen
+        settings_screen = window.settings_screen
         
         # Test each category
         categories = [
@@ -226,7 +235,7 @@ def test_settings_values():
         app = QApplication(sys.argv)
         window = MainWindow()
         window.screen_manager.show_screen('settings')
-        settings_screen = window.screen_manager.settings_screen
+        settings_screen = window.settings_screen
         
         # Check audio widget values
         print("\nAudio Settings:")
@@ -294,7 +303,7 @@ def test_navigation_to_other_screens():
         
         # Navigate to browse
         window.screen_manager.show_screen('browse')
-        if window.screen_manager.currentWidget() == window.screen_manager.browse_screen:
+        if window.screen_manager.currentWidget() == window.browse_screen:
             print("[PASS] Navigation to browse screen works")
         else:
             print("[FAIL] Could not navigate to browse")
@@ -302,7 +311,7 @@ def test_navigation_to_other_screens():
         
         # Navigate back to settings
         window.screen_manager.show_screen('settings')
-        if window.screen_manager.currentWidget() == window.screen_manager.settings_screen:
+        if window.screen_manager.currentWidget() == window.settings_screen:
             print("[PASS] Navigation back to settings works")
         else:
             print("[FAIL] Could not navigate back to settings")
@@ -310,7 +319,7 @@ def test_navigation_to_other_screens():
         
         # Navigate to player
         window.screen_manager.show_screen('player')
-        if window.screen_manager.currentWidget() == window.screen_manager.player_screen:
+        if window.screen_manager.currentWidget() == window.player_screen:
             print("[PASS] Navigation to player screen works")
         else:
             print("[FAIL] Could not navigate to player")
