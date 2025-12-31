@@ -332,6 +332,92 @@ Before generating code, verify:
 
 ---
 
+# Addition to 07-project-guidelines.md
+
+## Testing Guidelines
+
+**Reference:** See `09-testing-lessons-learned.md` for detailed testing insights from Phase 8.
+
+### Quick Testing Rules
+
+1. **PyQt5 Animations Need Time**
+   ```python
+   # WRONG
+   window.show_screen('settings')
+   QApplication.processEvents()  # Not enough!
+   
+   # RIGHT
+   window.show_screen('settings')
+   QTest.qWait(600)  # Wait for animation
+   ```
+
+2. **Verify Architecture First**
+   ```python
+   # Before writing tests, run diagnostics
+   # Check actual attribute names, don't assume
+   ```
+
+3. **Use Informative Error Messages**
+   ```python
+   # BAD
+   assert condition
+   
+   # GOOD
+   if not condition:
+       print(f"[FAIL] Expected X but got Y")
+       print(f"[INFO] Check Z for more details")
+       return False
+   ```
+
+4. **Integration Tests Are Essential**
+   - Run before declaring phase complete
+   - Test component interactions
+   - Document issues found
+   - Distinguish critical bugs from polish items
+
+### Common Testing Patterns in DeadStream
+
+**Screen Transitions:**
+```python
+from PyQt5.QtTest import QTest
+
+def wait_for_transition(ms=600):
+    """Wait for screen animation to complete."""
+    QTest.qWait(ms)
+
+# Usage
+window.screen_manager.show_screen('settings')
+wait_for_transition()
+current = window.screen_manager.currentWidget()
+```
+
+**Settings Screen Attributes:**
+- Buttons: `settings_screen.category_buttons['network']` (not `settings_screen.network_button`)
+- Widgets: `settings_screen.network_widget` (attribute)
+- Stack: `settings_screen.content_stack` (not `details_stack`)
+
+**Screen References:**
+- Stored on MainWindow: `window.player_screen`, `window.browse_screen`, `window.settings_screen`
+- NOT on ScreenManager: `window.screen_manager.screens` dictionary has them
+
+### Test File Organization
+
+```
+deadstream/
+├── test_*.py              # Integration tests (project root)
+├── *_test_launcher.py     # Test runners
+├── examples/
+│   └── test_*.py          # Example/demo scripts
+└── src/
+    └── module/
+        └── tests/         # Unit tests (future)
+```
+
+**For detailed testing guidelines, examples, and lessons learned:**  
+→ See `09-testing-lessons-learned.md`
+
+---
+
 ## For AI Assistants
 
 When generating code for this project:
