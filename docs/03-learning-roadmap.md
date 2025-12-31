@@ -303,27 +303,12 @@ See `phase-8-completion-summary.md` for detailed results.
 
 **BEFORE STARTING PHASE 9:** Phase 9 brings together the audio engine, show selection, and UI into a cohesive player experience. Review Phase 4 (Audio Engine) and Phase 5 (Smart Selection) completion summaries to understand integration points.
 
-### Deliverables
-- Complete settings interface
-- Settings persistence system
-- Network configuration UI
-- System information display
-- All settings tested and working
+Phase 9 focuses on integration and polish. Review all completion summaries (Phases 1-8) and reference `08-import-and-architecture-reference.md` when connecting modules to ensure consistent import patterns.
 
 ### Common Pitfalls
 - Import errors from incorrect file paths (see `08-import-and-architecture-reference.md`)
 - Forgetting path manipulation in subdirectory files
 - Assuming files exist (theme.py, color_button.py) that don't
-
-### Estimated Time
-2-3 weeks
-
----
-
-## Phase 9: Player Screen
-**Goal:** Beautiful now-playing interface
-
-**BEFORE STARTING PHASE 9:** Phase 9 focuses on integration and polish. Review all completion summaries (Phases 1-8) and reference `08-import-and-architecture-reference.md` when connecting modules to ensure consistent import patterns.
 
 ### Learning Topics
 - Real-time UI updates
