@@ -25,6 +25,19 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtTest import QTest
 
 
+def wait_for_transition(milliseconds=500):
+    """
+    Wait for screen transition to complete.
+    
+    Screen transitions are animated and take time. This function waits
+    long enough for the animation to finish.
+    
+    Args:
+        milliseconds: Time to wait (default 500ms = 0.5 seconds)
+    """
+    QTest.qWait(milliseconds)
+
+
 def test_settings_persistence():
     """Test that settings are saved and loaded correctly"""
     print("\n" + "="*60)
@@ -116,8 +129,8 @@ def test_settings_screen_integration():
         try:
             window.screen_manager.show_screen('settings')
             
-            # Give transition time to complete (animations take time)
-            QApplication.processEvents()  # Process any pending events
+            # Wait for transition animation to complete
+            wait_for_transition(600)  # 600ms should be enough for slide animation
             
             current_screen = window.screen_manager.currentWidget()
             
@@ -331,12 +344,12 @@ def test_navigation_to_other_screens():
         
         # Start at settings
         window.screen_manager.show_screen('settings')
-        QApplication.processEvents()  # Let transition complete
+        wait_for_transition(600)  # Wait for animation
         print("[INFO] Started at settings screen")
         
         # Navigate to browse
         window.screen_manager.show_screen('browse')
-        QApplication.processEvents()  # Let transition complete
+        wait_for_transition(600)  # Wait for animation
         
         if window.screen_manager.currentWidget() == window.browse_screen:
             print("[PASS] Navigation to browse screen works")
@@ -346,7 +359,7 @@ def test_navigation_to_other_screens():
         
         # Navigate back to settings
         window.screen_manager.show_screen('settings')
-        QApplication.processEvents()  # Let transition complete
+        wait_for_transition(600)  # Wait for animation
         
         if window.screen_manager.currentWidget() == window.settings_screen:
             print("[PASS] Navigation back to settings works")
@@ -356,7 +369,7 @@ def test_navigation_to_other_screens():
         
         # Navigate to player
         window.screen_manager.show_screen('player')
-        QApplication.processEvents()  # Let transition complete
+        wait_for_transition(600)  # Wait for animation
         
         if window.screen_manager.currentWidget() == window.player_screen:
             print("[PASS] Navigation to player screen works")
