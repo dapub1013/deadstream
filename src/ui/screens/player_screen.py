@@ -23,8 +23,7 @@ from PyQt5.QtGui import QFont
 from src.ui.widgets.track_info import TrackInfoWidget
 from src.ui.widgets.playback_controls import PlaybackControlsWidget
 from src.ui.widgets.progress_bar import ProgressBarWidget
-
-
+from src.ui.widgets.volume_control_widget import VolumeControlWidget
 class PlayerScreen(QWidget):
     """
     Player screen with now-playing interface.
@@ -51,6 +50,8 @@ class PlayerScreen(QWidget):
     skip_backward_30s_requested = pyqtSignal()
     skip_forward_30s_requested = pyqtSignal()
     seek_requested = pyqtSignal(int)  # Position in seconds
+    volume_changed = pyqtSignal(int)  # Volume level (0-100)
+    mute_toggled = pyqtSignal(bool)   # True=muted, False=unmuted
     
     def __init__(self):
         """Initialize player screen"""
@@ -60,6 +61,7 @@ class PlayerScreen(QWidget):
         self.track_info = None
         self.playback_controls = None
         self.progress_bar = None
+        self.volume_control = None
         
         # Playlist state
         self.current_track_index = 0  # Current track (0-indexed)
@@ -67,7 +69,7 @@ class PlayerScreen(QWidget):
         self.playlist_loaded = False  # Whether a playlist is loaded
         
         self.init_ui()
-
+    
     def init_ui(self):
         """Set up the player screen UI"""
         # Main horizontal layout (split screen)
@@ -163,14 +165,14 @@ class PlayerScreen(QWidget):
         
         layout.addWidget(self.progress_bar)
         
-        # Placeholder for volume
-        volume_label = QLabel("Volume Control\n(Task 9.7)")
-        volume_label.setStyleSheet("""
-            color: #9CA3AF;
-            padding: 10px;
-        """)
-        volume_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(volume_label)
+        # Volume control widget
+        self.volume_control = VolumeControlWidget()
+        
+        # Connect volume control signals
+        self.volume_control.volume_changed.connect(self.on_volume_changed)
+        self.volume_control.mute_toggled.connect(self.on_mute_toggled)
+        
+        layout.addWidget(self.volume_control)
         
         # Browse shows button (bottom)
         browse_btn = QPushButton("Browse Shows")
@@ -271,6 +273,26 @@ class PlayerScreen(QWidget):
         print(f"[INFO] Seek requested to {position}s from Player screen")
         self.seek_requested.emit(position)
     
+    def on_volume_changed(self, volume):
+        """
+        Handle volume change request.
+        
+        Args:
+            volume (int): New volume level (0-100)
+        """
+        print(f"[INFO] Volume changed to {volume}% from Player screen")
+        self.volume_changed.emit(volume)
+    
+    def on_mute_toggled(self, is_muted):
+        """
+        Handle mute toggle request.
+        
+        Args:
+            is_muted (bool): True if muted, False if unmuted
+        """
+        print(f"[INFO] Mute {'ON' if is_muted else 'OFF'} from Player screen")
+        self.mute_toggled.emit(is_muted)
+    
     def update_track(self, song_name, set_name, track_num, total_tracks):
         """
         Update current track information.
@@ -319,6 +341,53 @@ class PlayerScreen(QWidget):
         """
         if self.playback_controls:
             self.playback_controls.set_playing(is_playing)
+    
+    def set_volume(self, volume):
+        """
+        Set volume level.
+        
+        Args:
+            volume (int): Volume level (0-100)
+        """
+        if self.volume_control:
+            self.volume_control.set_volume(volume)
+    
+    def get_volume(self):
+        """
+        Get current volume level.
+        
+        Returns:
+            int: Current volume (0-100), or 50 if volume control not initialized
+        """
+        if self.volume_control:
+            return self.volume_control.get_volume()
+        return 50
+    
+    def mute(self):
+        """Mute audio"""
+        if self.volume_control:
+            self.volume_control.mute()
+    
+    def unmute(self):
+        """Unmute audio"""
+        if self.volume_control:
+            self.volume_control.unmute()
+    
+    def toggle_mute(self):
+        """Toggle mute state"""
+        if self.volume_control:
+            self.volume_control.toggle_mute()
+    
+    def is_muted(self):
+        """
+        Check if currently muted.
+        
+        Returns:
+            bool: True if muted, False otherwise
+        """
+        if self.volume_control:
+            return self.volume_control.is_currently_muted()
+        return False
     
     def _update_navigation_state(self):
         """
@@ -529,6 +598,8 @@ if __name__ == "__main__":
     screen.skip_backward_30s_requested.connect(on_skip_backward)
     screen.skip_forward_30s_requested.connect(on_skip_forward)
     screen.seek_requested.connect(on_seek)
+    screen.volume_changed.connect(lambda v: print(f"[TEST] Volume changed to {v}%"))
+    screen.mute_toggled.connect(lambda m: print(f"[TEST] Mute {'ON' if m else 'OFF'}"))
     
     screen.show()
     
@@ -550,19 +621,23 @@ if __name__ == "__main__":
     # Cleanup on exit
     screen.destroyed.connect(app.cleanup)
     
-    print("\n=== Player Screen Track Navigation Test (Task 9.6) ===")
+    print("\n=== Player Screen Navigation + Volume Test (Tasks 9.6-9.7) ===")
     print("Test Playlist:")
     for i, track in enumerate(test_playlist):
         print(f"  {i + 1}. {track['name']} ({track['set']}) - {track['duration']}s")
     print("\nPlaylist loads after 1 second")
     print("First track plays after 2 seconds")
     print("Track auto-advances when finished")
-    print("Test navigation buttons:")
+    print("\nTest navigation buttons:")
     print("  - Previous: Go back one track")
     print("  - Next: Skip to next track")
     print("  - Previous at Track 1: Shows warning")
     print("  - Next at Track 7: Shows warning")
-    print("=======================================================\n")
+    print("\nTest volume controls:")
+    print("  - Drag slider to change volume")
+    print("  - Click speaker button to mute/unmute")
+    print("  - Move slider while muted to unmute")
+    print("=================================================================\n")
     
     exit_code = app.exec_()
     app.cleanup()
