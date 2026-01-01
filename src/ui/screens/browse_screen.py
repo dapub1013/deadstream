@@ -40,6 +40,9 @@ from src.ui.widgets.show_list import ShowListWidget
 from src.ui.widgets.date_browser import DateBrowser
 from src.ui.widgets.year_browser import YearBrowser
 from src.ui.widgets.search_widget import SearchWidget
+from src.ui.widgets.error_dialog import ErrorDialog, show_database_error, show_network_error
+from src.ui.widgets.toast_notification import ToastManager
+from src.ui.widgets.loading_spinner import LoadingIndicator
 
 
 class BrowseScreen(QWidget):
@@ -72,6 +75,10 @@ class BrowseScreen(QWidget):
         super().__init__(parent)
         self.current_shows = []
         self.setup_ui()
+
+        # Create error handling UI components
+        self.toast_manager = ToastManager(self)
+
         self.load_default_shows()
     
     def setup_ui(self):
@@ -397,23 +404,30 @@ class BrowseScreen(QWidget):
         """Load top-rated shows (default view)"""
         try:
             self.show_list.set_loading_state()
-        
+
             shows = get_top_rated_shows(limit=50, min_reviews=5)
-        
+
             self.update_header(
                 "Top Rated Shows",
                 f"{len(shows)} shows with 5+ reviews"
             )
-        
+
             self.show_list.load_shows(shows)
             self.current_shows = shows
-        
+
             print(f"[OK] Loaded {len(shows)} top-rated shows")
-        
+
         except Exception as e:
             print(f"[ERROR] Failed to load top rated shows: {e}")
             import traceback
             traceback.print_exc()
+
+            # Show error to user
+            self.update_header("Error", "Failed to load shows")
+            self.show_list.set_empty_state("Failed to load top rated shows")
+            self.toast_manager.show_error(
+                "Database error: Unable to load top rated shows. Check database connection."
+            )
 
     def show_date_browser(self):
         """Show date browser dialog (Task 7.2)"""
@@ -650,6 +664,7 @@ class BrowseScreen(QWidget):
             traceback.print_exc()
             self.update_header("Error", f"Failed to load shows for {date_str}")
             self.show_list.set_empty_state("Error loading shows")
+            self.toast_manager.show_error(f"Database error: Unable to load shows for {date_str}")
     
     def load_shows_by_venue(self, venue_name):
         """Load and display shows from a specific venue (Task 7.3)"""
@@ -687,6 +702,7 @@ class BrowseScreen(QWidget):
             traceback.print_exc()
             self.update_header("Error", f"Failed to load shows for {venue_name}")
             self.show_list.set_empty_state("Error loading shows")
+            self.toast_manager.show_error(f"Database error: Unable to load shows for {venue_name}")
     
     def load_shows_by_year(self, year):
         """Load and display shows from a specific year (Task 7.4)"""
@@ -732,6 +748,7 @@ class BrowseScreen(QWidget):
             traceback.print_exc()
             self.update_header("Error", f"Failed to load shows for {year}")
             self.show_list.set_empty_state("Error loading shows")
+            self.toast_manager.show_error(f"Database error: Unable to load shows for {year}")
 
     def perform_search(self, search_params):
         """Perform database search based on parameters from SearchWidget"""
@@ -766,6 +783,7 @@ class BrowseScreen(QWidget):
             traceback.print_exc()
             self.update_header("Search Error", "Failed to perform search")
             self.show_list.set_empty_state("Search failed")
+            self.toast_manager.show_error(f"Search error: {str(e)}")
 
     def load_search_results(self, results):
         """Load and display search results (Task 7.5)"""
@@ -797,6 +815,7 @@ class BrowseScreen(QWidget):
             traceback.print_exc()
             self.update_header("Error", "Failed to load search results")
             self.show_list.set_empty_state("Error loading shows")
+            self.toast_manager.show_error("Failed to load search results")
     
     def load_random_show(self):
         """Load a random show (Task 7.6 - NEW)"""
@@ -834,6 +853,7 @@ class BrowseScreen(QWidget):
             traceback.print_exc()
             self.update_header("Error", "Failed to load random show")
             self.show_list.set_empty_state("Error loading show")
+            self.toast_manager.show_error("Database error: Unable to load random show")
     
     # ========================================================================
     # EVENT HANDLERS

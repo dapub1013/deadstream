@@ -26,6 +26,9 @@ from src.ui.widgets.track_info import TrackInfoWidget
 from src.ui.widgets.playback_controls import PlaybackControlsWidget
 from src.ui.widgets.progress_bar import ProgressBarWidget
 from src.ui.widgets.volume_control_widget import VolumeControlWidget
+from src.ui.widgets.error_dialog import ErrorDialog, show_playback_error, show_network_error
+from src.ui.widgets.toast_notification import ToastManager
+from src.ui.widgets.loading_spinner import LoadingOverlay
 
 # Import audio engine
 from src.audio.resilient_player import ResilientPlayer, PlayerState
@@ -60,20 +63,24 @@ class PlayerScreen(QWidget):
         
         # Create audio player
         self.player = ResilientPlayer()
-        
+
         # NEW: Connect track end callback for auto-play
         self.player.on_track_ended = self.on_track_ended_auto_advance
         print("[INFO] Auto-play next track enabled")
-        
+
         # Build UI
         self._build_ui()
-        
+
+        # Create error handling UI components
+        self.toast_manager = ToastManager(self)
+        self.loading_overlay = LoadingOverlay(self)
+
         # Start UI update timer (200ms = 5 updates/second)
         self.update_timer = QTimer()
         self.update_timer.timeout.connect(self.update_ui_from_player)
         self.update_timer.start(200)
-        
-        print("[INFO] PlayerScreen initialized with auto-play")
+
+        print("[INFO] PlayerScreen initialized with auto-play and error handling")
     
     def _build_ui(self):
         """Build the player screen layout"""
@@ -224,47 +231,86 @@ class PlayerScreen(QWidget):
     def load_and_play_track(self, track_index):
         """
         Load and play a specific track from the playlist
-        
+
         Args:
             track_index: Index of track to play (0-based)
         """
         if not self.playlist_loaded:
             print("[ERROR] Cannot play track - no playlist loaded")
+            self.toast_manager.show_error("No playlist loaded")
             return
-        
+
         if track_index < 0 or track_index >= self.total_tracks:
             print(f"[ERROR] Invalid track index: {track_index}")
+            self.toast_manager.show_error(f"Invalid track index: {track_index}")
             return
-        
-        # Reset track end trigger flag
-        self._track_end_triggered = False
-        
-        # Get track data
-        track = self.current_playlist[track_index]
-        
-        print(f"[INFO] Loading track {track_index + 1}/{self.total_tracks}")
-        print(f"[INFO] Track: {track.get('title', 'Unknown')}")
-        
-        # Update current index
-        self.current_track_index = track_index
-        
-        # Update track info widget
-        track_title = track.get('title', 'Unknown Track')
-        set_name = track.get('set', 'Unknown Set')
-        self.track_info.update_track(track_title, set_name)
-        
-        # Load URL into player
-        track_url = track.get('url', '')
-        if not track_url:
-            print("[ERROR] Track has no URL!")
-            return
-        
-        self.player.load_url(track_url)
-        
-        # Start playback
-        self.player.play()
-        
-        print(f"[PASS] Now playing: {track_title}")
+
+        try:
+            # Reset track end trigger flag
+            self._track_end_triggered = False
+
+            # Get track data
+            track = self.current_playlist[track_index]
+
+            print(f"[INFO] Loading track {track_index + 1}/{self.total_tracks}")
+            print(f"[INFO] Track: {track.get('title', 'Unknown')}")
+
+            # Update current index
+            self.current_track_index = track_index
+
+            # Update track info widget
+            track_title = track.get('title', 'Unknown Track')
+            set_name = track.get('set', 'Unknown Set')
+            self.track_info.update_track(track_title, set_name)
+
+            # Load URL into player
+            track_url = track.get('url', '')
+            if not track_url:
+                print("[ERROR] Track has no URL!")
+                self.toast_manager.show_error(f"Cannot play {track_title}: No URL available")
+                return
+
+            # Show loading indicator briefly
+            self.toast_manager.show_info(f"Loading {track_title}...")
+
+            # Load and play
+            self.player.load_url(track_url)
+            self.player.play()
+
+            print(f"[PASS] Now playing: {track_title}")
+
+            # Monitor player state for errors
+            QTimer.singleShot(2000, lambda: self._check_playback_started(track_title))
+
+        except Exception as e:
+            print(f"[ERROR] Failed to load track: {e}")
+            self.toast_manager.show_error(f"Failed to load track: {str(e)}")
+
+    def _check_playback_started(self, track_title):
+        """
+        Check if playback actually started after loading a track.
+        Shows error if player is in ERROR state.
+        """
+        try:
+            player_state = self.player.get_state()
+
+            if player_state == PlayerState.ERROR:
+                print(f"[ERROR] Playback failed for: {track_title}")
+                dialog = ErrorDialog(self)
+                result = dialog.show_error(
+                    "Playback Error",
+                    f"Unable to play '{track_title}'. The audio stream may be unavailable or in an unsupported format.",
+                    error_type="error",
+                    details="Check your network connection and try again.",
+                    allow_retry=True
+                )
+
+                # If user clicked retry, try to reload
+                if result and hasattr(dialog, 'retry_requested'):
+                    self.load_and_play_track(self.current_track_index)
+
+        except Exception as e:
+            print(f"[WARN] Could not check playback state: {e}")
     
     # ========================================================================
     # NEW: AUTO-PLAY NEXT TRACK
@@ -273,23 +319,28 @@ class PlayerScreen(QWidget):
     def on_track_ended_auto_advance(self):
         """
         Called automatically when current track ends (via VLC event)
-        
+
         This is the callback registered with ResilientPlayer.on_track_ended
         It automatically advances to the next track if available.
         """
         print("[INFO] Track ended - auto-advancing to next track")
-        
-        # Check if there's a next track
-        if self.current_track_index < self.total_tracks - 1:
-            # Play next track
-            next_index = self.current_track_index + 1
-            print(f"[INFO] Auto-playing track {next_index + 1}/{self.total_tracks}")
-            self.load_and_play_track(next_index)
-        else:
-            # End of playlist
-            print("[INFO] Reached end of playlist - stopping playback")
-            self.player.stop()
-            # Could add: emit a signal, show "End of Show" message, etc.
+
+        try:
+            # Check if there's a next track
+            if self.current_track_index < self.total_tracks - 1:
+                # Play next track
+                next_index = self.current_track_index + 1
+                print(f"[INFO] Auto-playing track {next_index + 1}/{self.total_tracks}")
+                self.load_and_play_track(next_index)
+            else:
+                # End of playlist
+                print("[INFO] Reached end of playlist - stopping playback")
+                self.player.stop()
+                self.toast_manager.show_success("End of show reached", duration=3000)
+
+        except Exception as e:
+            print(f"[ERROR] Auto-advance failed: {e}")
+            self.toast_manager.show_error(f"Failed to advance to next track: {str(e)}")
     
     # ========================================================================
     # PLAYBACK CONTROL HANDLERS

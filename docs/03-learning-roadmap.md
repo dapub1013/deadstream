@@ -181,7 +181,7 @@ See `phase-9-completion-summary.md` for detailed results.
 ### Tasks (with instruction)
 - [x] 10.1: Complete concert info widget in player screen
 - [x] 10.2: Implement auto-play next track
-- [ ] 10.3: Add error handling UI (dialogs, toasts, loading indicators)
+- [x] 10.3: Add error handling UI (dialogs, toasts, loading indicators)
 - [ ] 10.4: Complete settings integration (quality preferences)
 - [ ] 10.5: End-to-end workflow testing (browse → play)
 - [ ] 10.6: Performance profiling and optimization
@@ -203,10 +203,10 @@ See `phase-9-completion-summary.md` for detailed results.
 
 ### Success Criteria
 - [  ] Complete browse → select → play workflow works flawlessly
-- [  ] Concert info displays correctly (date, venue, location, badges)
-- [  ] Auto-play advances to next track at song end
-- [  ] Error messages displayed to user (not just console)
-- [  ] Loading indicators show during operations
+- [x] Concert info displays correctly (date, venue, location, badges)
+- [x] Auto-play advances to next track at song end
+- [x] Error messages displayed to user (not just console)
+- [x] Loading indicators show during operations
 - [  ] Settings (volume, quality, auto-play) applied correctly
 - [  ] All screen transitions smooth and responsive
 - [  ] Performance acceptable on Raspberry Pi 4
@@ -360,12 +360,12 @@ See `phase-9-completion-summary.md` for detailed results.
 ## What's Left to Build
 
 ### Core Functionality (Phase 10)
-- Concert info widget (2 hours)
-- Auto-play next track (1 hour)
-- Error handling UI (4 hours)
+- ~~Concert info widget (2 hours)~~ ✅ COMPLETE
+- ~~Auto-play next track (1 hour)~~ ✅ COMPLETE
+- ~~Error handling UI (4 hours)~~ ✅ COMPLETE (3 hours actual)
 - Settings integration (3 hours)
 - Integration testing (5 hours)
-- **Total:** ~15 hours (2-3 days)
+- **Completed:** 7 hours | **Remaining:** ~8 hours (1 day)
 
 ### Hardware (Phase 11)
 - HiFiBerry DAC installation (3-5 days)
@@ -382,10 +382,10 @@ See `phase-9-completion-summary.md` for detailed results.
 ## Recommendations for Remaining Phases
 
 ### Phase 10 (Integration & Polish)
-1. Start with concert info widget (quick win)
-2. Implement auto-play next (builds momentum)
-3. Add error handling UI (improves UX)
-4. Complete settings integration (ties everything together)
+1. ~~Start with concert info widget (quick win)~~ ✅ DONE
+2. ~~Implement auto-play next (builds momentum)~~ ✅ DONE
+3. ~~Add error handling UI (improves UX)~~ ✅ DONE
+4. Complete settings integration (ties everything together) ← NEXT
 5. Test complete workflows thoroughly
 6. Profile performance on actual hardware
 
