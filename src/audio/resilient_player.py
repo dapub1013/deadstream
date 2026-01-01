@@ -82,6 +82,16 @@ class ResilientPlayer:
         
         # Apply default volume
         self.player.audio_set_volume(self._volume)
+        
+        # Track end callback (for auto-play next track)
+        self.on_track_ended = None  # Set by PlayerScreen
+        
+        # Set up VLC event manager for track end detection
+        self.event_manager = self.player.event_manager()
+        self.event_manager.event_attach(
+            vlc.EventType.MediaPlayerEndReached,
+            self._on_track_ended_internal
+        )
     
     # ========================================================================
     # VOLUME CONTROL METHODS
@@ -348,6 +358,15 @@ class ResilientPlayer:
         """Get current player state"""
         return self.state
     
+    def is_playing(self):
+        """
+        Check if currently playing
+        
+        Returns:
+            bool: True if playing, False otherwise
+        """
+        return self.state == PlayerState.PLAYING
+    
     def get_position(self):
         """
         Get current playback position in milliseconds
@@ -419,6 +438,41 @@ class ResilientPlayer:
         current = self.get_position()
         new_pos = max(0, current - (seconds * 1000))
         return self.seek(new_pos)
+    
+    # ========================================================================
+    # TRACK END EVENT HANDLING
+    # ========================================================================
+    
+    def _on_track_ended_internal(self, event):
+        """
+        Internal VLC event handler - called when track ends
+        
+        This is called by VLC's event manager when MediaPlayerEndReached fires.
+        It triggers the user-defined callback (if set) to auto-advance to next track.
+        
+        Args:
+            event: VLC event object (not used, but required by VLC)
+        """
+        print("\n" + "="*60)
+        print("[EVENT] MediaPlayerEndReached FIRED!")
+        print("="*60)
+        print(f"[INFO] Current state: {self.state}")
+        print(f"[INFO] Current URL: {self.current_url}")
+        
+        # Call user-defined callback if set
+        if self.on_track_ended:
+            try:
+                print("[INFO] Calling on_track_ended callback...")
+                self.on_track_ended()
+                print("[PASS] Callback completed successfully")
+            except Exception as e:
+                print(f"[ERROR] Track end callback failed: {e}")
+                import traceback
+                traceback.print_exc()
+        else:
+            print("[WARN] No on_track_ended callback set - track will not auto-advance")
+        
+        print("="*60 + "\n")
     
     # ========================================================================
     # HEALTH MONITORING
