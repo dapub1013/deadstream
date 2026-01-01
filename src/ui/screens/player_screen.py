@@ -61,8 +61,13 @@ class PlayerScreen(QWidget):
         self.playback_controls = None
         self.progress_bar = None
         
+        # Playlist state
+        self.current_track_index = 0  # Current track (0-indexed)
+        self.total_tracks = 0         # Total tracks in playlist
+        self.playlist_loaded = False  # Whether a playlist is loaded
+        
         self.init_ui()
-    
+
     def init_ui(self):
         """Set up the player screen UI"""
         # Main horizontal layout (split screen)
@@ -204,13 +209,47 @@ class PlayerScreen(QWidget):
     
     def on_previous_track(self):
         """Handle previous track request"""
-        print("[INFO] Previous track requested from Player screen")
+        if not self.playlist_loaded or self.total_tracks == 0:
+            print("[WARN] No playlist loaded, cannot skip to previous track")
+            return
+        
+        # Check if we're at the first track
+        if self.current_track_index <= 0:
+            print(f"[INFO] Already at first track (1/{self.total_tracks})")
+            # Could restart current track here in the future
+            return
+        
+        # Move to previous track
+        self.current_track_index -= 1
+        print(f"[INFO] Previous track requested: moving to track {self.current_track_index + 1}/{self.total_tracks}")
+        
+        # Emit signal for main app to load the track
         self.previous_track_requested.emit()
+        
+        # Update UI to reflect new track position
+        self._update_navigation_state()
     
     def on_next_track(self):
         """Handle next track request"""
-        print("[INFO] Next track requested from Player screen")
+        if not self.playlist_loaded or self.total_tracks == 0:
+            print("[WARN] No playlist loaded, cannot skip to next track")
+            return
+        
+        # Check if we're at the last track
+        if self.current_track_index >= self.total_tracks - 1:
+            print(f"[INFO] Already at last track ({self.current_track_index + 1}/{self.total_tracks})")
+            # Could loop back to first track here in the future
+            return
+        
+        # Move to next track
+        self.current_track_index += 1
+        print(f"[INFO] Next track requested: moving to track {self.current_track_index + 1}/{self.total_tracks}")
+        
+        # Emit signal for main app to load the track
         self.next_track_requested.emit()
+        
+        # Update UI to reflect new track position
+        self._update_navigation_state()
     
     def on_skip_backward(self):
         """Handle skip backward 30s request"""
@@ -281,8 +320,68 @@ class PlayerScreen(QWidget):
         if self.playback_controls:
             self.playback_controls.set_playing(is_playing)
     
+    def _update_navigation_state(self):
+        """
+        Update navigation button states based on current position.
+        Disables previous button at first track, next button at last track.
+        """
+        if not self.playback_controls or not self.playlist_loaded:
+            return
+        
+        # Update track position display
+        self.playback_controls.update_track_position(
+            self.current_track_index + 1,  # Display as 1-indexed
+            self.total_tracks
+        )
+    
+    def load_playlist(self, track_count):
+        """
+        Initialize playlist with given number of tracks.
+        
+        Args:
+            track_count (int): Total number of tracks in playlist
+        """
+        self.total_tracks = track_count
+        self.current_track_index = 0
+        self.playlist_loaded = True
+        
+        print(f"[INFO] Playlist loaded with {track_count} tracks")
+        
+        # Update navigation state
+        self._update_navigation_state()
+    
+    def get_current_track_index(self):
+        """
+        Get current track index (0-based).
+        
+        Returns:
+            int: Current track index, or 0 if no playlist loaded
+        """
+        return self.current_track_index if self.playlist_loaded else 0
+    
+    def set_current_track(self, track_index):
+        """
+        Set current track index directly (for external playlist control).
+        
+        Args:
+            track_index (int): Track index to set (0-based)
+        """
+        if not self.playlist_loaded:
+            print("[WARN] Cannot set track: no playlist loaded")
+            return
+        
+        if track_index < 0 or track_index >= self.total_tracks:
+            print(f"[ERROR] Invalid track index: {track_index} (valid range: 0-{self.total_tracks - 1})")
+            return
+        
+        self.current_track_index = track_index
+        print(f"[INFO] Current track set to {track_index + 1}/{self.total_tracks}")
+        
+        # Update UI
+        self._update_navigation_state()
+    
     def clear_track(self):
-        """Clear current track information"""
+        """Clear current track information and reset playlist state"""
         if self.track_info:
             self.track_info.clear_track_info()
         
@@ -291,10 +390,17 @@ class PlayerScreen(QWidget):
         
         if self.progress_bar:
             self.progress_bar.reset()
+        
+        # Reset playlist state
+        self.current_track_index = 0
+        self.total_tracks = 0
+        self.playlist_loaded = False
+        
+        print("[INFO] Track cleared and playlist state reset")
 
 
 if __name__ == "__main__":
-    """Test the player screen"""
+    """Test the player screen with track navigation"""
     from PyQt5.QtWidgets import QApplication
     from PyQt5.QtCore import QTimer
     
@@ -312,46 +418,129 @@ if __name__ == "__main__":
     # Create player screen
     screen = PlayerScreen()
     screen.setGeometry(100, 100, 1024, 600)
-    screen.setWindowTitle("DeadStream Player Screen - Task 9.5")
+    screen.setWindowTitle("DeadStream Player Screen - Task 9.6: Track Navigation")
     
-    # Connect signals for testing
-    screen.play_pause_requested.connect(lambda: print("[TEST] Play/pause signal received"))
-    screen.previous_track_requested.connect(lambda: print("[TEST] Previous track signal received"))
-    screen.next_track_requested.connect(lambda: print("[TEST] Next track signal received"))
-    screen.skip_backward_30s_requested.connect(lambda: print("[TEST] Skip backward signal received"))
-    screen.skip_forward_30s_requested.connect(lambda: print("[TEST] Skip forward signal received"))
-    screen.seek_requested.connect(lambda pos: print(f"[TEST] Seek signal received: {pos}s"))
+    # Test playlist data
+    test_playlist = [
+        {"name": "China Cat Sunflower", "set": "SET I", "duration": 300},
+        {"name": "I Know You Rider", "set": "SET I", "duration": 360},
+        {"name": "Scarlet Begonias", "set": "SET I", "duration": 420},
+        {"name": "Fire on the Mountain", "set": "SET I", "duration": 480},
+        {"name": "Dark Star", "set": "SET II", "duration": 1200},
+        {"name": "Playing in the Band", "set": "SET II", "duration": 900},
+        {"name": "Uncle John's Band", "set": "ENCORE", "duration": 420},
+    ]
+    
+    current_track_idx = 0
+    current_time = 0
+    is_playing = False
+    
+    def load_track(index):
+        """Load a specific track from the test playlist"""
+        global current_track_idx, current_time
+        
+        if index < 0 or index >= len(test_playlist):
+            print(f"[TEST] Invalid track index: {index}")
+            return
+        
+        current_track_idx = index
+        current_time = 0
+        
+        track = test_playlist[index]
+        print(f"\n[TEST] Loading track {index + 1}/{len(test_playlist)}: {track['name']}")
+        
+        # Update screen with track info
+        screen.set_current_track(index)
+        screen.update_track(
+            track['name'],
+            track['set'],
+            index + 1,
+            len(test_playlist)
+        )
+        screen.set_duration(track['duration'])
+        screen.update_progress(0, track['duration'])
+    
+    def on_play_pause():
+        """Toggle play/pause state"""
+        global is_playing
+        is_playing = not is_playing
+        screen.set_playing(is_playing)
+        print(f"[TEST] {'Playing' if is_playing else 'Paused'}")
+    
+    def on_next_track():
+        """Handle next track button"""
+        next_idx = current_track_idx + 1
+        if next_idx < len(test_playlist):
+            load_track(next_idx)
+        else:
+            print("[TEST] Already at last track")
+    
+    def on_previous_track():
+        """Handle previous track button"""
+        prev_idx = current_track_idx - 1
+        if prev_idx >= 0:
+            load_track(prev_idx)
+        else:
+            print("[TEST] Already at first track")
+    
+    def on_skip_backward():
+        """Handle 30s backward skip"""
+        global current_time
+        current_time = max(0, current_time - 30)
+        track = test_playlist[current_track_idx]
+        screen.update_progress(current_time, track['duration'])
+        print(f"[TEST] Skipped back 30s to {current_time}s")
+    
+    def on_skip_forward():
+        """Handle 30s forward skip"""
+        global current_time
+        track = test_playlist[current_track_idx]
+        current_time = min(track['duration'], current_time + 30)
+        screen.update_progress(current_time, track['duration'])
+        print(f"[TEST] Skipped forward 30s to {current_time}s")
+    
+    def on_seek(position):
+        """Handle seek to position"""
+        global current_time
+        current_time = position
+        print(f"[TEST] Seeked to {position}s")
+    
+    def update_progress():
+        """Update progress every second during playback"""
+        global current_time
+        
+        if not is_playing:
+            return
+        
+        track = test_playlist[current_track_idx]
+        
+        if current_time < track['duration']:
+            current_time += 1
+            screen.update_progress(current_time, track['duration'])
+        else:
+            # Track finished, auto-advance to next
+            print("\n[TEST] Track finished, auto-advancing...")
+            on_next_track()
+    
+    # Connect signals
+    screen.play_pause_requested.connect(on_play_pause)
+    screen.previous_track_requested.connect(on_previous_track)
+    screen.next_track_requested.connect(on_next_track)
+    screen.skip_backward_30s_requested.connect(on_skip_backward)
+    screen.skip_forward_30s_requested.connect(on_skip_forward)
+    screen.seek_requested.connect(on_seek)
     
     screen.show()
     
-    # Simulate track playback
-    current_time = 0
-    track_duration = 420  # 7 minutes
+    # Initialize with playlist
+    print("\n[TEST] Initializing playlist...")
+    screen.load_playlist(len(test_playlist))
     
-    def load_track():
-        """Simulate loading a track"""
-        print("[TEST] Loading track: Scarlet Begonias (7:00)")
-        screen.update_track("Scarlet Begonias", "SET I", 3, 8)
-        screen.set_duration(track_duration)
-        screen.set_playing(False)
+    # Load first track after 1 second
+    QTimer.singleShot(1000, lambda: load_track(0))
     
-    def start_playback():
-        """Start playback simulation"""
-        global current_time
-        current_time = 0
-        print("[TEST] Starting playback")
-        screen.set_playing(True)
-    
-    def update_progress():
-        """Update progress every second"""
-        global current_time
-        if current_time < track_duration:
-            current_time += 1
-            screen.update_progress(current_time, track_duration)
-    
-    # Schedule events
-    QTimer.singleShot(1000, load_track)
-    QTimer.singleShot(2000, start_playback)
+    # Start playback after 2 seconds
+    QTimer.singleShot(2000, lambda: on_play_pause())
     
     # Update progress every second
     app.progress_timer = QTimer()
@@ -361,13 +550,19 @@ if __name__ == "__main__":
     # Cleanup on exit
     screen.destroyed.connect(app.cleanup)
     
-    print("\n=== Player Screen Test (Task 9.5) ===")
-    print("Track loads after 1 second")
-    print("Playback starts after 2 seconds")
-    print("Progress bar updates every second")
-    print("Drag slider to test seek functionality")
-    print("Watch console for seek output")
-    print("=====================================\n")
+    print("\n=== Player Screen Track Navigation Test (Task 9.6) ===")
+    print("Test Playlist:")
+    for i, track in enumerate(test_playlist):
+        print(f"  {i + 1}. {track['name']} ({track['set']}) - {track['duration']}s")
+    print("\nPlaylist loads after 1 second")
+    print("First track plays after 2 seconds")
+    print("Track auto-advances when finished")
+    print("Test navigation buttons:")
+    print("  - Previous: Go back one track")
+    print("  - Next: Skip to next track")
+    print("  - Previous at Track 1: Shows warning")
+    print("  - Next at Track 7: Shows warning")
+    print("=======================================================\n")
     
     exit_code = app.exec_()
     app.cleanup()

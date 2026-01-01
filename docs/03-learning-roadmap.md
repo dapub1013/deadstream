@@ -323,7 +323,7 @@ Phase 9 focuses on integration and polish. Review all completion summaries (Phas
 - [x] 9.3: Display full setlist
 - [x] 9.4: Add playback controls
 - [x] 9.5: Show progress bar with seek
-- [ ] 9.6: Implement next/previous track
+- [x] 9.6: Implement next/previous track
 - [ ] 9.7: Add volume slider
 - [ ] 9.8: Integrate with ResilientPlayer
 
