@@ -320,7 +320,7 @@ Phase 9 focuses on integration and polish. Review all completion summaries (Phas
 ### Tasks (with instruction)
 - [x] 9.1: Design player screen layout
 - [x] 9.2: Show current track info
-- [ ] 9.3: Display full setlist
+- [x] 9.3: Display full setlist
 - [ ] 9.4: Add playback controls
 - [ ] 9.5: Show progress bar with seek
 - [ ] 9.6: Implement next/previous track
