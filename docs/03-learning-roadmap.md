@@ -180,7 +180,7 @@ See `phase-9-completion-summary.md` for detailed results.
 
 ### Tasks (with instruction)
 - [x] 10.1: Complete concert info widget in player screen
-- [ ] 10.2: Implement auto-play next track
+- [x] 10.2: Implement auto-play next track
 - [ ] 10.3: Add error handling UI (dialogs, toasts, loading indicators)
 - [ ] 10.4: Complete settings integration (quality preferences)
 - [ ] 10.5: End-to-end workflow testing (browse → play)
