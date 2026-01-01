@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Resilient Audio Player with Platform-Aware Audio - Phase 9.8
+Resilient Audio Player with Volume Control - Phase 4.7
 
 This module provides a robust audio streaming player with comprehensive
-error handling, automatic recovery, and cross-platform audio support.
+error handling, automatic recovery, and volume control capabilities.
 
 Features:
 - Stream audio from URLs
@@ -12,25 +12,15 @@ Features:
 - Playback controls (play, pause, stop, skip)
 - Volume control (0-100%, mute/unmute)
 - Position tracking and seeking
-- Platform-aware audio (macOS dev, Linux production)
 
 Author: DeadStream Project
-Phase: 9.8 - Cross-Platform Audio Support
+Phase: 4.7 - Volume Control Complete
 """
-
-import sys
-import os
-
-# Add project root to path for imports
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
 
 import vlc
 import time
 import threading
 from enum import Enum
-from src.audio.vlc_config import create_vlc_instance
 
 
 class PlayerState(Enum):
@@ -45,18 +35,17 @@ class PlayerState(Enum):
 class ResilientPlayer:
     """
     Resilient audio streaming player with automatic recovery
-    and platform-aware audio configuration
     """
     
-    def __init__(self, debug=False):
-        """
-        Initialize the player
-        
-        Args:
-            debug: If True, enable verbose VLC output
-        """
-        # Create platform-aware VLC instance
-        self.instance = create_vlc_instance(debug=debug)
+    def __init__(self):
+        """Initialize the player"""
+        # Create VLC instance with verified settings
+        self.instance = vlc.Instance(
+            '--no-xlib',             # Same as working test
+            '--quiet',               # Same as working test
+            '--no-video',            # Same as working test
+            '--network-caching=8000' # Keep this for streaming
+        )
 
         # Create media player
         self.player = self.instance.media_player_new()
@@ -182,17 +171,19 @@ class ResilientPlayer:
             bool: True if successful, False otherwise
         """
         if not self._muted:
-            print("[INFO] Not currently muted")
+            print("[INFO] Already unmuted")
             return True
         
         try:
             # Restore previous volume
-            result = self.player.audio_set_volume(self._volume_before_mute)
+            restore_volume = self._volume_before_mute
+            
+            result = self.player.audio_set_volume(restore_volume)
             
             if result == 0:  # Success
                 self._muted = False
-                self._volume = self._volume_before_mute
-                print(f"[INFO] Audio unmuted (volume: {self._volume}%)")
+                self._volume = restore_volume
+                print(f"[INFO] Audio unmuted (volume: {restore_volume}%)")
                 return True
             else:
                 print(f"[WARN] VLC returned {result} when unmuting")
@@ -207,72 +198,57 @@ class ResilientPlayer:
         Toggle mute state
         
         Returns:
-            bool: True if now muted, False if now unmuted
+            bool: New mute state (True if now muted)
         """
         if self._muted:
             self.unmute()
-            return False
         else:
             self.mute()
-            return True
+        
+        return self._muted
     
-    def volume_up(self, increment=5):
+    def volume_up(self, amount=5):
         """
         Increase volume by specified amount
         
         Args:
-            increment: Amount to increase (default 5%)
+            amount: Amount to increase (default: 5)
             
         Returns:
-            bool: True if successful
+            int: New volume level
         """
-        new_volume = min(100, self._volume + increment)
-        return self.set_volume(new_volume)
+        new_volume = min(100, self._volume + amount)
+        self.set_volume(new_volume)
+        return self._volume
     
-    def volume_down(self, increment=5):
+    def volume_down(self, amount=5):
         """
         Decrease volume by specified amount
         
         Args:
-            increment: Amount to decrease (default 5%)
+            amount: Amount to decrease (default: 5)
             
         Returns:
-            bool: True if successful
+            int: New volume level
         """
-        new_volume = max(0, self._volume - increment)
-        return self.set_volume(new_volume)
+        new_volume = max(0, self._volume - amount)
+        self.set_volume(new_volume)
+        return self._volume
     
     # ========================================================================
-    # PLAYBACK CONTROL METHODS
+    # EXISTING PLAYBACK METHODS (unchanged)
     # ========================================================================
     
     def load_url(self, url):
-        """
-        Load a URL for playback
-        
-        Args:
-            url: URL to audio stream
-            
-        Returns:
-            bool: True if loaded successfully
-        """
+        """Load a URL for playback"""
         try:
-            print(f"[INFO] Loading URL: {url}")
-            
-            # Stop any existing playback
-            if self.state != PlayerState.STOPPED:
-                self.stop()
-            
-            # Create new media
-            media = self.instance.media_new(url)
-            
-            # Set media options for streaming
-            media.add_option(':network-caching=8000')  # 8 second buffer
-            
-            # Store URL for recovery
+            print(f"[INFO] Loading: {url}")
             self.current_url = url
             
-            # Load into player
+            # Create media from URL
+            media = self.instance.media_new(url)
+            
+            # Set media to player
             self.player.set_media(media)
             
             print("[PASS] URL loaded successfully")
@@ -350,10 +326,10 @@ class ResilientPlayer:
     
     def get_position(self):
         """
-        Get current playback position in milliseconds
+        Get current playback position
         
         Returns:
-            int: Position in milliseconds, or 0 if not available
+            int: Position in milliseconds, or 0 if not playing
         """
         try:
             pos = self.player.get_time()
@@ -363,7 +339,7 @@ class ResilientPlayer:
     
     def get_duration(self):
         """
-        Get total duration in milliseconds
+        Get total media duration
         
         Returns:
             int: Duration in milliseconds, or 0 if not available
@@ -386,43 +362,23 @@ class ResilientPlayer:
         """
         try:
             self.player.set_time(position_ms)
-            print(f"[INFO] Seeked to {format_time(position_ms)}")
+            print(f"[INFO] Seeked to {position_ms}ms")
             return True
         except Exception as e:
             print(f"[ERROR] Seek failed: {e}")
             return False
     
     def skip_forward(self, seconds=30):
-        """
-        Skip forward by specified seconds
-        
-        Args:
-            seconds: Number of seconds to skip (default 30)
-            
-        Returns:
-            bool: True if successful
-        """
-        current = self.get_position()
-        new_pos = current + (seconds * 1000)
+        """Skip forward by specified seconds"""
+        current_pos = self.get_position()
+        new_pos = current_pos + (seconds * 1000)
         return self.seek(new_pos)
     
     def skip_backward(self, seconds=30):
-        """
-        Skip backward by specified seconds
-        
-        Args:
-            seconds: Number of seconds to skip back (default 30)
-            
-        Returns:
-            bool: True if successful
-        """
-        current = self.get_position()
-        new_pos = max(0, current - (seconds * 1000))
+        """Skip backward by specified seconds"""
+        current_pos = self.get_position()
+        new_pos = max(0, current_pos - (seconds * 1000))
         return self.seek(new_pos)
-    
-    # ========================================================================
-    # HEALTH MONITORING
-    # ========================================================================
     
     def _start_health_monitor(self):
         """Start background health monitoring thread"""
@@ -432,23 +388,17 @@ class ResilientPlayer:
         self.health_running = True
         self.health_thread = threading.Thread(target=self._health_monitor_loop, daemon=True)
         self.health_thread.start()
-        print("[INFO] Health monitor started")
+        print("[INFO] Health monitoring started")
     
     def _stop_health_monitor(self):
-        """Stop background health monitoring thread"""
-        if not self.health_running:
-            return
-        
+        """Stop health monitoring thread"""
         self.health_running = False
         if self.health_thread:
             self.health_thread.join(timeout=2)
-        print("[INFO] Health monitor stopped")
+        print("[INFO] Health monitoring stopped")
     
     def _health_monitor_loop(self):
-        """
-        Background thread that monitors playback health
-        Detects stuck playback and attempts recovery
-        """
+        """Health monitoring background thread"""
         while self.health_running:
             try:
                 # Check if we're supposed to be playing
@@ -505,6 +455,6 @@ def format_time(milliseconds):
 
 
 if __name__ == '__main__':
-    print("ResilientPlayer with Platform-Aware Audio")
+    print("ResilientPlayer with Volume Control")
     print("This module should be imported, not run directly")
-    print("See examples/test_cross_platform_audio.py for usage")
+    print("See examples/test_volume_control.py for usage")

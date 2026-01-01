@@ -292,6 +292,81 @@ DB_PATH = os.path.join(
 
 ---
 
+### 7. Cross-Platform Development - Platform-Aware VLC Configuration
+
+**RULE:** Always use `create_vlc_instance()` from `src.audio.vlc_config` instead of creating VLC instances directly.
+
+**Why:** Enables development on macOS while maintaining production compatibility with Raspberry Pi. Different platforms require different audio output configurations.
+
+**Platform-Specific Requirements:**
+
+| Platform | Audio System | VLC Configuration |
+|----------|-------------|-------------------|
+| macOS (development) | CoreAudio | Auto-detect (no `--aout` flag) |
+| Linux/RPi (production) | ALSA | Force ALSA (`--aout=alsa`) |
+
+**Examples:**
+
+❌ **WRONG - Hardcoded Platform:**
+```python
+import vlc
+
+# This ONLY works on Linux!
+instance = vlc.Instance('--aout=alsa', '--no-video')
+
+# This FAILS on Linux (missing ALSA)!
+instance = vlc.Instance('--no-video')
+```
+
+✅ **CORRECT - Platform-Aware:**
+```python
+from src.audio.vlc_config import create_vlc_instance
+
+# Works on BOTH macOS AND Linux automatically
+instance = create_vlc_instance()
+player = instance.media_player_new()
+```
+
+**With Debug Mode:**
+```python
+# Enable verbose output to see VLC configuration
+instance = create_vlc_instance(debug=True)
+
+# Output shows:
+# [INFO] Platform: macOS
+# [INFO] Audio output: Auto-detect (CoreAudio)
+# [INFO] VLC instance created with args: ['--no-video', '--network-caching=8000', '--quiet', '--verbose=0']
+```
+
+**How It Works:**
+1. Detects platform using `platform.system()`
+2. On macOS: Lets VLC auto-detect CoreAudio
+3. On Linux: Forces ALSA for Raspberry Pi headphone jack
+4. Same codebase, different backend configuration
+
+**Already Platform-Aware:**
+- ✅ `src/audio/resilient_player.py` - Uses `create_vlc_instance()`
+- ✅ `examples/test_cross_platform_audio.py` - Tests both platforms
+
+**Testing Your Code:**
+```bash
+# Test on macOS (development)
+python examples/test_cross_platform_audio.py
+
+# Test on Raspberry Pi (production)
+ssh pi@deadstream
+python examples/test_cross_platform_audio.py
+```
+
+**Key Benefits:**
+- Develop on macOS with immediate audio feedback
+- No SSH needed for audio testing during development
+- Zero code changes when deploying to Pi
+- Fast iteration cycle
+- Single codebase for all platforms
+
+---
+
 ## Quick Reference Checklist
 
 Before generating code, verify:
@@ -329,6 +404,18 @@ Before generating code, verify:
 ### Issue: "ModuleNotFoundError: No module named 'X'"
 **Cause:** Import path doesn't match actual file structure  
 **Fix:** Consult `08-import-and-architecture-reference.md` for correct import patterns
+
+### Issue: "No audio on macOS during development"
+**Cause:** Using Linux-specific `--aout=alsa` flag  
+**Fix:** Use `create_vlc_instance()` for automatic platform detection
+
+### Issue: "No audio on Raspberry Pi with headphones"
+**Cause:** Missing `--aout=alsa` flag on Linux  
+**Fix:** Use `create_vlc_instance()` - automatically adds ALSA on Linux
+
+### Issue: "Architecture mismatch error on Apple Silicon Mac"
+**Cause:** Intel (x86_64) VLC installed on ARM Mac  
+**Fix:** `brew uninstall vlc && brew install --cask vlc` (installs ARM version)
 
 ---
 
@@ -422,14 +509,15 @@ deadstream/
 
 When generating code for this project:
 
-1. **Check existing code first** - `src/audio/resilient_player.py` has working VLC config
-2. **Use database for URLs** - Never hardcode Archive.org URLs
-3. **ASCII only** - No emojis or unicode in any output
-4. **Verify file structure** - Check `08-import-and-architecture-reference.md` before importing
-5. **Test before sharing** - Verify code would actually run
-6. **Follow established patterns** - Match existing code style
-7. **No assumptions** - Don't assume files exist (theme.py, src/screens/, etc.)
-
+1. **Check existing code first** - `src/audio/resilient_player.py` has working platform-aware config
+2. **Use platform-aware VLC** - Always `from src.audio.vlc_config import create_vlc_instance`
+3. **Never hardcode audio output** - Let platform detection handle macOS vs Linux
+4. **Use database for URLs** - Never hardcode Archive.org URLs
+5. **ASCII only** - No emojis or unicode in any output
+6. **Verify file structure** - Check `08-import-and-architecture-reference.md` before importing
+7. **Test before sharing** - Verify code would actually run
+8. **Follow established patterns** - Match existing code style
+9. **No assumptions** - Don't assume files exist (theme.py, src/screens/, etc.)
 ---
 
 ## Document History

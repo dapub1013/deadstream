@@ -317,6 +317,21 @@ Phase 9 focuses on integration and polish. Review all completion summaries (Phas
 - Responsive layouts
 - Timer-based updates
 
+### Pre-Task: Cross-Platform Development Setup
+**Completed:** December 30, 2025
+
+Before starting Phase 9 player screen implementation, cross-platform audio support was added to enable development on macOS while maintaining Raspberry Pi production compatibility.
+
+**What was added:**
+- Platform-aware VLC configuration (`src/audio/vlc_config.py`)
+- Updated ResilientPlayer to use platform detection
+- Cross-platform test script for verification
+- Automatic audio backend selection (CoreAudio on Mac, ALSA on Pi)
+
+**Impact:** Can now develop and test player UI with real audio on MacBook, deploy to Pi without changes.
+
+**Status:** Complete ✅ - Ready to proceed with player screen tasks
+
 ### Tasks (with instruction)
 - [x] 9.1: Design player screen layout
 - [x] 9.2: Show current track info
@@ -325,6 +340,7 @@ Phase 9 focuses on integration and polish. Review all completion summaries (Phas
 - [x] 9.5: Show progress bar with seek
 - [x] 9.6: Implement next/previous track
 - [x] 9.7: Add volume slider
+- [x] 9.8 (Pre-task): Cross-platform audio configuration (macOS dev, Linux prod)
 - [ ] 9.8: Integrate with ResilientPlayer
 
 ### Deliverables

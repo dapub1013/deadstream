@@ -1320,6 +1320,64 @@ Test integration early and thoroughly.
 
 ---
 
+## Phase 9 Pre-Task: Cross-Platform Audio (Completed December 30, 2025)
+
+**Objective:** Enable development and testing on macOS while maintaining Raspberry Pi production compatibility.
+
+**Problem Solved:**
+- Previously could only test audio on Raspberry Pi
+- Required SSH connection for every audio test
+- Slow development iteration cycle
+
+**Solution Implemented:**
+- Created `src/audio/vlc_config.py` - Platform detection and VLC configuration
+- Updated `src/audio/resilient_player.py` - Uses platform-aware VLC instance
+- Created `examples/test_cross_platform_audio.py` - Cross-platform test script
+- Added architecture detection (Darwin/macOS vs Linux/ARM)
+
+**Key Technical Details:**
+- **macOS:** Auto-detect CoreAudio (Mac speakers/headphones)
+- **Linux:** Force ALSA audio output (`--aout=alsa` for Pi headphone jack)
+- **Same codebase:** Zero platform-specific conditionals in application code
+- **Automatic detection:** Uses `platform.system()` to choose configuration
+
+**Files Created:**
+1. `src/audio/vlc_config.py` (~130 lines)
+   - `get_platform_type()`: Detects macOS/Linux/other
+   - `create_vlc_instance(debug=False)`: Platform-aware VLC creation
+   - `get_platform_info()`: Debugging information
+
+2. `examples/test_cross_platform_audio.py` (~180 lines)
+   - Database-driven URL selection
+   - Platform detection display
+   - 10-second playback test
+   - Volume control demonstration
+
+**Changes to Existing Files:**
+- `src/audio/resilient_player.py`:
+  - Added `debug` parameter to constructor
+  - Now uses `create_vlc_instance()` instead of direct VLC creation
+  - Platform configuration automatic
+
+**Testing Results:**
+- ✅ Audio playback verified on macOS (Apple Silicon)
+- ✅ Volume control working on macOS
+- ✅ Position tracking accurate on macOS
+- ✅ Backward compatible with Raspberry Pi
+- ✅ Zero code changes needed for deployment
+
+**Impact on Phase 9:**
+- Can develop player screen UI on MacBook with real audio
+- Immediate feedback during development
+- Faster iteration cycle
+- Test volume controls without SSH
+- Validate UI/audio integration locally
+
+**Status:** COMPLETE ✅  
+**Ready for Phase 9.1:** YES
+
+---
+
 ## Next Phase Preview
 
 **Phase 9: Player Screen**
