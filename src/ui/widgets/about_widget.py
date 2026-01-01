@@ -81,7 +81,7 @@ class AboutWidget(QWidget):
                 ("Version", "1.0.0"),
                 ("Build Date", "2025.12.30"),
                 ("Platform", "Raspberry Pi 4"),
-                ("Display", "7-inch Touchscreen (1024x600)")
+                ("Display", "7-inch Touchscreen (1280x720)")
             ]
         )
         content_layout.addWidget(app_card)

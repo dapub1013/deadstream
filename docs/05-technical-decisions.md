@@ -244,7 +244,7 @@ Track what works well and what doesn't:
 | 2025-12-24 | **Phase 6: PyQt5 event-driven architecture** | QMainWindow + QStackedWidget pattern for screen management; signal/slot mechanism for component communication |
 | 2025-12-24 | **Phase 6: Screen transition animations** | 300ms fade out + 300ms fade in (600ms total) provides professional polish without feeling sluggish |
 | 2025-12-24 | **Phase 6: Named screen registry pattern** | Screen access by name ('player', 'browse', 'settings') instead of indices for maintainability |
-| 2025-12-24 | **Phase 6: Development windowed mode** | 1024x600 windowed on desktop for development; fullscreen mode ready but commented for Phase 11 deployment |
+| 2025-12-24 | **Phase 6: Development windowed mode** | 1280x720 windowed on desktop for development; fullscreen mode ready but commented for Phase 11 deployment |
 | 2025-12-25 | **Phase 6: Keyboard shortcuts system** | Application-level event filter for global shortcuts; speeds desktop development, aids SSH testing, optional for touch-only use |
 | 2025-12-25 | **Phase 6: Touch input validation** | 60x60px button size confirmed optimal on 7" touchscreen; PyQt5 mouse events work for both mouse AND touch (no special handlers needed) |
 | 2025-12-25 | **Phase 6: X11 forwarding workflow** | SSH with X11 forwarding enables remote GUI testing; keyboard shortcuts functional over network |
