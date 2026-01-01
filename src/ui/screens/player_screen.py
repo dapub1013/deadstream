@@ -24,7 +24,7 @@ from src.ui.widgets.track_info import TrackInfoWidget
 from src.ui.widgets.playback_controls import PlaybackControlsWidget
 from src.ui.widgets.progress_bar import ProgressBarWidget
 from src.ui.widgets.volume_control_widget import VolumeControlWidget
-from src.ui.widgets.concert_info import ConcertInfoWidget
+from src.ui.widgets.setlist import SetlistWidget
 
 # Import audio engine
 from src.audio.resilient_player import ResilientPlayer, PlayerState
@@ -128,19 +128,16 @@ class PlayerScreen(QWidget):
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
         
-        # Concert info widget (NEW - Task 10.1)
-        self.concert_info = ConcertInfoWidget()
-        layout.addWidget(self.concert_info)
-        
-        # Setlist widget (from Phase 9)
+        # Setlist widget (includes concert header + tracks)
+        # SetlistWidget already has concert info built in from Phase 9
         self.setlist = SetlistWidget()
-        self.setlist.track_clicked.connect(self.on_track_clicked)
-        layout.addWidget(self.setlist, 1)  # Give setlist remaining space
+        self.setlist.track_selected.connect(self.on_track_clicked)
+        layout.addWidget(self.setlist, 1)
         
         panel.setLayout(layout)
         
         return panel
-        
+    
     def create_right_panel(self):
         """Create right panel (track info + controls + progress)"""
         panel = QFrame()
@@ -246,9 +243,6 @@ class PlayerScreen(QWidget):
         # Store show data
         self.current_show = show_data
         
-        # Load concert info (NEW - Task 10.1)
-        self.concert_info.load_concert_info(show_data)
-        
         # Fetch full show metadata from Archive.org
         # (This will be implemented in future integration tasks)
         # For now, create a sample track list
@@ -267,19 +261,41 @@ class PlayerScreen(QWidget):
                 'set_name': 'SET I',
                 'url': 'https://archive.org/download/...'
             },
-            # ... more tracks
+            {
+                'title': "Franklin's Tower",
+                'duration': '9:32',
+                'set_name': 'SET I',
+                'url': 'https://archive.org/download/...'
+            },
+            {
+                'title': 'Scarlet Begonias',
+                'duration': '10:45',
+                'set_name': 'SET II',
+                'url': 'https://archive.org/download/...'
+            },
+            {
+                'title': 'Fire on the Mountain',
+                'duration': '12:20',
+                'set_name': 'SET II',
+                'url': 'https://archive.org/download/...'
+            },
         ]
         
-        # Load setlist
-        self.setlist.load_setlist(sample_tracks)
+        # Load concert into setlist widget
+        # SetlistWidget handles both concert info AND tracks
+        self.setlist.load_concert(
+            concert_title=f"{show_data['date']} {show_data['venue']}",
+            location=f"{show_data['city']}, {show_data['state']}",
+            source_type=show_data.get('source', 'Unknown'),
+            rating=show_data.get('avg_rating', 0.0),
+            tracks=sample_tracks
+        )
         
-        # Update concert info track count (NEW - Task 10.1)
-        self.concert_info.set_track_count(len(sample_tracks))
-        
-        # Load first track
-        if sample_tracks:
-            self.load_track(0)
-        
+        # Store playlist for future track clicks
+        self.current_playlist = sample_tracks
+        self.total_tracks = len(sample_tracks)
+        self.current_track_index = 0
+
         print(f"[OK] Show loaded: {len(sample_tracks)} tracks")
 
     def load_track_url(self, url, track_name="Unknown Track", set_name="", track_num=1, total_tracks=1, duration=0):
@@ -388,7 +404,23 @@ class PlayerScreen(QWidget):
         else:
             self.player.unmute()
             print("[INFO] Audio unmuted")
-    
+
+    def on_track_clicked(self, track_index):
+        """
+        Handle track selection from setlist
+        
+        Args:
+            track_index (int): Track index (0-based) that was clicked
+        """
+        print(f"[INFO] Track clicked: {track_index}")
+        
+        # Update setlist highlight
+        if self.setlist:
+            self.setlist.set_current_track(track_index)
+        
+        # TODO Phase 10.2: Implement full track loading
+        print("[INFO] Track selection complete (playback not implemented yet)")
+
     # ========================================================================
     # CLEANUP
     # ========================================================================

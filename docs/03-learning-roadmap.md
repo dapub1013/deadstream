@@ -179,7 +179,7 @@ See `phase-9-completion-summary.md` for detailed results.
 - User feedback mechanisms
 
 ### Tasks (with instruction)
-- [ ] 10.1: Complete concert info widget in player screen
+- [x] 10.1: Complete concert info widget in player screen
 - [ ] 10.2: Implement auto-play next track
 - [ ] 10.3: Add error handling UI (dialogs, toasts, loading indicators)
 - [ ] 10.4: Complete settings integration (quality preferences)
