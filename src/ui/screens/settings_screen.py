@@ -26,6 +26,7 @@ from src.ui.widgets.display_settings_widget import DisplaySettingsWidget
 from src.ui.widgets.network_settings_widget import NetworkSettingsWidget
 from src.ui.widgets.audio_settings_widget import AudioSettingsWidget
 from src.ui.widgets.database_settings_widget import DatabaseSettingsWidget
+from src.ui.widgets.datetime_settings_widget import DateTimeSettingsWidget
 
 class SettingsScreen(QWidget):
     """Settings screen with category navigation"""
@@ -212,11 +213,8 @@ class SettingsScreen(QWidget):
         self.display_widget = DisplaySettingsWidget()
         self.content_stack.addWidget(self.display_widget)
         
-        # Date & Time settings (placeholder)
-        self.datetime_widget = self._create_placeholder_widget(
-            "Date & Time Settings",
-            "Time zone and date format preferences (placeholder)"
-        )
+        # Date & Time settings (implemented - Task 8.7)
+        self.datetime_widget = DateTimeSettingsWidget()
         self.content_stack.addWidget(self.datetime_widget)
         
         # About page (implemented)
@@ -326,7 +324,7 @@ if __name__ == "__main__":
     print("[INFO] Settings screen framework loaded")
     print("[INFO] Current category:", settings.current_category)
     print("[INFO] Try clicking different category buttons")
-    print("[INFO] Database category now active - Task 8.7 complete")
+    print("[INFO] All settings categories now complete - Task 8.7 ✓")
     print("[INFO] Press Ctrl+C to quit")
     
     sys.exit(app.exec_())
