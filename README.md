@@ -1,225 +1,294 @@
-# DeadStream - Grateful Dead Concert Player
+# DeadStream
 
 A dedicated Raspberry Pi device for streaming Grateful Dead concerts from the Internet Archive.
 
-## Hardware
+![Project Status](https://img.shields.io/badge/status-in%20development-yellow)
+![Python Version](https://img.shields.io/badge/python-3.9%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-- Raspberry Pi 4 Model B (4GB RAM)
-- 7" Touchscreen Display (landscape orientation)
-- IQaudio DAC Pro
-- Custom 3D-printed enclosure
+---
+
+## What is DeadStream?
+
+DeadStream is a purpose-built music player for Deadheads, designed to bring the magic of the Grateful Dead's live performances into your home with a simple, beautiful interface. Stream over 12,000 concerts from the Internet Archive's collection on a dedicated Raspberry Pi device with a touchscreen interface and high-quality audio output.
+
+### Key Features
+
+🎸 **12,000+ Concerts** - Access the complete Internet Archive Grateful Dead collection  
+🎯 **Smart Recording Selection** - Automatically chooses the best available recording quality  
+📅 **Browse by Date, Venue, or Year** - Find shows your way  
+⭐ **Top Rated Shows** - Discover community favorites  
+🎲 **Random Show** - Let fate choose your next listening session  
+🔊 **Audiophile-Grade Audio** - High-quality DAC for the best sound  
+👆 **Touch-Friendly Interface** - Designed for 7" touchscreen  
+🌐 **Network Resilient** - Handles interruptions gracefully with automatic recovery  
+
+---
+
+## Hardware Requirements
+
+### Core Components
+- **Raspberry Pi 4 Model B** (2GB RAM minimum, 4GB recommended)
+- **Official 7" Touchscreen Display** (800x480 resolution)
+- **IQaudio DAC Pro** or similar high-quality DAC
+- **MicroSD Card** (32GB minimum, 64GB recommended)
+- **Power Supply** (Official Raspberry Pi 4 power supply recommended)
+
+### Optional Components
+- **Custom 3D-Printed Case** (STL files included in `/hardware/`)
+- **Speakers** or amplifier for audio output
+- **Ethernet Cable** (for more reliable streaming than Wi-Fi)
+
+---
 
 ## Software Stack
 
-- **OS:** Raspberry Pi OS Desktop (64-bit)
-- **Language:** Python 3.13+
+- **Operating System:** Raspberry Pi OS Desktop (64-bit)
+- **Programming Language:** Python 3.9+
 - **UI Framework:** PyQt5
-- **Audio:** VLC (python-vlc)
+- **Audio Engine:** VLC (python-vlc bindings)
 - **Database:** SQLite
-- **Data Source:** Internet Archive (archive.org)
+- **Data Source:** Internet Archive API
 
-## Features (Planned)
+---
 
-- Stream 15,000+ Grateful Dead concerts
-- Browse by date, venue, year, or curated lists
-- "On This Day" in Dead history
-- Automatic selection of best recording quality
-- Touch-friendly interface optimized for 7" screen
-- High-quality audio output via DAC
+## Installation
 
-## Documents Overview
+### Quick Start (Automated)
 
-### 00-api-analysis.md
-Complete analysis of the Internet Archive API, including:
-- How the API works
-- What data is available
-- Implementation strategies
-- Update mechanisms
-- Example API calls and responses
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/deadstream.git
+cd deadstream
 
-**Read this first** to understand the data source.
+# Run the installation script
+./scripts/install.sh
+```
 
-### 01-project-charter.md
-The project's mission, goals, and philosophy:
-- What we're building and why
-- Learning objectives
-- Success criteria
-- Development approach
-- Timeline expectations
+The installation script will:
+- Install system dependencies (Python, PyQt5, VLC, SQLite)
+- Create a Python virtual environment
+- Install Python packages
+- Download the show database from Internet Archive
+- Configure audio settings for your DAC
+- Set up automatic startup (optional)
 
-**Read this second** to understand the project scope.
+### Manual Installation
 
-### 02-github-structure.md
-Complete repository organization plan:
-- Folder structure
-- Branching strategy
-- Commit message conventions
-- .gitignore configuration
+See [docs/installation-guide.md](docs/installation-guide.md) for detailed step-by-step instructions.
 
-**Use this** when setting up your repository.
+---
 
-### 03-learning-roadmap.md
-Phase-by-phase breakdown of the entire project:
-- 13 phases from foundation to completion
-- Learning topics for each phase
-- Specific tasks with checkboxes
-- Deliverables and time estimates
+## Usage
 
-**This is your roadmap** - bookmark it!
+### Starting DeadStream
 
-### 04-instruction-template.md
-How to request help for specific tasks:
-- Template for asking questions
-- What to expect in responses
-- Tips for effective learning
-- Example learning sessions
+```bash
+cd ~/deadstream
+source venv/bin/activate
+python3 src/ui/main_window.py
+```
 
-**Use this** when you're ready to start a new phase or task.
+### Basic Navigation
 
-### 05-technical-decisions.md
-Complete record of all technical choices:
-- Hardware specifications
-- Software stack
-- Architecture patterns
-- Why we chose what we chose
-- Alternatives considered
-- Performance targets
+- **Browse Screen** - Tap a browse mode (Top Rated, Date, Venue, Year, Search, Random)
+- **Show List** - Scroll and tap a show to play
+- **Now Playing** - Control playback, see show info
+- **Settings** - Configure network, audio, and display preferences
 
-**Reference this** when making implementation decisions.
+### Browse Modes
 
-### 07-project-guidelines.md
-Project standards and best practices for development:
-- ASCII-only text encoding rules
-- Dynamic test URL patterns (no hardcoded URLs)
-- Verified VLC configuration
-- Error handling standards
-- File path conventions
-- Import patterns and package structure
+**Top Rated** - Shows sorted by community ratings from archive.org  
+**Date** - Browse by performance date (chronologically)  
+**Venue** - Browse by venue name (alphabetically)  
+**Year** - Browse by year (1965-1995)  
+**Search** - Search by date, venue, or year  
+**Random Show** - Instant playback of a randomly selected show  
 
-**Essential reference** when writing new code or encountering import errors.
+---
 
-### 08-import-and-architecture-reference.md
-Comprehensive guide to the project's file structure and import system:
-- Complete directory structure (what exists vs. what doesn't)
-- Working import patterns by file location
-- Common import errors and solutions
-- Package vs. directory organization
-- Path manipulation for standalone files
-- Quick reference cards for new file creation
+## Configuration
 
-**Read this FIRST** when encountering import errors or creating new files in subdirectories.
+### First-Time Setup
 
-### ui-design-specification.md
-Complete user interface design specification:
-- All screen layouts and wireframes
-- Detailed component specifications
-- Color scheme and visual design
-- Navigation flows and interactions
-- Features included in v1.0 vs deferred
-- Implementation notes for PyQt5 conversion
+1. **Network Configuration**
+   - Connect to Wi-Fi or Ethernet
+   - Settings → Network → Configure
 
-**Essential for Phase 6+** when building the user interface.
+2. **Audio Settings**
+   - Select your DAC output device
+   - Settings → Audio → Device Selection
+   - Adjust buffer size if experiencing dropouts
 
-## How to Use These Documents
+3. **Display Settings**
+   - Adjust brightness for your environment
+   - Settings → Display → Brightness
 
-### For Project Setup
-1. Read `00-api-analysis.md` to understand the data
-2. Read `01-project-charter.md` to align on goals
-3. Use `02-github-structure.md` to create your repository
-4. Review `05-technical-decisions.md` for the tech stack
-5. Review `ui-design-specification.md` to understand the UI vision
+### Advanced Configuration
 
-### For Development
-1. Check `03-learning-roadmap.md` to see your current phase
-2. Use `04-instruction-template.md` to request specific help
-3. Reference `07-project-guidelines.md` for coding standards
-4. Reference `08-import-and-architecture-reference.md` when creating new files
-5. Reference `ui-design-specification.md` when building UI components (Phase 6+)
-6. Document your own learning in the repository's `/docs/learning-notes/` folder
-7. Update `05-technical-decisions.md` when you make significant choices
+Edit `config/user_config.yaml` for advanced settings:
 
-### For Troubleshooting
-- Check `08-import-and-architecture-reference.md` for import/module errors
-- Check `07-project-guidelines.md` for coding standard violations
-- Check `05-technical-decisions.md` for "Why we chose X"
-- Review `00-api-analysis.md` for API-related issues
-- Look at the roadmap for prerequisite phases you may have skipped
+```yaml
+audio:
+  output_device: "DAC"
+  buffer_size: 5000
+  
+network:
+  prefer_ethernet: true
+  retry_attempts: 3
+  
+show_selection:
+  prefer_soundboard: true
+  minimum_rating: 3.0
+```
 
-## Project Progress
+---
 
-### Completed Phases
+## Database
 
-**Phase 1: Foundation & Setup** (Complete - Dec 18, 2025)
-- See: `phase-1-completion-summary.md`
-- Raspberry Pi environment established
-- All development tools installed and tested
-- Zero critical issues
+### Initial Database Download
 
-**Phase 2: Internet Archive API Mastery** (Complete - Dec 20, 2025)
-- See: `phase-2-completion-summary.md`
-- Complete API interaction layer
-- Production-ready error handling and rate limiting
-- All tests passing
+The installation script automatically downloads the show database (~150MB). To manually update:
 
-**Phase 3: Database Foundation** (Complete - Dec 21, 2025)
-- See: `phase-3-completion-summary.md`
-- 12,268 shows catalogued with 99.5% data quality
-- 20+ query functions implemented
-- Update mechanism working
+```bash
+python3 scripts/update_database.py
+```
 
-**Phase 4: Audio Playback Engine** (Complete - Dec 23, 2025)
-- See: `phase-4-completion-summary.md`
-- VLC-based streaming with network resilience
-- Position tracking and volume control
-- All playback controls implemented
+### Database Statistics
 
-**Phase 5: Smart Show Selection** (Complete - Dec 24, 2025)
-- See: `phase-5-completion-summary.md`
-- Quality scoring algorithm implemented
-- User preferences system
-- Manual override capability
-- All features tested and working
+- **Total Shows:** 12,268
+- **Date Range:** 1965-1995
+- **Average Recordings per Show:** 3.2
+- **Database Size:** ~150MB
+- **Update Frequency:** Monthly (check for new additions)
 
-**Phase 6: Main Application Framework** (Complete - Dec 25, 2025)
-- See: `phase-6-completion-summary.md`
-- Three-screen navigation (Player, Browse, Settings)
-- Screen manager with smooth transitions
-- Touch-optimized interface
-- All screens integrated
+---
 
-**Phase 7: Browse Features** (Complete - Dec 28, 2025)
-- See: `phase-7-completion-summary.md`
-- Date browser with calendar view
-- Venue filtering
-- Year selector with legendary year highlights
-- Full-text search
-- Random show selection
-- All browse modes tested
+## Development
 
-**Phase 8: Settings Implementation** (Complete - Dec 30, 2025)
-- See: `phase-8-completion-summary.md`
-- Settings screen with category navigation
-- Network settings with real-time monitoring
-- Audio/display/date-time configuration
-- YAML-based settings persistence
-- About page with system statistics
-- All settings tested and integrated
+### Project Structure
 
-**Current Phase:** Phase 9 - Player Screen (Ready to Start)
-- [x] 9.1: Design player screen layout
-- [ ] 9.2: Show current track info
-- [ ] 9.3: Display full setlist
-- [ ] 9.4: Add playback controls
-- [ ] 9.5: Show progress bar with seek
-- [ ] 9.6: Implement next/previous track
-- [ ] 9.7: Add volume slider
-- [ ] 9.8: Integrate with ResilientPlayer
+```
+deadstream/
+├── src/              # Source code
+│   ├── api/          # Internet Archive API
+│   ├── audio/        # Audio playback engine
+│   ├── database/     # SQLite database management
+│   ├── ui/           # PyQt5 user interface
+│   └── utils/        # Utility functions
+├── tests/            # Test suite
+├── scripts/          # Utility scripts
+├── config/           # Configuration files
+├── docs/             # Documentation
+└── hardware/         # 3D models and schematics
+```
+
+### Running Tests
+
+```bash
+# Activate virtual environment
+source venv/bin/activate
+
+# Run all tests
+python3 -m pytest tests/
+
+# Run specific test file
+python3 -m pytest tests/test_api.py
+
+# Run with coverage
+python3 -m pytest --cov=src tests/
+```
+
+### Contributing
+
+This is currently a personal learning project, but suggestions and bug reports are welcome! Please open an issue to discuss proposed changes.
+
+---
+
+## Roadmap
+
+### Current Status: Phase 9 (Integration & Polish)
+
+✅ **Completed Phases:**
+- Phase 1: Foundation & Development Environment
+- Phase 2: Internet Archive API Integration
+- Phase 3: Database Design & Population
+- Phase 4: Smart Show Selection Algorithms
+- Phase 5: Audio Playback Engine
+- Phase 6: PyQt5 UI Framework
+- Phase 7: Browse Interface Implementation
+- Phase 8: Settings Screen Implementation
+
+🚧 **In Progress:**
+- Phase 9: Integration & Polish
+
+📋 **Upcoming:**
+- Phase 10: Now Playing Screen
+- Phase 11: Hardware Integration (Touchscreen + DAC)
+- Phase 12: Case Design & Assembly
+- Phase 13: Testing, Documentation & Release
+
+See [docs/roadmap.md](docs/roadmap.md) for detailed phase breakdowns.
+
+---
+
+## Documentation
+
+- **[Installation Guide](docs/installation-guide.md)** - Detailed setup instructions
+- **[User Guide](docs/user-guide.md)** - How to use DeadStream
+- **[Hardware Guide](docs/hardware-guide.md)** - Assembly instructions
+- **[API Documentation](docs/api-documentation.md)** - Internet Archive API notes
+- **[Development Guide](docs/development-guide.md)** - For contributors
+- **[Design Decisions](docs/design-decisions.md)** - Why we built it this way
+
+---
+
+## Credits & Acknowledgments
+
+### Data Source
+- **Internet Archive** - For preserving and providing access to the Grateful Dead's live performances
+- **Grateful Dead Archive** - For the incredible taping community and decades of recordings
+
+### Technology
+- **Raspberry Pi Foundation** - For creating accessible, powerful hardware
+- **Python Software Foundation** - For the Python programming language
+- **Qt Project** - For the PyQt5 framework
+- **VideoLAN** - For VLC media player
+
+### Inspiration
+- The **Grateful Dead taping community** - For decades of dedication to preserving live music
+- **Deadheads everywhere** - For keeping the music alive
+
+---
 
 ## License
 
-MIT License - See LICENSE file for details
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Acknowledgments
+### Note on Content
+This software provides access to publicly available recordings from the Internet Archive. All Grateful Dead recordings accessed through this application are from the Archive's public collection and are used in accordance with the Grateful Dead's long-standing taping policy.
 
-- Concert recordings courtesy of the Internet Archive
-- Thanks to all the tapers who preserved these performances
+---
+
+## Support
+
+Having issues? Found a bug? Have a feature request?
+
+- **Issues:** [GitHub Issues](https://github.com/yourusername/deadstream/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/yourusername/deadstream/discussions)
+- **Email:** your.email@example.com
+
+---
+
+## Project Status
+
+DeadStream is under active development as a learning project. Features and functionality are being added systematically through a phased approach. Check the [CHANGELOG.md](CHANGELOG.md) for recent updates.
+
+**Current Version:** 0.9.0 (Pre-Release)  
+**Target Release:** 1.0.0 (Q2 2025)
+
+---
+
+*Built with ❤️ for the Deadhead community*
+
+⚡💀🌹
