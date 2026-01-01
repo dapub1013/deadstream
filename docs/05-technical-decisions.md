@@ -248,6 +248,13 @@ Track what works well and what doesn't:
 | 2025-12-25 | **Phase 6: Keyboard shortcuts system** | Application-level event filter for global shortcuts; speeds desktop development, aids SSH testing, optional for touch-only use |
 | 2025-12-25 | **Phase 6: Touch input validation** | 60x60px button size confirmed optimal on 7" touchscreen; PyQt5 mouse events work for both mouse AND touch (no special handlers needed) |
 | 2025-12-25 | **Phase 6: X11 forwarding workflow** | SSH with X11 forwarding enables remote GUI testing; keyboard shortcuts functional over network |
+| 2025-12-27 | **Phase 7: Browse screen with 6 browse modes implemented** | Successfully implemented Top Rated, By Date, By Venue, By Year, Search, and Random Show modes. Widget-based architecture with expandable sections proved highly reusable. Browse-to-player navigation working but player integration deferred to Phase 9. |
+| 2025-12-27 | **Phase 7: Expandable section pattern established** | Created reusable expandable section widget with smooth animations. Pattern used for show filters and will be reused in settings. Provides clean, space-efficient UI organization. |
+| 2025-12-30 | **Phase 8: Settings screen with network and device info completed** | Implemented network settings widget (WiFi management, status, available networks), about widget (version info, database stats, credits), and settings persistence using YAML. Framework ready for audio/display settings in future iterations. |
+| 2025-12-30 | **Phase 8: Settings persistence using YAML** | Implemented settings manager with YAML storage in config/settings.yaml. Provides human-readable configuration with schema validation. Network settings persist across sessions. |
+| 2025-12-30 | **Testing architecture evolved** | Shifted from hardcoded test data to database-driven tests after Phase 8 Task 8.8 revealed architecture mismatches. Tests now verify actual implementation patterns rather than assumptions. |
+| 2025-12-31 | **Corrected: UI resolution standardized to 1280x720** | Touch Display 2 native landscape resolution is 1280x720, not 1024x600. UI design specification and all code updated to reflect actual hardware capability. Provides 28% more screen real estate for better layouts. |
+
 ---
 
 ## Implementation Notes (Added During Phase 1)
