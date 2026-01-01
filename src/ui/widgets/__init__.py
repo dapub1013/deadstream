@@ -30,3 +30,4 @@ __all__ = [
     'TrackInfoWidget',
 ]
 from src.ui.widgets.setlist import SetlistWidget
+from .concert_info import ConcertInfoWidget

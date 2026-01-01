@@ -24,6 +24,7 @@ from src.ui.widgets.track_info import TrackInfoWidget
 from src.ui.widgets.playback_controls import PlaybackControlsWidget
 from src.ui.widgets.progress_bar import ProgressBarWidget
 from src.ui.widgets.volume_control_widget import VolumeControlWidget
+from src.ui.widgets.concert_info import ConcertInfoWidget
 
 # Import audio engine
 from src.audio.resilient_player import ResilientPlayer, PlayerState
@@ -53,6 +54,7 @@ class PlayerScreen(QWidget):
         self.player = ResilientPlayer()
         
         # UI widgets
+        self.concert_info = None
         self.track_info = None
         self.playback_controls = None
         self.progress_bar = None
@@ -123,27 +125,22 @@ class PlayerScreen(QWidget):
         """)
         
         layout = QVBoxLayout()
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(0)
+        layout.setContentsMargins(0, 0, 0, 0)
         
-        # Placeholder for concert info
-        concert_label = QLabel("Concert Info")
-        concert_label.setFont(QFont("Arial", 18, QFont.Bold))
-        concert_label.setStyleSheet("color: #FFFFFF;")
-        layout.addWidget(concert_label)
+        # Concert info widget (NEW - Task 10.1)
+        self.concert_info = ConcertInfoWidget()
+        layout.addWidget(self.concert_info)
         
-        # Placeholder for setlist
-        setlist_label = QLabel("Setlist (Task 9.3 - Complete)")
-        setlist_label.setStyleSheet("""
-            color: #9CA3AF;
-            padding: 20px;
-        """)
-        layout.addWidget(setlist_label)
+        # Setlist widget (from Phase 9)
+        self.setlist = SetlistWidget()
+        self.setlist.track_clicked.connect(self.on_track_clicked)
+        layout.addWidget(self.setlist, 1)  # Give setlist remaining space
         
-        layout.addStretch()
         panel.setLayout(layout)
         
         return panel
-    
+        
     def create_right_panel(self):
         """Create right panel (track info + controls + progress)"""
         panel = QFrame()
@@ -237,6 +234,54 @@ class PlayerScreen(QWidget):
         if self.playback_controls:
             self.playback_controls.set_playing(is_playing)
     
+    def load_show(self, show_data):
+        """
+        Load and play a concert
+        
+        Args:
+            show_data (dict): Show dictionary from browse screen
+        """
+        print(f"[INFO] Loading show: {show_data.get('date')} - {show_data.get('venue')}")
+        
+        # Store show data
+        self.current_show = show_data
+        
+        # Load concert info (NEW - Task 10.1)
+        self.concert_info.load_concert_info(show_data)
+        
+        # Fetch full show metadata from Archive.org
+        # (This will be implemented in future integration tasks)
+        # For now, create a sample track list
+        
+        # TODO: Replace with actual API call to fetch tracks
+        sample_tracks = [
+            {
+                'title': 'Help on the Way',
+                'duration': '5:23',
+                'set_name': 'SET I',
+                'url': 'https://archive.org/download/...'
+            },
+            {
+                'title': 'Slipknot!',
+                'duration': '7:45',
+                'set_name': 'SET I',
+                'url': 'https://archive.org/download/...'
+            },
+            # ... more tracks
+        ]
+        
+        # Load setlist
+        self.setlist.load_setlist(sample_tracks)
+        
+        # Update concert info track count (NEW - Task 10.1)
+        self.concert_info.set_track_count(len(sample_tracks))
+        
+        # Load first track
+        if sample_tracks:
+            self.load_track(0)
+        
+        print(f"[OK] Show loaded: {len(sample_tracks)} tracks")
+
     def load_track_url(self, url, track_name="Unknown Track", set_name="", track_num=1, total_tracks=1, duration=0):
         """
         Load and play a track URL
