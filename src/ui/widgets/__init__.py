@@ -29,3 +29,4 @@ __all__ = [
     'ShowCard',
     'TrackInfoWidget',
 ]
+from src.ui.widgets.setlist import SetlistWidget
