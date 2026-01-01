@@ -3,7 +3,7 @@
 Player screen for DeadStream UI.
 Shows now-playing interface with track info, playback controls, and setlist.
 
-Phase 9, Tasks 9.2 and 9.4 - Track info and playback controls integrated
+Phase 9, Tasks 9.2, 9.4, and 9.5 - Track info, playback controls, and progress bar integrated
 """
 
 # Path manipulation for imports (file in src/ui/screens/)
@@ -22,6 +22,7 @@ from PyQt5.QtGui import QFont
 # Import widgets
 from src.ui.widgets.track_info import TrackInfoWidget
 from src.ui.widgets.playback_controls import PlaybackControlsWidget
+from src.ui.widgets.progress_bar import ProgressBarWidget
 
 
 class PlayerScreen(QWidget):
@@ -30,7 +31,7 @@ class PlayerScreen(QWidget):
     
     Features:
     - Left panel: Concert info + setlist (placeholder)
-    - Right panel: Track info + playback controls
+    - Right panel: Track info + playback controls + progress bar
     
     Signals:
         browse_requested: User wants to browse shows
@@ -39,6 +40,7 @@ class PlayerScreen(QWidget):
         next_track_requested: User wants next track
         skip_backward_30s_requested: User wants to skip back 30 seconds
         skip_forward_30s_requested: User wants to skip forward 30 seconds
+        seek_requested: User seeked to position (int: seconds)
     """
     
     # Signals
@@ -48,6 +50,7 @@ class PlayerScreen(QWidget):
     next_track_requested = pyqtSignal()
     skip_backward_30s_requested = pyqtSignal()
     skip_forward_30s_requested = pyqtSignal()
+    seek_requested = pyqtSignal(int)  # Position in seconds
     
     def __init__(self):
         """Initialize player screen"""
@@ -56,6 +59,7 @@ class PlayerScreen(QWidget):
         # Widgets
         self.track_info = None
         self.playback_controls = None
+        self.progress_bar = None
         
         self.init_ui()
     
@@ -83,7 +87,7 @@ class PlayerScreen(QWidget):
             }
         """)
         
-        print("[INFO] PlayerScreen initialized with track info and playback controls")
+        print("[INFO] PlayerScreen initialized with track info, playback controls, and progress bar")
     
     def create_left_panel(self):
         """Create left panel (concert info + setlist)"""
@@ -105,7 +109,7 @@ class PlayerScreen(QWidget):
         layout.addWidget(concert_label)
         
         # Placeholder for setlist
-        setlist_label = QLabel("Setlist will appear here\n(Task 9.3)")
+        setlist_label = QLabel("Setlist (Task 9.3 - Complete)")
         setlist_label.setStyleSheet("""
             color: #9CA3AF;
             padding: 20px;
@@ -118,7 +122,7 @@ class PlayerScreen(QWidget):
         return panel
     
     def create_right_panel(self):
-        """Create right panel (track info + controls)"""
+        """Create right panel (track info + controls + progress)"""
         panel = QFrame()
         panel.setStyleSheet("""
             QFrame {
@@ -146,14 +150,13 @@ class PlayerScreen(QWidget):
         
         layout.addWidget(self.playback_controls)
         
-        # Placeholder for progress bar
-        progress_label = QLabel("Progress Bar\n(Task 9.5)")
-        progress_label.setStyleSheet("""
-            color: #9CA3AF;
-            padding: 10px;
-        """)
-        progress_label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(progress_label)
+        # Progress bar widget
+        self.progress_bar = ProgressBarWidget()
+        
+        # Connect progress bar signal
+        self.progress_bar.seek_requested.connect(self.on_seek)
+        
+        layout.addWidget(self.progress_bar)
         
         # Placeholder for volume
         volume_label = QLabel("Volume Control\n(Task 9.7)")
@@ -219,6 +222,16 @@ class PlayerScreen(QWidget):
         print("[INFO] Skip forward 30s requested from Player screen")
         self.skip_forward_30s_requested.emit()
     
+    def on_seek(self, position):
+        """
+        Handle seek request.
+        
+        Args:
+            position (int): Seek position in seconds
+        """
+        print(f"[INFO] Seek requested to {position}s from Player screen")
+        self.seek_requested.emit(position)
+    
     def update_track(self, song_name, set_name, track_num, total_tracks):
         """
         Update current track information.
@@ -237,6 +250,27 @@ class PlayerScreen(QWidget):
         if self.playback_controls:
             self.playback_controls.update_track_position(track_num, total_tracks)
     
+    def update_progress(self, current_seconds, total_seconds):
+        """
+        Update progress bar position.
+        
+        Args:
+            current_seconds (int): Current playback position in seconds
+            total_seconds (int): Total track duration in seconds
+        """
+        if self.progress_bar:
+            self.progress_bar.update_position(current_seconds, total_seconds)
+    
+    def set_duration(self, total_seconds):
+        """
+        Set track duration (when track loads).
+        
+        Args:
+            total_seconds (int): Total track duration in seconds
+        """
+        if self.progress_bar:
+            self.progress_bar.set_duration(total_seconds)
+    
     def set_playing(self, is_playing):
         """
         Update playing state.
@@ -254,6 +288,9 @@ class PlayerScreen(QWidget):
         
         if self.playback_controls:
             self.playback_controls.reset()
+        
+        if self.progress_bar:
+            self.progress_bar.reset()
 
 
 if __name__ == "__main__":
@@ -261,12 +298,21 @@ if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
     from PyQt5.QtCore import QTimer
     
-    app = QApplication(sys.argv)
+    class TestApp(QApplication):
+        def __init__(self, argv):
+            super().__init__(argv)
+            self.progress_timer = None
+        
+        def cleanup(self):
+            if self.progress_timer:
+                self.progress_timer.stop()
+    
+    app = TestApp(sys.argv)
     
     # Create player screen
     screen = PlayerScreen()
     screen.setGeometry(100, 100, 1024, 600)
-    screen.setWindowTitle("DeadStream Player Screen - Task 9.4")
+    screen.setWindowTitle("DeadStream Player Screen - Task 9.5")
     
     # Connect signals for testing
     screen.play_pause_requested.connect(lambda: print("[TEST] Play/pause signal received"))
@@ -274,38 +320,55 @@ if __name__ == "__main__":
     screen.next_track_requested.connect(lambda: print("[TEST] Next track signal received"))
     screen.skip_backward_30s_requested.connect(lambda: print("[TEST] Skip backward signal received"))
     screen.skip_forward_30s_requested.connect(lambda: print("[TEST] Skip forward signal received"))
+    screen.seek_requested.connect(lambda pos: print(f"[TEST] Seek signal received: {pos}s"))
     
     screen.show()
     
-    # Simulate track changes with playback state
-    def update1():
-        print("[TEST] Loading track 1 of 8")
-        screen.update_track("Bertha", "SET I", 1, 8)
+    # Simulate track playback
+    current_time = 0
+    track_duration = 420  # 7 minutes
+    
+    def load_track():
+        """Simulate loading a track"""
+        print("[TEST] Loading track: Scarlet Begonias (7:00)")
+        screen.update_track("Scarlet Begonias", "SET I", 3, 8)
+        screen.set_duration(track_duration)
         screen.set_playing(False)
     
-    def start_playing():
+    def start_playback():
+        """Start playback simulation"""
+        global current_time
+        current_time = 0
         print("[TEST] Starting playback")
         screen.set_playing(True)
     
-    def update2():
-        print("[TEST] Moving to track 3")
-        screen.update_track("Scarlet Begonias", "SET I", 3, 8)
+    def update_progress():
+        """Update progress every second"""
+        global current_time
+        if current_time < track_duration:
+            current_time += 1
+            screen.update_progress(current_time, track_duration)
     
-    def update3():
-        print("[TEST] Moving to track 8 (last track)")
-        screen.update_track("One More Saturday Night", "ENCORE", 8, 8)
+    # Schedule events
+    QTimer.singleShot(1000, load_track)
+    QTimer.singleShot(2000, start_playback)
     
-    # Schedule updates
-    QTimer.singleShot(1000, update1)
-    QTimer.singleShot(2000, start_playing)
-    QTimer.singleShot(4000, update2)
-    QTimer.singleShot(6000, update3)
+    # Update progress every second
+    app.progress_timer = QTimer()
+    app.progress_timer.timeout.connect(update_progress)
+    app.progress_timer.start(1000)
     
-    print("\n=== Player Screen Test (Task 9.4) ===")
-    print("Track info widget shows current song/set")
-    print("Playback controls update based on track position")
-    print("Previous disabled on track 1, Next disabled on last track")
-    print("Click controls to test signal emission")
+    # Cleanup on exit
+    screen.destroyed.connect(app.cleanup)
+    
+    print("\n=== Player Screen Test (Task 9.5) ===")
+    print("Track loads after 1 second")
+    print("Playback starts after 2 seconds")
+    print("Progress bar updates every second")
+    print("Drag slider to test seek functionality")
+    print("Watch console for seek output")
     print("=====================================\n")
     
-    sys.exit(app.exec_())
+    exit_code = app.exec_()
+    app.cleanup()
+    sys.exit(exit_code)
