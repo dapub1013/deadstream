@@ -209,7 +209,7 @@ This is currently a personal learning project, but suggestions and bug reports a
 
 ### Current Status: Phase 9 (Integration & Polish)
 
-✅ **Completed Phases:**
+**Completed Phases:**
 - Phase 1: Foundation & Development Environment
 - Phase 2: Internet Archive API Integration
 - Phase 3: Database Design & Population
@@ -219,10 +219,10 @@ This is currently a personal learning project, but suggestions and bug reports a
 - Phase 7: Browse Interface Implementation
 - Phase 8: Settings Screen Implementation
 
-🚧 **In Progress:**
+**In Progress:**
 - Phase 9: Integration & Polish
 
-📋 **Upcoming:**
+**Upcoming:**
 - Phase 10: Now Playing Screen
 - Phase 11: Hardware Integration (Touchscreen + DAC)
 - Phase 12: Case Design & Assembly
