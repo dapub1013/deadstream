@@ -341,7 +341,7 @@ Before starting Phase 9 player screen implementation, cross-platform audio suppo
 - [x] 9.6: Implement next/previous track
 - [x] 9.7: Add volume slider
 - [x] 9.8 (Pre-task): Cross-platform audio configuration (macOS dev, Linux prod)
-- [ ] 9.8: Integrate with ResilientPlayer
+- [x] 9.8: Integrate with ResilientPlayer
 
 ### Deliverables
 - Complete player UI
