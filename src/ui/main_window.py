@@ -112,13 +112,25 @@ class MainWindow(QMainWindow):
     def setup_window_size(self):
         """Set window size based on screen"""
         screen = QApplication.primaryScreen().geometry()
-        
+
         # Development mode: windowed at 1280x720
-        window_width = min(1280, screen.width() - 100)
-        window_height = min(720, screen.height() - 100)
-        
-        self.setGeometry(50, 50, window_width, window_height)
-        
+        window_width = 1280
+        window_height = 720
+
+        # Ensure it fits on screen
+        if screen.width() < window_width + 100:
+            window_width = screen.width() - 100
+        if screen.height() < window_height + 100:
+            window_height = screen.height() - 100
+
+        # Set fixed size for development (prevents resizing issues)
+        self.setFixedSize(window_width, window_height)
+
+        # Position in center of screen
+        x = (screen.width() - window_width) // 2
+        y = (screen.height() - window_height) // 2
+        self.move(x, y)
+
         print(f"[INFO] Window size set to {window_width}x{window_height}")
     
     def create_screens(self):
@@ -160,6 +172,7 @@ class MainWindow(QMainWindow):
             
             # Settings screen navigation
             self.settings_screen.browse_requested.connect(self.show_browse)
+            self.settings_screen.back_clicked.connect(self.show_browse)
             
             # Screen manager change signal
             self.screen_manager.screen_changed.connect(self.on_screen_changed)
