@@ -23,7 +23,8 @@ if PROJECT_ROOT not in sys.path:
 
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QPushButton, QFrame, QDialog, QListWidget, QListWidgetItem
+    QPushButton, QFrame, QDialog, QListWidget, QListWidgetItem,
+    QStackedWidget
 )
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
@@ -54,6 +55,7 @@ from src.ui.widgets.search_widget import SearchWidget
 from src.ui.widgets.error_dialog import ErrorDialog, show_database_error, show_network_error
 from src.ui.widgets.toast_notification import ToastManager
 from src.ui.widgets.loading_spinner import LoadingIndicator
+from src.ui.widgets.random_show_widget import RandomShowWidget
 
 
 class BrowseScreen(QWidget):
@@ -199,24 +201,33 @@ class BrowseScreen(QWidget):
         return layout
     
     def create_right_panel(self):
-        """Create right panel with show list"""
+        """Create right panel with stacked widget for different views"""
         panel = QFrame()
         panel.setStyleSheet(f"""
             QFrame {{
                 background-color: {BG_GRAY_800};
             }}
         """)
-        
+
         layout = QVBoxLayout(panel)
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(16)
-        
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        # Stacked widget to switch between show list view and random show view
+        self.content_stack = QStackedWidget()
+
+        # Page 0: Show list view (with header)
+        list_page = QWidget()
+        list_layout = QVBoxLayout(list_page)
+        list_layout.setContentsMargins(20, 20, 20, 20)
+        list_layout.setSpacing(16)
+
         # Header widget (separate from ShowListWidget!)
         self.header_widget = QWidget()
         header_layout = QVBoxLayout(self.header_widget)
         header_layout.setContentsMargins(0, 0, 0, 0)
         header_layout.setSpacing(4)
-        
+
         # Title label
         self.header_title = QLabel("Top Rated Shows")
         self.header_title.setStyleSheet(f"""
@@ -234,14 +245,24 @@ class BrowseScreen(QWidget):
             }}
         """)
         header_layout.addWidget(self.header_subtitle)
-        
-        layout.addWidget(self.header_widget)
-        
+
+        list_layout.addWidget(self.header_widget)
+
         # Show list widget
         self.show_list = ShowListWidget()
         self.show_list.show_selected.connect(self.on_show_selected)
-        layout.addWidget(self.show_list)
-        
+        list_layout.addWidget(self.show_list)
+
+        self.content_stack.addWidget(list_page)
+
+        # Page 1: Random show view
+        self.random_show_widget = RandomShowWidget()
+        self.random_show_widget.show_selected.connect(self.on_show_selected)
+        self.random_show_widget.reload_requested.connect(self.load_random_show)
+        self.content_stack.addWidget(self.random_show_widget)
+
+        layout.addWidget(self.content_stack)
+
         return panel
 
     def create_navigation_buttons(self):
@@ -277,6 +298,9 @@ class BrowseScreen(QWidget):
     def load_default_shows(self):
         """Load top-rated shows (default view)"""
         try:
+            # Switch to list view
+            self.content_stack.setCurrentIndex(0)
+
             self.show_list.set_loading_state()
 
             shows = get_top_rated_shows(limit=50, min_reviews=5)
@@ -504,13 +528,16 @@ class BrowseScreen(QWidget):
     
     def load_shows_by_date(self, date_str):
         """Load and display shows from a specific date (Task 7.2)"""
-        
+
         try:
+            # Switch to list view
+            self.content_stack.setCurrentIndex(0)
+
             self.show_list.set_loading_state()
-            
+
             # Get shows for this date
             shows = get_show_by_date(date_str)
-            
+
             if not shows:
                 # No shows found
                 self.update_header(
@@ -519,19 +546,19 @@ class BrowseScreen(QWidget):
                 )
                 self.show_list.set_empty_state(f"No shows on {date_str}")
                 return
-            
+
             # Update header
             self.update_header(
                 f"Shows on {date_str}",
                 f"{len(shows)} recording(s) from this date"
             )
-            
+
             # Load shows into list
             self.show_list.load_shows(shows)
             self.current_shows = shows
-            
+
             print(f"[OK] Loaded {len(shows)} shows from {date_str}")
-            
+
         except Exception as e:
             print(f"[ERROR] Failed to load date shows: {e}")
             import traceback
@@ -542,13 +569,16 @@ class BrowseScreen(QWidget):
     
     def load_shows_by_venue(self, venue_name):
         """Load and display shows from a specific venue (Task 7.3)"""
-        
+
         try:
+            # Switch to list view
+            self.content_stack.setCurrentIndex(0)
+
             self.show_list.set_loading_state()
-            
+
             # Get shows for this venue
             shows = search_by_venue(venue_name, exact_match=False)
-            
+
             if not shows:
                 # No shows found
                 self.update_header(
@@ -557,19 +587,19 @@ class BrowseScreen(QWidget):
                 )
                 self.show_list.set_empty_state(f"No shows at {venue_name}")
                 return
-            
+
             # Update header
             self.update_header(
                 f"{len(shows)} Shows at {venue_name}",
                 "Sorted by date (oldest to newest)"
             )
-            
+
             # Load shows into list
             self.show_list.load_shows(shows)
             self.current_shows = shows
-            
+
             print(f"[OK] Loaded {len(shows)} shows from {venue_name}")
-            
+
         except Exception as e:
             print(f"[ERROR] Failed to load venue shows: {e}")
             import traceback
@@ -580,13 +610,16 @@ class BrowseScreen(QWidget):
     
     def load_shows_by_year(self, year):
         """Load and display shows from a specific year (Task 7.4)"""
-        
+
         try:
+            # Switch to list view
+            self.content_stack.setCurrentIndex(0)
+
             self.show_list.set_loading_state()
-            
+
             # Get shows for this year
             shows = search_by_year(year)
-            
+
             if not shows:
                 # No shows found
                 self.update_header(
@@ -595,27 +628,27 @@ class BrowseScreen(QWidget):
                 )
                 self.show_list.set_empty_state(f"No shows from {year}")
                 return
-            
+
             # Update header - include legendary year indicator
             from src.ui.widgets.year_browser import YearBrowser
             is_legendary = year in YearBrowser.LEGENDARY_YEARS
-            
+
             if is_legendary:
                 title = f"[LEGENDARY] {year} ({len(shows)} shows)"
             else:
                 title = f"{year} ({len(shows)} shows)"
-            
+
             self.update_header(
                 title,
                 "All shows from this year, sorted by date"
             )
-            
+
             # Load shows into list
             self.show_list.load_shows(shows)
             self.current_shows = shows
-            
+
             print(f"[OK] Loaded {len(shows)} shows from {year}")
-            
+
         except Exception as e:
             print(f"[ERROR] Failed to load year shows: {e}")
             import traceback
@@ -661,8 +694,11 @@ class BrowseScreen(QWidget):
 
     def load_search_results(self, results):
         """Load and display search results (Task 7.5)"""
-        
+
         try:
+            # Switch to list view
+            self.content_stack.setCurrentIndex(0)
+
             # Update header
             if not results:
                 self.update_header(
@@ -671,18 +707,18 @@ class BrowseScreen(QWidget):
                 )
                 self.show_list.set_empty_state("Try different search criteria")
                 return
-            
+
             self.update_header(
                 f"Search Results ({len(results)} shows)",
                 "Sorted by rating (best first)"
             )
-            
+
             # Load shows into list
             self.show_list.load_shows(results)
             self.current_shows = results
-            
+
             print(f"[OK] Loaded {len(results)} search results")
-            
+
         except Exception as e:
             print(f"[ERROR] Failed to load search results: {e}")
             import traceback
@@ -693,40 +729,20 @@ class BrowseScreen(QWidget):
     
     def load_random_show(self):
         """Load a random show (Task 7.6 - NEW)"""
-        
+
         try:
-            self.show_list.set_loading_state()
-            
-            # Get a random show
-            show = get_random_show()
-            
-            if not show:
-                # No show found
-                self.update_header(
-                    "No Shows Found",
-                    "No shows in database"
-                )
-                self.show_list.set_empty_state("Database appears empty")
-                return
-            
-            # Update header
-            self.update_header(
-                "Random Show",
-                f"{show['date']} at {show['venue']}, {show['city']}, {show['state']}"
-            )
-            
-            # Load single show as a list
-            self.show_list.load_shows([show])
-            self.current_shows = [show]
-            
-            print(f"[OK] Loaded random show: {show['date']} - {show['venue']}")
-            
+            # Switch to random show widget view
+            self.content_stack.setCurrentIndex(1)
+
+            # Load random show in the widget
+            self.random_show_widget.load_random_show()
+
+            print("[OK] Random show view activated")
+
         except Exception as e:
             print(f"[ERROR] Failed to load random show: {e}")
             import traceback
             traceback.print_exc()
-            self.update_header("Error", "Failed to load random show")
-            self.show_list.set_empty_state("Error loading show")
             self.toast_manager.show_error("Database error: Unable to load random show")
     
     # ========================================================================
