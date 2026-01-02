@@ -24,7 +24,8 @@ class ScreenTransition:
     """
     
     # Transition duration in milliseconds
-    DURATION = 300  # 300ms feels responsive but smooth
+    # 300ms provides responsive feel while maintaining smooth 60fps animation
+    DURATION = 300
     
     def __init__(self, container):
         """
