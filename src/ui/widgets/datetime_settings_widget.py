@@ -26,6 +26,8 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 from PyQt5.QtGui import QFont
 
+from src.settings import get_settings
+
 try:
     import pytz
     PYTZ_AVAILABLE = True
@@ -44,15 +46,16 @@ class DateTimeSettingsWidget(QWidget):
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        
-        # Current settings
-        self.current_timezone = 'America/New_York'
-        self.use_24h = False
-        self.date_format = 'US'
-        
+
+        # Load settings from SettingsManager
+        settings = get_settings()
+        self.current_timezone = settings.get('datetime', 'timezone', 'America/New_York')
+        self.use_24h = settings.get('datetime', 'time_format_24h', False)
+        self.date_format = settings.get('datetime', 'date_format', 'US')
+
         # Clock update timer
         self.clock_timer = None
-        
+
         self.init_ui()
         self.start_clock_updates()
     
@@ -529,6 +532,12 @@ class DateTimeSettingsWidget(QWidget):
     def _on_timezone_changed(self, index):
         """Handle timezone selection changes"""
         self.current_timezone = self.timezone_combo.itemData(index)
+
+        # Persist to SettingsManager
+        settings = get_settings()
+        settings.set('datetime', 'timezone', self.current_timezone)
+        print(f"[INFO] DateTime: Timezone saved to settings: {self.current_timezone}")
+
         self._update_clock()
         self.timezone_changed.emit(self.current_timezone)
     
@@ -536,6 +545,12 @@ class DateTimeSettingsWidget(QWidget):
         """Handle time format preference changes"""
         button_id = self.time_format_group.id(button)
         self.use_24h = (button_id == 1)
+
+        # Persist to SettingsManager
+        settings = get_settings()
+        settings.set('datetime', 'time_format_24h', self.use_24h)
+        print(f"[INFO] DateTime: Time format saved to settings: {'24h' if self.use_24h else '12h'}")
+
         self._update_clock()
         self.time_format_changed.emit(self.use_24h)
     
@@ -543,6 +558,12 @@ class DateTimeSettingsWidget(QWidget):
         """Handle date format preference changes"""
         button_id = self.date_format_group.id(button)
         self.date_format = 'International' if button_id == 1 else 'US'
+
+        # Persist to SettingsManager
+        settings = get_settings()
+        settings.set('datetime', 'date_format', self.date_format)
+        print(f"[INFO] DateTime: Date format saved to settings: {self.date_format}")
+
         self._update_clock()
         self.date_format_changed.emit(self.date_format)
     

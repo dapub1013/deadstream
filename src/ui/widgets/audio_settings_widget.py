@@ -24,6 +24,8 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 
+from src.settings import get_settings
+
 
 class AudioSettingsWidget(QWidget):
     """Widget for audio configuration settings"""
@@ -34,11 +36,20 @@ class AudioSettingsWidget(QWidget):
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        
-        # Current settings
-        self.default_volume = 50  # Default to 50%
-        self.preferred_quality = 'flac'  # Default to FLAC
-        
+
+        # Load settings from SettingsManager
+        settings = get_settings()
+        self.default_volume = settings.get('audio', 'default_volume', 77)
+
+        # Map quality_preference to UI format (balanced -> flac, audiophile -> flac, crowd_favorite -> mp3)
+        quality_pref = settings.get('audio', 'quality_preference', 'balanced')
+        if quality_pref == 'audiophile':
+            self.preferred_quality = 'flac'
+        elif quality_pref == 'crowd_favorite':
+            self.preferred_quality = 'mp3'
+        else:  # balanced (default)
+            self.preferred_quality = 'flac'
+
         self.init_ui()
     
     def init_ui(self):
@@ -386,17 +397,31 @@ class AudioSettingsWidget(QWidget):
         """Handle volume slider changes"""
         self.default_volume = value
         self.volume_value_label.setText(f"{value}%")
+
+        # Persist to SettingsManager
+        settings = get_settings()
+        settings.set('audio', 'default_volume', value)
+        print(f"[INFO] Audio: Default volume saved to settings: {value}%")
+
         self.volume_changed.emit(value)
     
     def _on_quality_changed(self, button):
         """Handle quality preference changes"""
         button_id = self.quality_group.id(button)
-        
+
         if button_id == 0:  # FLAC
             self.preferred_quality = 'flac'
         else:  # MP3
             self.preferred_quality = 'mp3'
-        
+
+        # Persist to SettingsManager (map UI choice to quality_preference)
+        settings = get_settings()
+        if self.preferred_quality == 'flac':
+            settings.set('audio', 'quality_preference', 'audiophile')
+        else:  # mp3
+            settings.set('audio', 'quality_preference', 'crowd_favorite')
+        print(f"[INFO] Audio: Quality preference saved to settings: {self.preferred_quality}")
+
         self.quality_changed.emit(self.preferred_quality)
     
     def get_volume(self):

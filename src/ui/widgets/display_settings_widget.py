@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 
-import yaml
+from src.settings import get_settings
 
 
 class DisplaySettingsWidget(QWidget):
@@ -29,12 +29,7 @@ class DisplaySettingsWidget(QWidget):
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        
-        # Set up config file path
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-        self.config_dir = os.path.join(project_root, 'config')
-        self.config_file = os.path.join(self.config_dir, 'settings.yaml')
-        
+
         self.init_ui()
         self.load_current_settings()
     
@@ -343,63 +338,24 @@ class DisplaySettingsWidget(QWidget):
     def _on_brightness_changed(self, value):
         """Handle brightness slider changes"""
         self.brightness_label.setText(f"Brightness: {value}%")
-        
-        # Save to settings
-        self._save_setting('display', 'brightness', value)
+
+        # Save to SettingsManager
+        settings = get_settings()
+        settings.set('display', 'brightness', value)
         self.settings_changed.emit('brightness', value)
-        
+
         # Note: Actual brightness control would require system-level access
         # This is a UI-only implementation for now
-        print(f"[INFO] Brightness set to {value}%")
+        print(f"[INFO] Display: Brightness saved to settings: {value}%")
     
     def _on_timeout_changed(self, value):
         """Handle timeout selection changes"""
-        # Save to settings
-        self._save_setting('display', 'screen_timeout', value)
+        # Save to SettingsManager
+        settings = get_settings()
+        settings.set('display', 'screen_timeout', value)
         self.settings_changed.emit('screen_timeout', value)
-        
-        print(f"[INFO] Screen timeout set to: {value}")
-    
-    def _save_setting(self, category, key, value):
-        """Save a setting to the config file"""
-        # Load existing config or create new
-        if os.path.exists(self.config_file):
-            try:
-                with open(self.config_file, 'r') as f:
-                    config = yaml.safe_load(f) or {}
-            except Exception as e:
-                print(f"[WARN] Could not load config: {e}")
-                config = {}
-        else:
-            config = {}
-        
-        # Ensure category exists
-        if category not in config:
-            config[category] = {}
-        
-        # Set value
-        config[category][key] = value
-        
-        # Save back to file
-        try:
-            os.makedirs(self.config_dir, exist_ok=True)
-            with open(self.config_file, 'w') as f:
-                yaml.dump(config, f, default_flow_style=False)
-        except Exception as e:
-            print(f"[ERROR] Could not save config: {e}")
-    
-    def _load_setting(self, category, key, default=None):
-        """Load a setting from the config file"""
-        if not os.path.exists(self.config_file):
-            return default
-        
-        try:
-            with open(self.config_file, 'r') as f:
-                config = yaml.safe_load(f) or {}
-            return config.get(category, {}).get(key, default)
-        except Exception as e:
-            print(f"[WARN] Could not load setting {category}.{key}: {e}")
-            return default
+
+        print(f"[INFO] Display: Screen timeout saved to settings: {value}")
     
     def _reset_to_defaults(self):
         """Reset all display settings to defaults"""
@@ -412,13 +368,15 @@ class DisplaySettingsWidget(QWidget):
         print("[INFO] Display settings reset to defaults")
     
     def load_current_settings(self):
-        """Load current settings from config"""
+        """Load current settings from SettingsManager"""
+        settings = get_settings()
+
         # Load brightness
-        brightness = self._load_setting('display', 'brightness', 75)
+        brightness = settings.get('display', 'brightness', 82)
         self.brightness_slider.setValue(brightness)
-        
+
         # Load timeout (ensure it's a string for findText)
-        timeout = self._load_setting('display', 'screen_timeout', '10 minutes')
+        timeout = settings.get('display', 'screen_timeout', '10 minutes')
         timeout = str(timeout)  # Convert to string in case YAML loaded it as int
         index = self.timeout_combo.findText(timeout)
         if index >= 0:

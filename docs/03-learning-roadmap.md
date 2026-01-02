@@ -202,7 +202,7 @@ See `phase-9-completion-summary.md` for detailed results.
 1-2 weeks (likely 3-5 days at current velocity)
 
 ### Success Criteria
-- [  ] Complete browse → select → play workflow works flawlessly
+- [ ] Complete browse → select → play workflow works flawlessly
 - [x] Concert info displays correctly (date, venue, location, badges)
 - [x] Auto-play advances to next track at song end
 - [x] Error messages displayed to user (not just console)

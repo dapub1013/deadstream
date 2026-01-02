@@ -71,6 +71,11 @@ class PlayerScreen(QWidget):
         # Build UI
         self._build_ui()
 
+        # Sync volume control widget with player's initial volume (loaded from settings)
+        player_volume = self.player.get_volume()
+        self.volume_control.set_volume(player_volume)
+        print(f"[INFO] PlayerScreen: Volume control initialized to {player_volume}% from settings")
+
         # Create error handling UI components
         self.toast_manager = ToastManager(self)
         self.loading_overlay = LoadingOverlay(self)

@@ -14,9 +14,10 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 sys.path.insert(0, PROJECT_ROOT)
 
 from src.ui.screen_manager import ScreenManager
-from src.ui.player_screen import PlayerScreen
+from src.ui.screens.player_screen import PlayerScreen
 from src.ui.screens.browse_screen import BrowseScreen
 from src.ui.screens.settings_screen import SettingsScreen
+from src.settings import get_settings
 
 
 class MainWindow(QMainWindow):
@@ -50,10 +51,21 @@ class MainWindow(QMainWindow):
         
         # Initialize keyboard handler
         self._setup_keyboard_handler()
-        
-        # Start on player screen
-        self.screen_manager.show_screen(ScreenManager.PLAYER_SCREEN)
-        
+
+        # Restore last screen from settings (default to browse)
+        settings = get_settings()
+        last_screen = settings.get('app', 'last_screen', 'browse')
+        print(f"[INFO] Restoring last screen from settings: {last_screen}")
+
+        # Map setting value to screen constant
+        screen_map = {
+            'player': ScreenManager.PLAYER_SCREEN,
+            'browse': ScreenManager.BROWSE_SCREEN,
+            'settings': ScreenManager.SETTINGS_SCREEN
+        }
+        initial_screen = screen_map.get(last_screen, ScreenManager.BROWSE_SCREEN)
+        self.screen_manager.show_screen(initial_screen)
+
         print("[INFO] MainWindow initialization complete")
     
     def setup_dark_theme(self):
@@ -201,19 +213,29 @@ class MainWindow(QMainWindow):
     def on_screen_changed(self, screen_name):
         """
         Handle screen change events
-        
+
         Args:
             screen_name: Name of the new screen
         """
         print(f"[INFO] Screen changed to: {screen_name}")
-        
+
+        # Save current screen to settings for restoration on next launch
+        settings = get_settings()
+        screen_value_map = {
+            ScreenManager.PLAYER_SCREEN: 'player',
+            ScreenManager.BROWSE_SCREEN: 'browse',
+            ScreenManager.SETTINGS_SCREEN: 'settings'
+        }
+        screen_value = screen_value_map.get(screen_name, 'browse')
+        settings.set('app', 'last_screen', screen_value)
+
         # Update window title
         titles = {
             ScreenManager.PLAYER_SCREEN: "DeadStream - Now Playing",
             ScreenManager.BROWSE_SCREEN: "DeadStream - Browse Shows",
             ScreenManager.SETTINGS_SCREEN: "DeadStream - Settings"
         }
-        
+
         if screen_name in titles:
             self.setWindowTitle(titles[screen_name])
     

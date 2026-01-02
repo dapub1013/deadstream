@@ -31,6 +31,7 @@ import time
 import threading
 from enum import Enum
 from src.audio.vlc_config import create_vlc_instance
+from src.settings import get_settings
 
 
 class PlayerState(Enum):
@@ -74,12 +75,13 @@ class ResilientPlayer:
         self.health_running = False
         self.last_position = 0
         self.stuck_count = 0
-        
-        # Volume state
-        self._volume = 50  # Default 50%
+
+        # Volume state - load from settings
+        settings = get_settings()
+        self._volume = settings.get('audio', 'default_volume', 77)
         self._muted = False
-        self._volume_before_mute = 50
-        
+        self._volume_before_mute = self._volume
+
         # Apply default volume
         self.player.audio_set_volume(self._volume)
         
