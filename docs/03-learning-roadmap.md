@@ -183,7 +183,7 @@ See `phase-9-completion-summary.md` for detailed results.
 - [x] 10.2: Implement auto-play next track
 - [x] 10.3: Add error handling UI (dialogs, toasts, loading indicators)
 - [x] 10.4: Complete settings integration (quality preferences)
-- [ ] 10.5: End-to-end workflow testing (browse → play)
+- [x] 10.5: End-to-end workflow testing (browse → play)
 - [ ] 10.6: Performance profiling and optimization
 - [ ] 10.7: Polish screen transitions and animations
 - [ ] 10.8: Fix integration bugs and edge cases
