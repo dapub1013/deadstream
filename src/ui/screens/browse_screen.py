@@ -152,9 +152,11 @@ class BrowseScreen(QWidget):
         layout = QVBoxLayout()
         layout.setSpacing(12)
         
+        # All buttons use PRIMARY_BUTTON_STYLE (blue, like "Browse by Date")
+
         # Top Rated (default)
         top_rated_btn = QPushButton("Top Rated Shows")
-        top_rated_btn.setStyleSheet(BROWSE_MODE_BUTTON_SELECTED)
+        top_rated_btn.setStyleSheet(PRIMARY_BUTTON_STYLE)
         top_rated_btn.setMinimumHeight(60)
         top_rated_btn.clicked.connect(self.load_default_shows)
         layout.addWidget(top_rated_btn)
@@ -168,29 +170,28 @@ class BrowseScreen(QWidget):
 
         # Browse by Venue
         venue_btn = QPushButton("Browse by Venue")
-        venue_btn.setStyleSheet(GREEN_ACCENT_BUTTON)
+        venue_btn.setStyleSheet(PRIMARY_BUTTON_STYLE)
         venue_btn.setMinimumHeight(60)
         venue_btn.clicked.connect(self.show_venue_browser)
         layout.addWidget(venue_btn)
 
         # Browse by Year
         year_btn = QPushButton("Browse by Year")
-        year_btn.setStyleSheet(PURPLE_ACCENT_BUTTON)
+        year_btn.setStyleSheet(PRIMARY_BUTTON_STYLE)
         year_btn.setMinimumHeight(60)
         year_btn.clicked.connect(self.show_year_browser)
         layout.addWidget(year_btn)
 
-        # Search Shows (Task 7.5)
+        # Search Shows
         search_btn = QPushButton("Search Shows")
-        search_btn.setStyleSheet(ORANGE_ACCENT_BUTTON)
+        search_btn.setStyleSheet(PRIMARY_BUTTON_STYLE)
         search_btn.setMinimumHeight(60)
         search_btn.clicked.connect(self.show_search_dialog)
         layout.addWidget(search_btn)
 
-        # Random Show (Task 7.6)
+        # Random Show
         random_btn = QPushButton("Random Show")
-        # Using a pink/magenta style - we'll use purple for now as closest match
-        random_btn.setStyleSheet(PURPLE_ACCENT_BUTTON)
+        random_btn.setStyleSheet(PRIMARY_BUTTON_STYLE)
         random_btn.setMinimumHeight(60)
         random_btn.clicked.connect(self.load_random_show)
         layout.addWidget(random_btn)
@@ -202,7 +203,7 @@ class BrowseScreen(QWidget):
         panel = QFrame()
         panel.setStyleSheet(f"""
             QFrame {{
-                background-color: {BG_GRAY_900};
+                background-color: {BG_GRAY_800};
             }}
         """)
         

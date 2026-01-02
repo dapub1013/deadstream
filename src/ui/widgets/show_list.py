@@ -16,12 +16,24 @@ Can be used for all browse modes:
 - Shows by Year
 """
 
+import sys
+import os
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QScrollArea, QFrame
 )
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
+
+# Import centralized styles
+from src.ui.styles.button_styles import (
+    PRIMARY_BUTTON_STYLE, BLUE_600, BLUE_700, BLUE_800,
+    TEXT_WHITE, TEXT_GRAY_400, TEXT_GRAY_500
+)
 
 
 class ShowCard(QFrame):
@@ -56,16 +68,17 @@ class ShowCard(QFrame):
     
     def setup_ui(self):
         """Create card layout and widgets"""
-        # Card styling - matches UI spec (gray-900 background, rounded)
-        self.setStyleSheet("""
-            ShowCard {
-                background-color: #111827;
+        # Card styling - blue primary style like browse buttons
+        self.setStyleSheet(f"""
+            ShowCard {{
+                background-color: {BLUE_600};
                 border-radius: 8px;
                 padding: 12px;
-            }
-            ShowCard:hover {
-                background-color: #1f2937;
-            }
+                border: none;
+            }}
+            ShowCard:hover {{
+                background-color: {BLUE_700};
+            }}
         """)
         
         # Make entire card clickable
@@ -82,25 +95,25 @@ class ShowCard(QFrame):
         
         # Date - large, bold (e.g., "1977-05-08")
         date_label = QLabel(self.show_data['date'])
-        date_label.setStyleSheet("""
-            color: white;
+        date_label.setStyleSheet(f"""
+            color: {TEXT_WHITE};
             font-size: 20px;
             font-weight: 600;
         """)
         info_layout.addWidget(date_label)
-        
+
         # Venue - medium (e.g., "Barton Hall, Cornell University")
         venue = self.show_data.get('venue', 'Unknown Venue')
         venue_label = QLabel(venue)
-        venue_label.setStyleSheet("""
-            color: #9ca3af;
+        venue_label.setStyleSheet(f"""
+            color: {TEXT_WHITE};
             font-size: 16px;
         """)
         venue_label.setWordWrap(True)
         venue_label.setMaximumWidth(400)
         info_layout.addWidget(venue_label)
-        
-        # Location - small, gray (e.g., "Ithaca, NY")
+
+        # Location - small, lighter (e.g., "Ithaca, NY")
         city = self.show_data.get('city', '')
         state = self.show_data.get('state', '')
         if city and state:
@@ -111,11 +124,12 @@ class ShowCard(QFrame):
             location = state
         else:
             location = "Unknown Location"
-        
+
         location_label = QLabel(location)
-        location_label.setStyleSheet("""
-            color: #6b7280;
+        location_label.setStyleSheet(f"""
+            color: {TEXT_WHITE};
             font-size: 14px;
+            opacity: 0.8;
         """)
         info_layout.addWidget(location_label)
         
@@ -127,22 +141,22 @@ class ShowCard(QFrame):
         source = self.show_data.get('source', '')
         if source:
             source_badge = QLabel(source.upper()[:3])  # SBD, AUD, or MTX
-            source_badge.setStyleSheet("""
-                background-color: #374151;
-                color: #9ca3af;
+            source_badge.setStyleSheet(f"""
+                background-color: rgba(255, 255, 255, 0.2);
+                color: {TEXT_WHITE};
                 padding: 4px 8px;
                 border-radius: 4px;
                 font-size: 12px;
                 font-weight: 600;
             """)
             badges_layout.addWidget(source_badge)
-        
+
         # Rating badge (star + number)
         rating = self.show_data.get('avg_rating')
         if rating:
             rating_badge = QLabel(f"[*] {rating:.1f}/5.0")
-            rating_badge.setStyleSheet("""
-                color: #fbbf24;
+            rating_badge.setStyleSheet(f"""
+                color: {TEXT_WHITE};
                 font-size: 14px;
                 font-weight: 600;
             """)
@@ -153,25 +167,25 @@ class ShowCard(QFrame):
         
         layout.addLayout(info_layout, stretch=1)
         
-        # Right side: Play button
+        # Right side: Play button (darker blue to contrast with card)
         play_button = QPushButton("Play ->")
         play_button.setMinimumSize(100, 60)  # Touch-friendly
-        play_button.setStyleSheet("""
-            QPushButton {
-                background-color: #2563eb;
-                color: white;
+        play_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {BLUE_800};
+                color: {TEXT_WHITE};
                 border: none;
                 border-radius: 8px;
                 font-size: 16px;
                 font-weight: 600;
                 padding: 12px 20px;
-            }
-            QPushButton:hover {
-                background-color: #1d4ed8;
-            }
-            QPushButton:pressed {
+            }}
+            QPushButton:hover {{
+                background-color: #1e3a8a;
+            }}
+            QPushButton:pressed {{
                 background-color: #1e40af;
-            }
+            }}
         """)
         play_button.clicked.connect(self.on_play_clicked)
         layout.addWidget(play_button, alignment=Qt.AlignVCenter)
