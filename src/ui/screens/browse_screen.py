@@ -50,6 +50,7 @@ from src.ui.styles.text_styles import (
 # Import widgets
 from src.ui.widgets.show_list import ShowListWidget
 from src.ui.widgets.date_browser import DateBrowser
+from src.ui.widgets.date_selector import DateSelectorWidget
 from src.ui.widgets.year_browser import YearBrowser
 from src.ui.widgets.search_widget import SearchWidget
 from src.ui.widgets.error_dialog import ErrorDialog, show_database_error, show_network_error
@@ -261,6 +262,11 @@ class BrowseScreen(QWidget):
         self.random_show_widget.reload_requested.connect(self.load_random_show)
         self.content_stack.addWidget(self.random_show_widget)
 
+        # Page 2: Date selector view
+        self.date_selector_widget = DateSelectorWidget()
+        self.date_selector_widget.date_selected.connect(self.on_date_selector_selected)
+        self.content_stack.addWidget(self.date_selector_widget)
+
         layout.addWidget(self.content_stack)
 
         return panel
@@ -328,34 +334,14 @@ class BrowseScreen(QWidget):
             )
 
     def show_date_browser(self):
-        """Show date browser dialog (Task 7.2)"""
-        
-        # Create dialog
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Browse by Date")
-        dialog.setModal(True)
-        dialog.setMinimumSize(400, 500)
-        
-        # Apply dark theme
-        dialog.setStyleSheet("""
-            QDialog {
-                background-color: #111827;
-            }
-        """)
-        
-        # Create layout
-        layout = QVBoxLayout(dialog)
-        
-        # Add date browser widget
-        date_browser = DateBrowser()
-        date_browser.date_selected.connect(lambda date: (
-            dialog.accept(),
-            self.load_shows_by_date(date)
-        ))
-        layout.addWidget(date_browser)
-        
-        # Show dialog
-        dialog.exec_()
+        """Show date selector in right panel (redesigned interface)"""
+        # Switch to date selector view (page 2)
+        self.content_stack.setCurrentIndex(2)
+
+        # Reset selection in case it was used before
+        self.date_selector_widget.reset_selection()
+
+        print("[INFO] Date selector activated")
     
     def show_venue_browser(self):
         """Show venue browser dialog (Task 7.3)"""
@@ -748,11 +734,17 @@ class BrowseScreen(QWidget):
     # ========================================================================
     # EVENT HANDLERS
     # ========================================================================
-    
+
     def on_show_selected(self, show):
         """Handle show selection from list"""
         print(f"[INFO] Show selected: {show['date']} - {show['venue']}")
         self.show_selected.emit(show)
+
+    def on_date_selector_selected(self, date_str):
+        """Handle date selection from DateSelectorWidget"""
+        print(f"[INFO] Date selected from selector: {date_str}")
+        # Load shows for this date (will switch back to list view)
+        self.load_shows_by_date(date_str)
 
 
 # Test code
