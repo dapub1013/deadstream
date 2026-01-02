@@ -42,3 +42,6 @@ data/downloads/
 tmp/
 temp/
 config/settings.yaml
+
+# AI Assistant files
+CLAUDE.md
