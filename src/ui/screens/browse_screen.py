@@ -267,6 +267,11 @@ class BrowseScreen(QWidget):
         self.date_selector_widget.date_selected.connect(self.on_date_selector_selected)
         self.content_stack.addWidget(self.date_selector_widget)
 
+        # Page 3: Year browser view
+        self.year_browser_widget = YearBrowser()
+        self.year_browser_widget.year_selected.connect(self.on_year_browser_selected)
+        self.content_stack.addWidget(self.year_browser_widget)
+
         layout.addWidget(self.content_stack)
 
         return panel
@@ -453,34 +458,15 @@ class BrowseScreen(QWidget):
         dialog.exec_()
     
     def show_year_browser(self):
-        """Show year browser dialog (Task 7.4)"""
-        
-        # Create dialog
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Browse by Year")
-        dialog.setModal(True)
-        dialog.setMinimumSize(600, 500)
-        
-        # Apply dark theme
-        dialog.setStyleSheet("""
-            QDialog {
-                background-color: #111827;
-            }
-        """)
-        
-        # Create layout
-        layout = QVBoxLayout(dialog)
-        
-        # Add year browser widget
-        year_browser = YearBrowser()
-        year_browser.year_selected.connect(lambda year: (
-            dialog.accept(),
-            self.load_shows_by_year(year)
-        ))
-        layout.addWidget(year_browser)
-        
-        # Show dialog
-        dialog.exec_()
+        """Show year browser in right panel (Task 7.4)"""
+        # Switch to year browser view (page 3)
+        self.content_stack.setCurrentIndex(3)
+
+        # Reload year data in case it's stale
+        self.year_browser_widget.load_year_data()
+        self.year_browser_widget.update_year_grid()
+
+        print("[INFO] Year browser activated")
     
     def show_search_dialog(self):
         """Show search dialog (Task 7.5)"""
@@ -745,6 +731,12 @@ class BrowseScreen(QWidget):
         print(f"[INFO] Date selected from selector: {date_str}")
         # Load shows for this date (will switch back to list view)
         self.load_shows_by_date(date_str)
+
+    def on_year_browser_selected(self, year):
+        """Handle year selection from YearBrowser"""
+        print(f"[INFO] Year selected from browser: {year}")
+        # Load shows for this year (will switch back to list view)
+        self.load_shows_by_year(year)
 
 
 # Test code

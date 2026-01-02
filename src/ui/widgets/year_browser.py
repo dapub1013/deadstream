@@ -86,14 +86,7 @@ class YearBrowser(QWidget):
         header_layout.addWidget(self.next_decade_btn)
         
         layout.addLayout(header_layout)
-        
-        # All Years button
-        all_years_btn = QPushButton("Show All Years")
-        all_years_btn.setMinimumHeight(45)
-        all_years_btn.setFont(QFont("Arial", 13))
-        all_years_btn.clicked.connect(self.show_all_years)
-        layout.addWidget(all_years_btn)
-        
+
         # Year grid (2 columns x 5 rows = 10 years per decade)
         self.year_grid = QGridLayout()
         self.year_grid.setSpacing(10)
@@ -104,32 +97,13 @@ class YearBrowser(QWidget):
             for col in range(2):
                 btn = QPushButton()
                 btn.setMinimumSize(180, 80)
-                btn.setFont(QFont("Arial", 18, QFont.Bold))
+                btn.setFont(QFont("Arial", 32, QFont.Bold))  # Larger font for year
                 btn.clicked.connect(lambda checked, b=btn: self.year_clicked(b))
                 self.year_grid.addWidget(btn, row, col)
                 self.year_buttons.append(btn)
         
         layout.addLayout(self.year_grid)
-        
-        # Legend
-        legend_layout = QHBoxLayout()
-        
-        # Legendary year indicator
-        legend_star = QLabel("★ = Legendary Year")
-        legend_star.setFont(QFont("Arial", 11))
-        legend_star.setStyleSheet("color: #fbbf24;")
-        legend_layout.addWidget(legend_star)
-        
-        legend_layout.addStretch()
-        
-        # Show count indicator
-        legend_count = QLabel("Number shows available")
-        legend_count.setFont(QFont("Arial", 11))
-        legend_count.setStyleSheet("color: #9ca3af;")
-        legend_layout.addWidget(legend_count)
-        
-        layout.addLayout(legend_layout)
-        
+
         # Info label
         self.info_label = QLabel("Select a year to see all shows")
         self.info_label.setAlignment(Qt.AlignCenter)
@@ -165,30 +139,7 @@ class YearBrowser(QWidget):
         """
         self.prev_decade_btn.setStyleSheet(nav_style)
         self.next_decade_btn.setStyleSheet(nav_style)
-        
-        # Style the all years button
-        all_years_style = """
-            QPushButton {
-                background-color: #10b981;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #059669;
-            }
-            QPushButton:pressed {
-                background-color: #047857;
-            }
-        """
-        # Find the "Show All Years" button and apply style
-        for i in range(self.layout().count()):
-            widget = self.layout().itemAt(i).widget()
-            if isinstance(widget, QPushButton) and widget.text() == "Show All Years":
-                widget.setStyleSheet(all_years_style)
-                break
-        
+
         # Decade label styling
         self.decade_label.setStyleSheet("color: white;")
     
@@ -230,12 +181,9 @@ class YearBrowser(QWidget):
             show_count = self.year_counts.get(year, 0)
             
             if has_shows:
-                # Format button text with year and show count
-                if is_legendary:
-                    btn.setText(f"★ {year} ★\n({show_count} shows)")
-                else:
-                    btn.setText(f"{year}\n({show_count} shows)")
-                
+                # Show only the year (no stars, no show count)
+                btn.setText(f"{year}")
+
                 # Enabled style - different colors for legendary vs regular
                 if is_legendary:
                     # Gold/amber for legendary years
@@ -272,21 +220,14 @@ class YearBrowser(QWidget):
                             background-color: #2563eb;
                         }
                     """)
-                
+
+                btn.setVisible(True)
                 btn.setEnabled(True)
                 btn.setProperty('year', year)  # Store year in button
-                
+
             else:
-                # No shows this year - show as disabled
-                btn.setText(f"{year}\n(no shows)")
-                btn.setStyleSheet("""
-                    QPushButton {
-                        background-color: #374151;
-                        color: #6b7280;
-                        border: 1px solid #4b5563;
-                        border-radius: 10px;
-                    }
-                """)
+                # No shows this year - hide the button
+                btn.setVisible(False)
                 btn.setEnabled(False)
                 btn.setProperty('year', None)
         
@@ -321,14 +262,7 @@ class YearBrowser(QWidget):
         self.current_decade += 10
         self.update_year_grid()
         print(f"[INFO] Navigated to {self.current_decade}s")
-    
-    def show_all_years(self):
-        """Jump to decade view showing all years (1965-1995)"""
-        # Set to 1960s to start showing full range
-        self.current_decade = 1960
-        self.update_year_grid()
-        print("[INFO] Showing all years view")
-    
+
     def year_clicked(self, button):
         """Handle year button click"""
         year = button.property('year')
