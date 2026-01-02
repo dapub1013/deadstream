@@ -25,6 +25,26 @@ A dedicated hardware device for streaming Grateful Dead concerts from the Intern
 - **Documented**: Track decisions, learnings, and solutions
 - **No rushing**: Quality and understanding over speed
 
+### Phase 10: Integration & Polish (REVISED)
+**Split into two sub-phases based on UX refinement insights:**
+
+#### Phase 10A: UX Pivot & Browse Shows Redesign (6-8 hours)
+- Redesign Browse Shows screen with improved information architecture
+- Implement "Random Show" as killer feature with attractive showcard display
+- Create filters system (Wall of Sound, Dick's Picks, etc.)
+- Refine navigation hierarchy based on actual usage patterns
+
+#### Phase 10B: Core Integration (8-10 hours)
+- Error handling UI implementation
+- Settings screen integration
+- End-to-end testing
+- Final polish work
+
+**Total Phase 10**: 16-18 hours (revised from original 13 hours)
+**Rationale**: Mid-phase UX insights revealed opportunity to significantly improve 
+user experience before hardware integration. Changes leverage existing code and 
+simplify overall architecture.
+
 ## Success Criteria
 - [✅ Complete] Device successfully streams and plays any GD show
   - Core playback engine complete (Phase 4)

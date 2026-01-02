@@ -505,7 +505,29 @@ deadstream/
 
 ---
 
-## For AI Assistants
+## Working with Claude Code
+
+### When to Use Claude Code vs. Claude Chat
+- **Claude Code**: File creation, code implementation, refactoring, debugging
+- **Claude Chat**: Planning, architecture decisions, documentation, learning concepts
+
+### Handoff Protocol
+When transitioning work to Claude Code:
+1. Provide clear task description with acceptance criteria
+2. Reference relevant project files (especially this guidelines doc)
+3. Specify which standards to follow (PEP 8, git workflow, etc.)
+4. Request commit messages that follow project conventions
+
+### Context Files for Claude Code
+Always include in Claude Code workspace:
+- `/mnt/project/07-project-guidelines.md`
+- `/mnt/project/05-technical-decisions.md`
+- `/mnt/project/08-import-and-architecture-reference.md`
+- Current phase plan document
+
+---
+
+# For AI Assistants
 
 When generating code for this project:
 
