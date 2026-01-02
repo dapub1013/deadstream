@@ -61,7 +61,7 @@ class DateSelectorWidget(QWidget):
         main_layout.setSpacing(16)
 
         # Header
-        header = QLabel("Select Date")
+        header = QLabel("Browse by Date")
         header.setStyleSheet(f"""
             QLabel {{
                 {TITLE_SECTION_STYLE}
@@ -174,10 +174,10 @@ class DateSelectorWidget(QWidget):
                 border: none;
                 border-radius: 6px;
                 padding: 4px;
-                font-size: 16px;
+                font-size: 20px;
             }}
             QListWidget::item {{
-                padding: 12px 8px;
+                padding: 14px 8px;
                 border-radius: 4px;
                 margin: 2px 0px;
             }}
@@ -200,9 +200,9 @@ class DateSelectorWidget(QWidget):
             # Populate year list (reverse chronological order)
             years = sorted(self.year_data.keys(), reverse=True)
             for year in years:
-                count = self.year_data[year]
-                item = QListWidgetItem(f"{year} ({count} shows)")
+                item = QListWidgetItem(f"{year}")
                 item.setData(Qt.UserRole, int(year))
+                item.setTextAlignment(Qt.AlignCenter)
                 self.year_list.addItem(item)
 
             print(f"[INFO] Loaded {len(years)} years with shows")
@@ -237,8 +237,9 @@ class DateSelectorWidget(QWidget):
 
             # Populate month list
             for month, count in months_with_shows:
-                item = QListWidgetItem(f"{month_names[month-1]} ({count} shows)")
+                item = QListWidgetItem(f"{month_names[month-1]}")
                 item.setData(Qt.UserRole, month)
+                item.setTextAlignment(Qt.AlignCenter)
                 self.month_list.addItem(item)
 
             self.update_status()
@@ -266,12 +267,9 @@ class DateSelectorWidget(QWidget):
 
             # Populate day list
             for day in sorted(days_with_shows):
-                # Count shows on this day
-                day_shows = [s for s in shows if int(s['date'].split('-')[2]) == day]
-                count = len(day_shows)
-
-                item = QListWidgetItem(f"{day} ({count} show{'s' if count > 1 else ''})")
+                item = QListWidgetItem(f"{day:02d}")
                 item.setData(Qt.UserRole, day)
+                item.setTextAlignment(Qt.AlignCenter)
                 self.day_list.addItem(item)
 
             self.update_status()
