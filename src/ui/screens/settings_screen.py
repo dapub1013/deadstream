@@ -14,15 +14,25 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QScrollArea, QFrame, QStackedWidget
 )
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 
+# Import centralized styles
+from src.ui.styles.button_styles import (
+    SETTINGS_CATEGORY_SELECTED, SETTINGS_CATEGORY_UNSELECTED,
+    SECONDARY_BUTTON_STYLE, BG_GRAY_800, BG_GRAY_900, BG_BLACK,
+    TEXT_WHITE, BG_GRAY_700
+)
+from src.ui.styles.text_styles import (
+    TITLE_MAIN_STYLE, FONT_3XL
+)
+
 # Import settings widgets
 from src.ui.widgets.about_widget import AboutWidget
-from src.ui.widgets.display_settings_widget import DisplaySettingsWidget 
+from src.ui.widgets.display_settings_widget import DisplaySettingsWidget
 from src.ui.widgets.network_settings_widget import NetworkSettingsWidget
 from src.ui.widgets.audio_settings_widget import AudioSettingsWidget
 from src.ui.widgets.database_settings_widget import DatabaseSettingsWidget
@@ -72,62 +82,47 @@ class SettingsScreen(QWidget):
     def _create_header(self):
         """Create the header with title and back button"""
         header = QFrame()
-        header.setStyleSheet("""
-            QFrame {
-                background-color: #1a1a1a;
-                border-bottom: 1px solid #333333;
-            }
+        header.setStyleSheet(f"""
+            QFrame {{
+                background-color: {BG_GRAY_800};
+                border-bottom: 1px solid {BG_GRAY_700};
+            }}
         """)
         header.setFixedHeight(80)
-        
+
         layout = QHBoxLayout(header)
         layout.setContentsMargins(20, 0, 20, 0)
-        
+
         # Back button
         back_btn = QPushButton("< Back to Browse")
         back_btn.setFixedSize(200, 60)
-        back_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #333333;
-                color: #ffffff;
-                border: none;
-                border-radius: 8px;
-                font-size: 16px;
-                font-weight: 500;
-            }
-            QPushButton:hover {
-                background-color: #444444;
-            }
-            QPushButton:pressed {
-                background-color: #555555;
-            }
-        """)
+        back_btn.setStyleSheet(SECONDARY_BUTTON_STYLE)
         back_btn.clicked.connect(self.back_clicked.emit)
         layout.addWidget(back_btn)
-        
+
         # Title
         title = QLabel("Settings")
-        title_font = QFont()
-        title_font.setPointSize(28)
-        title_font.setBold(True)
-        title.setFont(title_font)
-        title.setStyleSheet("color: #ffffff;")
+        title.setStyleSheet(f"""
+            QLabel {{
+                {TITLE_MAIN_STYLE}
+            }}
+        """)
         title.setAlignment(Qt.AlignCenter)
         layout.addWidget(title, stretch=1)
-        
+
         # Spacer to balance back button
         layout.addSpacing(200)
-        
+
         return header
     
     def _create_category_sidebar(self):
         """Create the left sidebar with category buttons"""
         sidebar = QFrame()
-        sidebar.setStyleSheet("""
-            QFrame {
-                background-color: #0d0d0d;
-                border-right: 1px solid #333333;
-            }
+        sidebar.setStyleSheet(f"""
+            QFrame {{
+                background-color: {BG_BLACK};
+                border-right: 1px solid {BG_GRAY_700};
+            }}
         """)
         sidebar.setFixedWidth(280)
         
@@ -163,25 +158,10 @@ class SettingsScreen(QWidget):
         btn.setFixedHeight(70)
         btn.setProperty("category_id", category_id)
         btn.setProperty("base_color", color)
-        
+
         # Set initial style (will be updated by update_button_styles)
-        btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: #1a1a1a;
-                color: #ffffff;
-                border: 2px solid #333333;
-                border-radius: 10px;
-                font-size: 18px;
-                font-weight: 600;
-                text-align: left;
-                padding-left: 20px;
-            }}
-            QPushButton:hover {{
-                background-color: #262626;
-                border-color: {color};
-            }}
-        """)
-        
+        btn.setStyleSheet(SETTINGS_CATEGORY_UNSELECTED)
+
         btn.clicked.connect(lambda: self.show_category(category_id))
         return btn
     
@@ -189,11 +169,11 @@ class SettingsScreen(QWidget):
         """Create the right content area with stacked widgets"""
         # Use QStackedWidget instead of clearing/recreating widgets
         self.content_stack = QStackedWidget()
-        self.content_stack.setStyleSheet("""
-            QStackedWidget {
-                background-color: #121212;
+        self.content_stack.setStyleSheet(f"""
+            QStackedWidget {{
+                background-color: {BG_GRAY_900};
                 border: none;
-            }
+            }}
         """)
         
         # Create all setting widgets upfront
@@ -270,39 +250,27 @@ class SettingsScreen(QWidget):
         for category_id, btn in self.category_buttons.items():
             color = btn.property("base_color")
             is_selected = (category_id == self.current_category)
-            
+
             if is_selected:
-                # Selected state - colored background
+                # Selected state - colored background (custom color per category)
                 btn.setStyleSheet(f"""
                     QPushButton {{
                         background-color: {color};
-                        color: #ffffff;
-                        border: 2px solid {color};
-                        border-radius: 10px;
+                        color: {TEXT_WHITE};
+                        border: none;
+                        border-radius: 8px;
                         font-size: 18px;
                         font-weight: 600;
                         text-align: left;
-                        padding-left: 20px;
+                        padding: 16px;
+                    }}
+                    QPushButton:hover {{
+                        opacity: 0.9;
                     }}
                 """)
             else:
-                # Unselected state - dark background
-                btn.setStyleSheet(f"""
-                    QPushButton {{
-                        background-color: #1a1a1a;
-                        color: #ffffff;
-                        border: 2px solid #333333;
-                        border-radius: 10px;
-                        font-size: 18px;
-                        font-weight: 600;
-                        text-align: left;
-                        padding-left: 20px;
-                    }}
-                    QPushButton:hover {{
-                        background-color: #262626;
-                        border-color: {color};
-                    }}
-                """)
+                # Unselected state - use centralized dark style
+                btn.setStyleSheet(SETTINGS_CATEGORY_UNSELECTED)
 
 
 if __name__ == "__main__":

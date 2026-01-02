@@ -30,9 +30,20 @@ from PyQt5.QtGui import QFont
 
 # Import database queries
 from src.database.queries import (
-    get_top_rated_shows, get_most_played_venues, 
-    search_by_venue, get_show_by_date, search_by_year, 
+    get_top_rated_shows, get_most_played_venues,
+    search_by_venue, get_show_by_date, search_by_year,
     get_show_count, get_random_show
+)
+
+# Import centralized styles
+from src.ui.styles.button_styles import (
+    BROWSE_MODE_BUTTON_SELECTED, BROWSE_MODE_BUTTON_UNSELECTED,
+    SECONDARY_BUTTON_STYLE, PRIMARY_BUTTON_STYLE, GREEN_ACCENT_BUTTON,
+    PURPLE_ACCENT_BUTTON, ORANGE_ACCENT_BUTTON, BG_GRAY_800, BG_GRAY_900,
+    BG_GRAY_700, TEXT_WHITE, TEXT_GRAY_400
+)
+from src.ui.styles.text_styles import (
+    TITLE_SECTION_STYLE, TEXT_SUPPORTING_STYLE, FONT_2XL, FONT_BASE
 )
 
 # Import widgets
@@ -101,11 +112,11 @@ class BrowseScreen(QWidget):
     def create_left_panel(self):
         """Create left panel with browse mode buttons"""
         panel = QFrame()
-        panel.setStyleSheet("""
-            QFrame {
-                background-color: #1f2937;
-                border-right: 2px solid #374151;
-            }
+        panel.setStyleSheet(f"""
+            QFrame {{
+                background-color: {BG_GRAY_800};
+                border-right: 2px solid {BG_GRAY_700};
+            }}
         """)
         
         layout = QVBoxLayout(panel)
@@ -114,14 +125,12 @@ class BrowseScreen(QWidget):
         
         # Title
         title = QLabel("Browse Shows")
-        title.setStyleSheet("""
-            QLabel {
-                color: white;
-                font-size: 24px;
-                font-weight: bold;
+        title.setStyleSheet(f"""
+            QLabel {{
+                {TITLE_SECTION_STYLE}
                 padding-bottom: 8px;
-                border-bottom: 2px solid #374151;
-            }
+                border-bottom: 2px solid {BG_GRAY_700};
+            }}
         """)
         layout.addWidget(title)
         
@@ -145,144 +154,43 @@ class BrowseScreen(QWidget):
         
         # Top Rated (default)
         top_rated_btn = QPushButton("Top Rated Shows")
-        top_rated_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #374151;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 16px;
-                font-size: 16px;
-                font-weight: bold;
-                text-align: left;
-            }
-            QPushButton:hover {
-                background-color: #4b5563;
-            }
-            QPushButton:pressed {
-                background-color: #1f2937;
-            }
-        """)
+        top_rated_btn.setStyleSheet(BROWSE_MODE_BUTTON_SELECTED)
         top_rated_btn.setMinimumHeight(60)
         top_rated_btn.clicked.connect(self.load_default_shows)
         layout.addWidget(top_rated_btn)
-        
+
         # Browse by Date
         date_btn = QPushButton("Browse by Date")
-        date_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #3b82f6;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 16px;
-                font-size: 16px;
-                font-weight: bold;
-                text-align: left;
-            }
-            QPushButton:hover {
-                background-color: #2563eb;
-            }
-            QPushButton:pressed {
-                background-color: #1d4ed8;
-            }
-        """)
+        date_btn.setStyleSheet(PRIMARY_BUTTON_STYLE)
         date_btn.setMinimumHeight(60)
         date_btn.clicked.connect(self.show_date_browser)
         layout.addWidget(date_btn)
-        
+
         # Browse by Venue
         venue_btn = QPushButton("Browse by Venue")
-        venue_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #10b981;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 16px;
-                font-size: 16px;
-                font-weight: bold;
-                text-align: left;
-            }
-            QPushButton:hover {
-                background-color: #059669;
-            }
-            QPushButton:pressed {
-                background-color: #047857;
-            }
-        """)
+        venue_btn.setStyleSheet(GREEN_ACCENT_BUTTON)
         venue_btn.setMinimumHeight(60)
         venue_btn.clicked.connect(self.show_venue_browser)
         layout.addWidget(venue_btn)
-        
+
         # Browse by Year
         year_btn = QPushButton("Browse by Year")
-        year_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #a855f7;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 16px;
-                font-size: 16px;
-                font-weight: bold;
-                text-align: left;
-            }
-            QPushButton:hover {
-                background-color: #9333ea;
-            }
-            QPushButton:pressed {
-                background-color: #7e22ce;
-            }
-        """)
+        year_btn.setStyleSheet(PURPLE_ACCENT_BUTTON)
         year_btn.setMinimumHeight(60)
         year_btn.clicked.connect(self.show_year_browser)
         layout.addWidget(year_btn)
-        
+
         # Search Shows (Task 7.5)
         search_btn = QPushButton("Search Shows")
-        search_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #f59e0b;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 16px;
-                font-size: 16px;
-                font-weight: bold;
-                text-align: left;
-            }
-            QPushButton:hover {
-                background-color: #d97706;
-            }
-            QPushButton:pressed {
-                background-color: #b45309;
-            }
-        """)
+        search_btn.setStyleSheet(ORANGE_ACCENT_BUTTON)
         search_btn.setMinimumHeight(60)
         search_btn.clicked.connect(self.show_search_dialog)
         layout.addWidget(search_btn)
-        
-        # Random Show (Task 7.6 - NEW)
+
+        # Random Show (Task 7.6)
         random_btn = QPushButton("Random Show")
-        random_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #ec4899;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 16px;
-                font-size: 16px;
-                font-weight: bold;
-                text-align: left;
-            }
-            QPushButton:hover {
-                background-color: #db2777;
-            }
-            QPushButton:pressed {
-                background-color: #be185d;
-            }
-        """)
+        # Using a pink/magenta style - we'll use purple for now as closest match
+        random_btn.setStyleSheet(PURPLE_ACCENT_BUTTON)
         random_btn.setMinimumHeight(60)
         random_btn.clicked.connect(self.load_random_show)
         layout.addWidget(random_btn)
@@ -292,10 +200,10 @@ class BrowseScreen(QWidget):
     def create_right_panel(self):
         """Create right panel with show list"""
         panel = QFrame()
-        panel.setStyleSheet("""
-            QFrame {
-                background-color: #111827;
-            }
+        panel.setStyleSheet(f"""
+            QFrame {{
+                background-color: {BG_GRAY_900};
+            }}
         """)
         
         layout = QVBoxLayout(panel)
@@ -310,22 +218,19 @@ class BrowseScreen(QWidget):
         
         # Title label
         self.header_title = QLabel("Top Rated Shows")
-        self.header_title.setStyleSheet("""
-            QLabel {
-                color: white;
-                font-size: 24px;
-                font-weight: bold;
-            }
+        self.header_title.setStyleSheet(f"""
+            QLabel {{
+                {TITLE_SECTION_STYLE}
+            }}
         """)
         header_layout.addWidget(self.header_title)
-        
+
         # Subtitle label
         self.header_subtitle = QLabel("Shows with 5+ reviews")
-        self.header_subtitle.setStyleSheet("""
-            QLabel {
-                color: #9ca3af;
-                font-size: 16px;
-            }
+        self.header_subtitle.setStyleSheet(f"""
+            QLabel {{
+                {TEXT_SUPPORTING_STYLE}
+            }}
         """)
         header_layout.addWidget(self.header_subtitle)
         
@@ -342,53 +247,21 @@ class BrowseScreen(QWidget):
         """Create navigation buttons (Player, Settings)"""
         layout = QVBoxLayout()
         layout.setSpacing(12)
-        
+
         # Back to Player button
         player_btn = QPushButton("Back to Player")
-        player_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #374151;
-                color: white;
-                border: 2px solid #4b5563;
-                border-radius: 8px;
-                padding: 12px;
-                font-size: 14px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #4b5563;
-            }
-            QPushButton:pressed {
-                background-color: #6b7280;
-            }
-        """)
+        player_btn.setStyleSheet(SECONDARY_BUTTON_STYLE)
         player_btn.setMinimumHeight(50)
         player_btn.clicked.connect(self.player_requested.emit)
         layout.addWidget(player_btn)
-        
+
         # Settings button
         settings_btn = QPushButton("Settings")
-        settings_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #374151;
-                color: white;
-                border: 2px solid #4b5563;
-                border-radius: 8px;
-                padding: 12px;
-                font-size: 14px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #4b5563;
-            }
-            QPushButton:pressed {
-                background-color: #6b7280;
-            }
-        """)
+        settings_btn.setStyleSheet(SECONDARY_BUTTON_STYLE)
         settings_btn.setMinimumHeight(50)
         settings_btn.clicked.connect(self.settings_requested.emit)
         layout.addWidget(settings_btn)
-        
+
         return layout
 
     def update_header(self, title, subtitle):
