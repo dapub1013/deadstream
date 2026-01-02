@@ -17,6 +17,15 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLab
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 
+# Import centralized styles
+from src.ui.styles.button_styles import (
+    PLAYBACK_BUTTON_STYLE, PLAY_PAUSE_BUTTON_STYLE,
+    SMALL_CONTROL_BUTTON_STYLE
+)
+from src.ui.styles.text_styles import (
+    TEXT_SUPPORTING_STYLE
+)
+
 
 class PlaybackControlsWidget(QWidget):
     """
@@ -76,12 +85,11 @@ class PlaybackControlsWidget(QWidget):
         # Track counter
         self.track_counter = QLabel("Track 0 of 0")
         self.track_counter.setAlignment(Qt.AlignCenter)
-        self.track_counter.setStyleSheet("""
-            QLabel {
-                color: #9CA3AF;
-                font-size: 14px;
+        self.track_counter.setStyleSheet(f"""
+            QLabel {{
+                {TEXT_SUPPORTING_STYLE}
                 padding: 5px;
-            }
+            }}
         """)
         main_layout.addWidget(self.track_counter)
         
@@ -130,118 +138,56 @@ class PlaybackControlsWidget(QWidget):
         layout = QHBoxLayout()
         layout.setSpacing(20)
         layout.setContentsMargins(0, 0, 0, 0)
-        
+
         # Center the controls
         layout.addStretch()
-        
+
         # Rewind 30s button
         rewind_btn = QPushButton("< 30s")
         rewind_btn.setMinimumSize(100, 44)
-        rewind_btn.setStyleSheet(self.get_skip_button_style())
+        rewind_btn.setStyleSheet(SMALL_CONTROL_BUTTON_STYLE)
         rewind_btn.clicked.connect(self.on_skip_backward_clicked)
         layout.addWidget(rewind_btn)
-        
+
         # Skip 30s button
         skip_btn = QPushButton("30s >")
         skip_btn.setMinimumSize(100, 44)
-        skip_btn.setStyleSheet(self.get_skip_button_style())
+        skip_btn.setStyleSheet(SMALL_CONTROL_BUTTON_STYLE)
         skip_btn.clicked.connect(self.on_skip_forward_clicked)
         layout.addWidget(skip_btn)
-        
+
         layout.addStretch()
-        
+
         container.setLayout(layout)
         return container
     
     def create_control_button(self, tooltip, text, is_primary=False, enabled=True):
         """
         Create a control button with consistent styling.
-        
+
         Args:
             tooltip (str): Button tooltip
             text (str): Button text
             is_primary (bool): Whether this is the primary button (larger)
             enabled (bool): Initial enabled state
-            
+
         Returns:
             QPushButton: Configured button
         """
         btn = QPushButton(text)
         btn.setToolTip(tooltip)
-        
+
         if is_primary:
-            # Larger play/pause button
+            # Larger play/pause button - use centralized style
             btn.setMinimumSize(80, 80)
-            btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #FFFFFF;
-                    color: #000000;
-                    border: none;
-                    border-radius: 40px;
-                    font-size: 16px;
-                    font-weight: bold;
-                }
-                QPushButton:hover {
-                    background-color: #E5E7EB;
-                }
-                QPushButton:pressed {
-                    background-color: #D1D5DB;
-                }
-            """)
+            btn.setStyleSheet(PLAY_PAUSE_BUTTON_STYLE)
         else:
-            # Standard control buttons
+            # Standard control buttons - use centralized style
             btn.setMinimumSize(60, 60)
-            style = """
-                QPushButton {
-                    background-color: #374151;
-                    color: #FFFFFF;
-                    border: none;
-                    border-radius: 30px;
-                    font-size: 20px;
-                    font-weight: bold;
-                }
-                QPushButton:hover {
-                    background-color: #4B5563;
-                }
-                QPushButton:pressed {
-                    background-color: #6B7280;
-                }
-            """
-            
-            if not enabled:
-                style += """
-                QPushButton {
-                    background-color: #1F2937;
-                    color: #6B7280;
-                }
-                QPushButton:hover {
-                    background-color: #1F2937;
-                }
-                """
-            
-            btn.setStyleSheet(style)
+            btn.setStyleSheet(PLAYBACK_BUTTON_STYLE)
             btn.setEnabled(enabled)
-        
+
         return btn
-    
-    def get_skip_button_style(self):
-        """Get stylesheet for 30-second skip buttons"""
-        return """
-            QPushButton {
-                background-color: #1F2937;
-                color: #FFFFFF;
-                border: none;
-                border-radius: 8px;
-                font-size: 14px;
-                padding: 10px;
-            }
-            QPushButton:hover {
-                background-color: #374151;
-            }
-            QPushButton:pressed {
-                background-color: #4B5563;
-            }
-        """
     
     def on_play_pause_clicked(self):
         """Handle play/pause button click"""
@@ -309,66 +255,16 @@ class PlaybackControlsWidget(QWidget):
         # Update previous button state
         if self.current_track > 1:
             self.previous_btn.setEnabled(True)
-            self.previous_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #374151;
-                    color: #FFFFFF;
-                    border: none;
-                    border-radius: 30px;
-                    font-size: 20px;
-                    font-weight: bold;
-                }
-                QPushButton:hover {
-                    background-color: #4B5563;
-                }
-                QPushButton:pressed {
-                    background-color: #6B7280;
-                }
-            """)
         else:
             self.previous_btn.setEnabled(False)
-            self.previous_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #1F2937;
-                    color: #6B7280;
-                    border: none;
-                    border-radius: 30px;
-                    font-size: 20px;
-                    font-weight: bold;
-                }
-            """)
-        
+
         # Update next button state
         if self.current_track < self.total_tracks:
             self.next_btn.setEnabled(True)
-            self.next_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #374151;
-                    color: #FFFFFF;
-                    border: none;
-                    border-radius: 30px;
-                    font-size: 20px;
-                    font-weight: bold;
-                }
-                QPushButton:hover {
-                    background-color: #4B5563;
-                }
-                QPushButton:pressed {
-                    background-color: #6B7280;
-                }
-            """)
         else:
             self.next_btn.setEnabled(False)
-            self.next_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #1F2937;
-                    color: #6B7280;
-                    border: none;
-                    border-radius: 30px;
-                    font-size: 20px;
-                    font-weight: bold;
-                }
-            """)
+
+        # Styles are already set via PLAYBACK_BUTTON_STYLE which handles disabled state
     
     def reset(self):
         """Reset controls to initial state"""
