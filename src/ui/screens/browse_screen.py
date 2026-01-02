@@ -1,16 +1,23 @@
 #!/usr/bin/env python3
 """
-Browse Screen for DeadStream - WITH SEARCH AND RANDOM SHOW
+Browse Screen for DeadStream - Phase 10A Redesign
 
-This version includes Tasks 7.1-7.6 (COMPLETE Phase 7).
+This version implements Phase 10A Task 1.2: Refactored Browse Shows Layout.
 
-Completed features:
+Phase 10A redesign:
+- ShowCard widget as primary display (right panel 70%)
+- Prioritized navigation (left panel 30%)
+- Browse by Date as primary action
+- Random Show as prominent feature
+- State-aware ShowCard display (default, random, date_selected modes)
+
+Previous features retained:
 - Task 7.1: Show list view with top-rated shows
 - Task 7.2: Date browser (calendar-based browsing)
 - Task 7.3: Venue filter
 - Task 7.4: Year selector
 - Task 7.5: Search functionality
-- Task 7.6: Random show button (NEW)
+- Task 7.6: Random show button
 """
 
 import sys
@@ -41,7 +48,8 @@ from src.ui.styles.button_styles import (
     BROWSE_MODE_BUTTON_SELECTED, BROWSE_MODE_BUTTON_UNSELECTED,
     SECONDARY_BUTTON_STYLE, PRIMARY_BUTTON_STYLE, GREEN_ACCENT_BUTTON,
     PURPLE_ACCENT_BUTTON, ORANGE_ACCENT_BUTTON, BG_GRAY_800, BG_GRAY_900,
-    BG_GRAY_700, TEXT_WHITE, TEXT_GRAY_400
+    BG_GRAY_700, TEXT_WHITE, TEXT_GRAY_400, BLUE_600, BLUE_700, BLUE_800,
+    BORDER_RADIUS
 )
 from src.ui.styles.text_styles import (
     TITLE_SECTION_STYLE, TEXT_SUPPORTING_STYLE, FONT_2XL, FONT_BASE
@@ -57,29 +65,45 @@ from src.ui.widgets.error_dialog import ErrorDialog, show_database_error, show_n
 from src.ui.widgets.toast_notification import ToastManager
 from src.ui.widgets.loading_spinner import LoadingIndicator
 from src.ui.widgets.random_show_widget import RandomShowWidget
+from src.ui.widgets.show_card import ShowCard
 
 
 class BrowseScreen(QWidget):
     """
-    Browse screen for finding and selecting shows
-    
-    Layout (from UI spec):
-    - Left panel (40%): Navigation and browse modes
-    - Right panel (60%): Show list with header
-    
-    Browse modes:
-    - Top Rated (default)
-    - Browse by Date (Task 7.2)
-    - Browse by Venue (Task 7.3)
-    - Browse by Year (Task 7.4)
-    - Search Shows (Task 7.5)
-    - Random Show (Task 7.6 - NEW)
-    
+    Browse screen for finding and selecting shows - Phase 10A Redesign
+
+    Layout (Phase 10A):
+    - Left panel (30%): Prioritized navigation buttons
+    - Right panel (70%): ShowCard display area with multiple states
+
+    Left Panel Priority Order:
+    1. Browse by Date (primary, larger)
+    2. Random Show (medium, prominent)
+    3. Filters (medium - Phase 10A Task 3)
+    4. Top Rated (optional, smaller)
+
+    Right Panel States:
+    - DEFAULT: Last played show or welcome message
+    - RANDOM: Random show with "Try Another" button
+    - DATE_SELECTED: Show from date browser
+    - FILTERED: Random show matching active filter
+    - LIST_VIEW: Traditional show list (retained for some modes)
+
+    Browse modes retained from Phase 7:
+    - Top Rated
+    - Browse by Date
+    - Browse by Venue
+    - Browse by Year
+    - Search Shows
+    - Random Show
+
     Signals:
     - show_selected: Emitted when user selects a show to play
+    - player_requested: Navigate to player screen
+    - settings_requested: Navigate to settings screen
     """
-    
-# Navigation signals
+
+    # Navigation signals
     show_selected = pyqtSignal(dict)  # Emits show dictionary
     player_requested = pyqtSignal()   # Navigate to player
     settings_requested = pyqtSignal() # Navigate to settings
@@ -88,28 +112,30 @@ class BrowseScreen(QWidget):
         """Initialize browse screen"""
         super().__init__(parent)
         self.current_shows = []
+        self.current_filter = None  # Track active filter (Phase 10A Task 3)
+        self.current_mode = 'default'  # Track current display mode
         self.setup_ui()
 
         # Create error handling UI components
         self.toast_manager = ToastManager(self)
 
-        self.load_default_shows()
+        self.load_default_state()
     
     def setup_ui(self):
-        """Create browse screen layout"""
+        """Create browse screen layout - Phase 10A redesign"""
         # Main horizontal layout (left panel + right panel)
         main_layout = QHBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
-        
-        # Left Panel (40%) - Navigation
+
+        # Left Panel (30%) - Prioritized navigation
         left_panel = self.create_left_panel()
-        main_layout.addWidget(left_panel, stretch=4)
-        
-        # Right Panel (60%) - Show list
+        main_layout.addWidget(left_panel, stretch=3)
+
+        # Right Panel (70%) - ShowCard display area
         right_panel = self.create_right_panel()
-        main_layout.addWidget(right_panel, stretch=6)
-        
+        main_layout.addWidget(right_panel, stretch=7)
+
         self.setLayout(main_layout)
     
     def create_left_panel(self):
@@ -151,58 +177,115 @@ class BrowseScreen(QWidget):
         return panel
     
     def create_browse_mode_buttons(self):
-        """Create buttons for different browse modes"""
+        """
+        Create prioritized navigation buttons - Phase 10A redesign
+
+        Priority order:
+        1. Browse by Date (larger, primary)
+        2. Random Show (medium, exciting)
+        3. Filters (medium, secondary) - Task 3
+        4. Additional modes (smaller, tertiary)
+        """
         layout = QVBoxLayout()
         layout.setSpacing(12)
-        
-        # All buttons use PRIMARY_BUTTON_STYLE (blue, like "Browse by Date")
 
-        # Top Rated (default)
+        # 1. Browse by Date - PRIMARY ACTION (larger, 80px)
+        self.browse_by_date_btn = QPushButton("Browse by Date")
+        self.browse_by_date_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {BLUE_600};
+                color: {TEXT_WHITE};
+                border: none;
+                border-radius: {BORDER_RADIUS};
+                font-size: 20px;
+                font-weight: 700;
+                padding: 16px 24px;
+            }}
+            QPushButton:hover {{
+                background-color: {BLUE_700};
+            }}
+            QPushButton:pressed {{
+                background-color: {BLUE_800};
+            }}
+        """)
+        self.browse_by_date_btn.setMinimumHeight(80)
+        self.browse_by_date_btn.clicked.connect(self.show_date_browser)
+        layout.addWidget(self.browse_by_date_btn)
+
+        # 2. Random Show - PROMINENT FEATURE (medium, 70px, exciting color)
+        self.random_show_btn = QPushButton("Random Show")
+        self.random_show_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {PURPLE_ACCENT_BUTTON.split('{')[1].split('}')[0].split(':')[1].strip().split(';')[0]};
+                color: {TEXT_WHITE};
+                border: none;
+                border-radius: {BORDER_RADIUS};
+                font-size: 18px;
+                font-weight: 700;
+                padding: 14px 20px;
+            }}
+            QPushButton:hover {{
+                background-color: #7c3aed;
+            }}
+            QPushButton:pressed {{
+                background-color: #6d28d9;
+            }}
+        """)
+        self.random_show_btn.setMinimumHeight(70)
+        self.random_show_btn.clicked.connect(self.on_random_show_clicked)
+        layout.addWidget(self.random_show_btn)
+
+        # 3. Filters - PLACEHOLDER for Task 3 (medium, 70px)
+        self.filters_btn = QPushButton("Filters")
+        self.filters_btn.setStyleSheet(SECONDARY_BUTTON_STYLE)
+        self.filters_btn.setMinimumHeight(70)
+        self.filters_btn.clicked.connect(self.show_filters_placeholder)
+        layout.addWidget(self.filters_btn)
+
+        # Add separator line
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setStyleSheet(f"background-color: {BG_GRAY_700}; max-height: 2px;")
+        layout.addWidget(separator)
+
+        # Additional modes (smaller, tertiary)
+        # Top Rated Shows
         top_rated_btn = QPushButton("Top Rated Shows")
-        top_rated_btn.setStyleSheet(PRIMARY_BUTTON_STYLE)
-        top_rated_btn.setMinimumHeight(60)
+        top_rated_btn.setStyleSheet(SECONDARY_BUTTON_STYLE)
+        top_rated_btn.setMinimumHeight(55)
         top_rated_btn.clicked.connect(self.load_default_shows)
         layout.addWidget(top_rated_btn)
 
-        # Browse by Date
-        date_btn = QPushButton("Browse by Date")
-        date_btn.setStyleSheet(PRIMARY_BUTTON_STYLE)
-        date_btn.setMinimumHeight(60)
-        date_btn.clicked.connect(self.show_date_browser)
-        layout.addWidget(date_btn)
-
         # Browse by Venue
         venue_btn = QPushButton("Browse by Venue")
-        venue_btn.setStyleSheet(PRIMARY_BUTTON_STYLE)
-        venue_btn.setMinimumHeight(60)
+        venue_btn.setStyleSheet(SECONDARY_BUTTON_STYLE)
+        venue_btn.setMinimumHeight(55)
         venue_btn.clicked.connect(self.show_venue_browser)
         layout.addWidget(venue_btn)
 
         # Browse by Year
         year_btn = QPushButton("Browse by Year")
-        year_btn.setStyleSheet(PRIMARY_BUTTON_STYLE)
-        year_btn.setMinimumHeight(60)
+        year_btn.setStyleSheet(SECONDARY_BUTTON_STYLE)
+        year_btn.setMinimumHeight(55)
         year_btn.clicked.connect(self.show_year_browser)
         layout.addWidget(year_btn)
 
         # Search Shows
         search_btn = QPushButton("Search Shows")
-        search_btn.setStyleSheet(PRIMARY_BUTTON_STYLE)
-        search_btn.setMinimumHeight(60)
+        search_btn.setStyleSheet(SECONDARY_BUTTON_STYLE)
+        search_btn.setMinimumHeight(55)
         search_btn.clicked.connect(self.show_search_dialog)
         layout.addWidget(search_btn)
 
-        # Random Show
-        random_btn = QPushButton("Random Show")
-        random_btn.setStyleSheet(PRIMARY_BUTTON_STYLE)
-        random_btn.setMinimumHeight(60)
-        random_btn.clicked.connect(self.load_random_show)
-        layout.addWidget(random_btn)
-        
         return layout
     
     def create_right_panel(self):
-        """Create right panel with stacked widget for different views"""
+        """
+        Create right panel - Phase 10A redesign
+
+        Primary display: ShowCard widget with multiple states
+        Retained: Show list, date selector, year browser (stacked)
+        """
         panel = QFrame()
         panel.setStyleSheet(f"""
             QFrame {{
@@ -214,10 +297,24 @@ class BrowseScreen(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        # Stacked widget to switch between show list view and random show view
+        # Stacked widget for different view modes
         self.content_stack = QStackedWidget()
 
-        # Page 0: Show list view (with header)
+        # Page 0: ShowCard display (PRIMARY - Phase 10A)
+        showcard_page = QWidget()
+        showcard_layout = QVBoxLayout(showcard_page)
+        showcard_layout.setContentsMargins(20, 20, 20, 20)
+        showcard_layout.setSpacing(16)
+
+        # ShowCard widget - new primary display
+        self.show_card = ShowCard()
+        self.show_card.play_clicked.connect(self.on_showcard_play_clicked)
+        self.show_card.try_another_clicked.connect(self.on_random_show_clicked)
+        showcard_layout.addWidget(self.show_card)
+
+        self.content_stack.addWidget(showcard_page)
+
+        # Page 1: Show list view (with header) - RETAINED
         list_page = QWidget()
         list_layout = QVBoxLayout(list_page)
         list_layout.setContentsMargins(20, 20, 20, 20)
@@ -256,18 +353,12 @@ class BrowseScreen(QWidget):
 
         self.content_stack.addWidget(list_page)
 
-        # Page 1: Random show view
-        self.random_show_widget = RandomShowWidget()
-        self.random_show_widget.show_selected.connect(self.on_show_selected)
-        self.random_show_widget.reload_requested.connect(self.load_random_show)
-        self.content_stack.addWidget(self.random_show_widget)
-
-        # Page 2: Date selector view
+        # Page 2: Date selector view - RETAINED
         self.date_selector_widget = DateSelectorWidget()
         self.date_selector_widget.date_selected.connect(self.on_date_selector_selected)
         self.content_stack.addWidget(self.date_selector_widget)
 
-        # Page 3: Year browser view
+        # Page 3: Year browser view - RETAINED
         self.year_browser_widget = YearBrowser()
         self.year_browser_widget.year_selected.connect(self.on_year_browser_selected)
         self.content_stack.addWidget(self.year_browser_widget)
@@ -303,14 +394,110 @@ class BrowseScreen(QWidget):
         self.header_subtitle.setText(subtitle)
     
     # ========================================================================
-    # BROWSE MODE HANDLERS
+    # BROWSE MODE HANDLERS - PHASE 10A
     # ========================================================================
-    
-    def load_default_shows(self):
-        """Load top-rated shows (default view)"""
+
+    def load_default_state(self):
+        """
+        Load default state on screen initialization - Phase 10A
+
+        Shows last played show if available, otherwise displays welcome message
+        """
+        # Switch to ShowCard view (page 0)
+        self.content_stack.setCurrentIndex(0)
+        self.current_mode = 'default'
+
+        # TODO: Query playback_history table for last played show
+        # For now, show a welcome message
+        self.show_card.date_label.setText("Welcome to DeadStream")
+        self.show_card.venue_label.setText("Select a browse mode to find shows")
+        self.show_card.location_label.setText("")
+        self.show_card.quality_badge.setText("")
+        self.show_card.setlist_label.setText(
+            "Browse by Date: Explore shows from any date in history\n\n"
+            "Random Show: Discover a high-quality random show\n\n"
+            "Filters: Find shows by era, series, or quality"
+        )
+        self.show_card.set_mode('default')
+        self.show_card.play_button.setEnabled(False)  # No show loaded yet
+
+        print("[INFO] Browse screen initialized in default state")
+
+    def on_random_show_clicked(self):
+        """
+        Handle Random Show button click - Phase 10A Task 2
+
+        Loads random high-quality show and displays in ShowCard
+        """
         try:
-            # Switch to list view
+            # Switch to ShowCard view
             self.content_stack.setCurrentIndex(0)
+            self.current_mode = 'random'
+
+            # Show loading state
+            self.show_card.show_loading()
+
+            # Get random show from database
+            # Using get_random_show for now (Phase 7 implementation)
+            # Task 2.1 will add get_random_excellent_show with min_score and filter support
+            show = get_random_show()
+
+            if show:
+                # Animate ShowCard update
+                self.show_card.fade_in(show)
+                self.show_card.set_mode('random')  # Shows "Try Another" button
+                self.show_card.play_button.setEnabled(True)
+
+                print(f"[OK] Random show loaded: {show['date']} - {show['venue']}")
+            else:
+                # No shows found (edge case)
+                self.show_card.show_error("No shows found matching criteria")
+                print("[WARN] No random show found")
+
+        except Exception as e:
+            print(f"[ERROR] Failed to load random show: {e}")
+            import traceback
+            traceback.print_exc()
+            self.show_card.show_error("Unable to load random show")
+            self.toast_manager.show_error("Database error: Unable to load random show")
+
+    def on_showcard_play_clicked(self, identifier):
+        """
+        Handle play button click from ShowCard - Phase 10A
+
+        Args:
+            identifier (str): Show identifier to play
+        """
+        print(f"[INFO] Play requested from ShowCard: {identifier}")
+
+        # Get full show data to emit
+        # For now, we'll need to query the database
+        # The ShowCard should store the full show dict
+        if self.show_card.current_show:
+            self.show_selected.emit(self.show_card.current_show)
+        else:
+            print("[ERROR] ShowCard has no current show data")
+
+    def show_filters_placeholder(self):
+        """
+        Placeholder for Filters button - Phase 10A Task 3
+
+        Will be replaced with actual filter dialog in Task 3.2
+        """
+        self.toast_manager.show_error(
+            "Filters feature coming soon! (Phase 10A Task 3)"
+        )
+        print("[INFO] Filters button clicked (placeholder)")
+
+    # ========================================================================
+    # BROWSE MODE HANDLERS - PHASE 7 (RETAINED)
+    # ========================================================================
+
+    def load_default_shows(self):
+        """Load top-rated shows (default view) - Phase 7 retained"""
+        try:
+            # Switch to list view (page 1 in Phase 10A)
+            self.content_stack.setCurrentIndex(1)
 
             self.show_list.set_loading_state()
 
@@ -499,11 +686,11 @@ class BrowseScreen(QWidget):
         dialog.exec_()
     
     def load_shows_by_date(self, date_str):
-        """Load and display shows from a specific date (Task 7.2)"""
+        """Load and display shows from a specific date (Task 7.2) - Phase 7 retained"""
 
         try:
-            # Switch to list view
-            self.content_stack.setCurrentIndex(0)
+            # Switch to list view (page 1 in Phase 10A)
+            self.content_stack.setCurrentIndex(1)
 
             self.show_list.set_loading_state()
 
@@ -540,11 +727,11 @@ class BrowseScreen(QWidget):
             self.toast_manager.show_error(f"Database error: Unable to load shows for {date_str}")
     
     def load_shows_by_venue(self, venue_name):
-        """Load and display shows from a specific venue (Task 7.3)"""
+        """Load and display shows from a specific venue (Task 7.3) - Phase 7 retained"""
 
         try:
-            # Switch to list view
-            self.content_stack.setCurrentIndex(0)
+            # Switch to list view (page 1 in Phase 10A)
+            self.content_stack.setCurrentIndex(1)
 
             self.show_list.set_loading_state()
 
@@ -581,11 +768,11 @@ class BrowseScreen(QWidget):
             self.toast_manager.show_error(f"Database error: Unable to load shows for {venue_name}")
     
     def load_shows_by_year(self, year):
-        """Load and display shows from a specific year (Task 7.4)"""
+        """Load and display shows from a specific year (Task 7.4) - Phase 7 retained"""
 
         try:
-            # Switch to list view
-            self.content_stack.setCurrentIndex(0)
+            # Switch to list view (page 1 in Phase 10A)
+            self.content_stack.setCurrentIndex(1)
 
             self.show_list.set_loading_state()
 
@@ -665,11 +852,11 @@ class BrowseScreen(QWidget):
             self.toast_manager.show_error(f"Search error: {str(e)}")
 
     def load_search_results(self, results):
-        """Load and display search results (Task 7.5)"""
+        """Load and display search results (Task 7.5) - Phase 7 retained"""
 
         try:
-            # Switch to list view
-            self.content_stack.setCurrentIndex(0)
+            # Switch to list view (page 1 in Phase 10A)
+            self.content_stack.setCurrentIndex(1)
 
             # Update header
             if not results:
@@ -699,24 +886,6 @@ class BrowseScreen(QWidget):
             self.show_list.set_empty_state("Error loading shows")
             self.toast_manager.show_error("Failed to load search results")
     
-    def load_random_show(self):
-        """Load a random show (Task 7.6 - NEW)"""
-
-        try:
-            # Switch to random show widget view
-            self.content_stack.setCurrentIndex(1)
-
-            # Load random show in the widget
-            self.random_show_widget.load_random_show()
-
-            print("[OK] Random show view activated")
-
-        except Exception as e:
-            print(f"[ERROR] Failed to load random show: {e}")
-            import traceback
-            traceback.print_exc()
-            self.toast_manager.show_error("Database error: Unable to load random show")
-    
     # ========================================================================
     # EVENT HANDLERS
     # ========================================================================
@@ -727,10 +896,49 @@ class BrowseScreen(QWidget):
         self.show_selected.emit(show)
 
     def on_date_selector_selected(self, date_str):
-        """Handle date selection from DateSelectorWidget"""
+        """
+        Handle date selection from DateSelectorWidget - Phase 10A Task 1.3
+
+        Loads selected show in ShowCard instead of list view
+        """
         print(f"[INFO] Date selected from selector: {date_str}")
-        # Load shows for this date (will switch back to list view)
-        self.load_shows_by_date(date_str)
+
+        try:
+            # Get shows for this date
+            shows = get_show_by_date(date_str)
+
+            if not shows:
+                # No shows found - show error in ShowCard
+                self.content_stack.setCurrentIndex(0)
+                self.show_card.show_error(f"No show found for {date_str}")
+                print(f"[WARN] No shows found for {date_str}")
+                return
+
+            # Take first show (or best scored show if multiple)
+            show = shows[0]
+            if len(shows) > 1:
+                # If multiple recordings, pick the best one
+                show = max(shows, key=lambda s: s.get('recording_score', 0))
+                print(f"[INFO] Multiple recordings found, selected best: score={show.get('recording_score', 0)}")
+
+            # Switch to ShowCard view (page 0)
+            self.content_stack.setCurrentIndex(0)
+            self.current_mode = 'date_selected'
+
+            # Load show in ShowCard with fade animation
+            self.show_card.fade_in(show)
+            self.show_card.set_mode('date_selected')  # No "Try Another" button
+            self.show_card.play_button.setEnabled(True)
+
+            print(f"[OK] Date selection loaded in ShowCard: {show['date']} - {show['venue']}")
+
+        except Exception as e:
+            print(f"[ERROR] Failed to load date selection: {e}")
+            import traceback
+            traceback.print_exc()
+            self.content_stack.setCurrentIndex(0)
+            self.show_card.show_error(f"Error loading show for {date_str}")
+            self.toast_manager.show_error(f"Database error: Unable to load show for {date_str}")
 
     def on_year_browser_selected(self, year):
         """Handle year selection from YearBrowser"""

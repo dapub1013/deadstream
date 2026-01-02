@@ -19,10 +19,10 @@
 
 ## Phase 10A: Active Tasks
 
-### Task 1: Browse Shows Screen Redesign (0/3 hours)
-- [ ] **1.1** Create ShowCard Widget (0/1 hour)
-- [ ] **1.2** Refactor Browse Shows Layout (0/1.5 hours)
-- [ ] **1.3** Update Browse by Date Flow (0/0.5 hours)
+### Task 1: Browse Shows Screen Redesign (2/3 hours)
+- [x] **1.1** Create ShowCard Widget (1/1 hour) ✓ COMPLETE
+- [x] **1.2** Refactor Browse Shows Layout (1/1.5 hours) ✓ COMPLETE
+- [x] **1.3** Update Browse by Date Flow (0/0.5 hours) ✓ COMPLETE (integrated with 1.2)
 
 ### Task 2: Random Show Implementation (0/3 hours)
 - [ ] **2.1** Database Query Logic (0/0.5 hours)
