@@ -169,6 +169,7 @@ class MainWindow(QMainWindow):
             # Browse screen navigation
             self.browse_screen.player_requested.connect(self.show_player)
             self.browse_screen.settings_requested.connect(self.show_settings)
+            self.browse_screen.show_selected.connect(self.on_show_selected)
             
             # Settings screen navigation
             self.settings_screen.browse_requested.connect(self.show_browse)
@@ -214,14 +215,24 @@ class MainWindow(QMainWindow):
     def show_player(self):
         """Navigate to player screen"""
         self.screen_manager.show_screen(ScreenManager.PLAYER_SCREEN)
-    
+
     def show_browse(self):
         """Navigate to browse screen"""
         self.screen_manager.show_screen(ScreenManager.BROWSE_SCREEN)
-    
+
     def show_settings(self):
         """Navigate to settings screen"""
         self.screen_manager.show_screen(ScreenManager.SETTINGS_SCREEN)
+
+    def on_show_selected(self, show):
+        """Handle show selection from browse screen"""
+        print(f"[INFO] Loading show: {show.get('date', 'Unknown')} - {show.get('venue', 'Unknown')}")
+
+        # Load the show into the player screen
+        self.player_screen.load_show(show)
+
+        # Navigate to player screen
+        self.show_player()
     
     def on_screen_changed(self, screen_name):
         """
