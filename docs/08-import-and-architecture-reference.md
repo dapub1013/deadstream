@@ -350,8 +350,6 @@ from ...database.queries import get_show_count
 - `browse_screen.py` - Full browse implementation with all widgets
 - `settings_screen.py` - Full settings implementation with categories
 
-**Note:** Duplicate filenames! `browse_screen.py` exists in both `src/ui/` and `src/ui/screens/`. The `screens/` version is the full implementation.
-
 ### Widget Files (in src/ui/widgets/)
 - `show_list.py` - Show list display widget
 - `date_browser.py` - Calendar-based date browser
