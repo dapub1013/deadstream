@@ -215,7 +215,7 @@ class BadgeDemo(QWidget):
             ('1973-11-10', 'Winterland Arena', 4.7, 'SBD'),
         ]
         
-        for date, venue, rating, source in concerts:
+        for idx, (date, venue, rating, source) in enumerate(concerts):
             concert_layout = QHBoxLayout()
             concert_layout.setSpacing(Theme.SPACING_MEDIUM)
             
@@ -251,7 +251,7 @@ class BadgeDemo(QWidget):
             layout.addLayout(concert_layout)
             
             # Separator line
-            if concert != concerts[-1]:  # Don't add after last item
+            if idx < len(concerts) - 1:  # Don't add after last item
                 separator = QLabel()
                 separator.setStyleSheet(f"""
                     background-color: {Theme.BORDER_SUBTLE};
