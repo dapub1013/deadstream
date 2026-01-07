@@ -55,8 +55,17 @@ class WelcomeScreen(QWidget):
         """Initialize the welcome screen"""
         super().__init__(parent)
         
-        # Apply gradient background from Theme
-        self.setStyleSheet(Theme.get_global_stylesheet())
+        # Apply gradient background explicitly
+        # Use both global stylesheet AND widget-specific background
+        self.setStyleSheet(f"""
+            QWidget {{
+                background: qlineargradient(
+                    x1:0, y1:0, x2:0, y2:1,
+                    stop:0 {Theme.BG_PRIMARY},
+                    stop:1 #1a1a4a
+                );
+            }}
+        """)
         
         # Create UI
         self._create_ui()
@@ -174,14 +183,14 @@ class WelcomeScreen(QWidget):
         layout.setAlignment(Qt.AlignCenter)
         
         # Primary CTA: "Find a Show"
-        find_btn = PillButton("Find a Show", variant='yellow')
+        find_btn = PillButton("Find a Show", variant='blue')
         find_btn.setMinimumWidth(300)  # Wider buttons look better on welcome screen
         find_btn.setToolTip("Browse Grateful Dead concerts")
         find_btn.clicked.connect(self._on_browse_clicked)
         layout.addWidget(find_btn)
         
         # Secondary action: "Random Show"
-        random_btn = PillButton("Random Show", variant='red')
+        random_btn = PillButton("Random Show", variant='gradient')
         random_btn.setMinimumWidth(300)
         random_btn.setToolTip("Play a random Grateful Dead concert")
         random_btn.clicked.connect(self._on_random_clicked)
