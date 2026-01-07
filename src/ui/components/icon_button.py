@@ -24,20 +24,20 @@ class IconButton(QPushButton):
     Circular icon button for navigation and actions.
     
     Icon Types:
-        - 'home': House emoji for home/back navigation
-        - 'settings': Gear emoji for settings
-        - 'search': Magnifying glass for search
+        - 'home': House symbol for home/back navigation
+        - 'settings': Gear symbol for settings
+        - 'search': Search symbol for search
         - 'back': Left triangle for back navigation
         - 'forward': Right triangle for forward navigation
         - 'close': X mark for close/dismiss
         - 'menu': Hamburger menu (three lines)
-        - 'random': Dice emoji for random/shuffle
+        - 'random': Die face for random/shuffle
         - 'play': Play button for media playback
         - 'pause': Pause button for media control
         - 'skip': Next track button
-        - 'star': Star emoji for favorites/ratings
-        - 'heart': Heart emoji for favorites
-        - 'volume': Speaker emoji for audio
+        - 'star': Star for favorites/ratings
+        - 'heart': Heart for favorites
+        - 'volume': Music note for audio
         - 'info': Information icon
         - 'plus': Plus sign for add actions
         - 'minus': Minus sign for remove actions
@@ -53,7 +53,7 @@ class IconButton(QPushButton):
         - Circular appearance
         - Automatic hover/pressed states
         - Supports custom icons via text override
-        - Uses emojis for visual appeal
+        - Uses Unicode symbols for cross-platform compatibility
     
     Example:
         home_btn = IconButton('home', variant='transparent')
@@ -61,23 +61,23 @@ class IconButton(QPushButton):
     """
     
     # Icon character mappings (Unicode symbols and emojis)
-    # Using visually appealing characters for better UI appearance
+    # Using cross-platform compatible characters for Raspberry Pi
     ICONS = {
-        'home': '🏠',           # House emoji
-        'settings': '⚙',        # Gear symbol (without variant selector)
-        'search': '🔍',         # Magnifying glass emoji
+        'home': '⌂',            # House symbol (Unicode, no variant)
+        'settings': '⚙',        # Gear symbol (verified working)
+        'search': '⌕',          # Search symbol (Unicode alternative)
         'back': '◀',            # Left-pointing triangle
         'forward': '▶',         # Right-pointing triangle
         'close': '✕',           # Heavy multiplication X
         'menu': '☰',            # Trigram (hamburger menu)
-        'random': '🎲',         # Game die emoji
-        'play': '▶',            # Play triangle (simple)
+        'random': '⚄',          # Die face (Unicode dice symbol)
+        'play': '▶',            # Play triangle
         'pause': '⏸',           # Pause button
         'skip': '⏭',            # Next track button
-        'star': '⭐',           # Star emoji
-        'heart': '❤',           # Heart (without variant selector)
-        'volume': '🔊',         # Volume/speaker
-        'info': 'ℹ',            # Information (without variant selector)
+        'star': '★',            # Star (Unicode, no variant)
+        'heart': '♥',           # Heart (Unicode, no variant)
+        'volume': '♪',          # Music note (Unicode alternative)
+        'info': 'ℹ',            # Information (verified working)
         'plus': '➕',           # Plus/add
         'minus': '➖',          # Minus/remove
     }
