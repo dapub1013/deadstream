@@ -86,8 +86,8 @@ class WelcomeScreen(QWidget):
         logo_layout = self._create_logo_section()
         main_layout.addLayout(logo_layout)
         
-        # Spacing between logo and buttons
-        main_layout.addSpacing(Theme.SPACING_XLARGE)
+        # Spacing between logo and buttons (larger gap for visual balance)
+        main_layout.addSpacing(48)  # Extra spacing between logo and buttons
         
         # Action buttons
         buttons_layout = self._create_action_buttons()
@@ -134,9 +134,9 @@ class WelcomeScreen(QWidget):
         title = QLabel("DeadStream")
         title.setAlignment(Qt.AlignCenter)
         
-        # Use Theme typography
+        # Use Theme typography (64px for large welcome title)
         title_font = QFont(Theme.FONT_FAMILY)
-        title_font.setPixelSize(Theme.HEADER_XLARGE)  # 64px
+        title_font.setPixelSize(64)  # Larger than HEADER_LARGE for welcome screen
         title_font.setBold(True)
         title.setFont(title_font)
         
