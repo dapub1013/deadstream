@@ -105,6 +105,7 @@ class Theme:
     
     # Badges
     BADGE_HEIGHT = 28           # Badge height
+    BADGE_WIDTH = 80            # Badge width
     BADGE_RADIUS = 14           # Badge border radius
     
     # List Items
