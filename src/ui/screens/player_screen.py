@@ -97,68 +97,104 @@ class CornerButton(QWidget):
         super().mousePressEvent(event)
 
 
-class ScrollingLabel(QLabel):
-    """Label that scrolls text horizontally if it doesn't fit"""
+class ElidedLabel(QLabel):
+    """Label that shows ellipsis (...) when text is too long"""
     
     def __init__(self, text="", parent=None):
         super().__init__(text, parent)
-        self._scroll_pos = 0
-        self._scroll_timer = QTimer(self)
-        self._scroll_timer.timeout.connect(self._scroll_text)
-        self._needs_scroll = False
-        self._original_text = text
-        
+        self._full_text = text
+        self.setMinimumHeight(60)
+        self.setMaximumHeight(60)
+    
     def setText(self, text):
-        """Set text and check if scrolling is needed"""
-        self._original_text = text
+        """Set text and store full version"""
+        self._full_text = text
         super().setText(text)
-        self._check_scroll_needed()
-        
-    def _check_scroll_needed(self):
-        """Check if text is too wide and needs scrolling"""
-        if not self._original_text:
-            self._needs_scroll = False
-            self._scroll_timer.stop()
-            return
-            
-        # Get text width
-        fm = QFontMetrics(self.font())
-        text_width = fm.horizontalAdvance(self._original_text)
-        available_width = self.width() - 40  # Some padding
-        
-        if text_width > available_width:
-            # Text is too long, start scrolling
-            self._needs_scroll = True
-            self._scroll_pos = 0
-            if not self._scroll_timer.isActive():
-                self._scroll_timer.start(100)  # Scroll every 100ms
-        else:
-            # Text fits, no scrolling needed
-            self._needs_scroll = False
-            self._scroll_timer.stop()
-            self._scroll_pos = 0
-            super().setText(self._original_text)
+        self.update()
     
-    def _scroll_text(self):
-        """Scroll the text by moving characters"""
-        if not self._needs_scroll or not self._original_text:
-            return
+    def paintEvent(self, event):
+        """Paint with elided text if needed"""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
         
-        # Create scrolling effect by rotating text
-        text_len = len(self._original_text)
-        self._scroll_pos = (self._scroll_pos + 1) % (text_len + 10)  # Add pause at end
+        # Get font metrics
+        fm = painter.fontMetrics()
         
-        if self._scroll_pos < text_len:
-            scrolled_text = self._original_text[self._scroll_pos:] + "   " + self._original_text[:self._scroll_pos]
-        else:
-            scrolled_text = self._original_text  # Pause at original position
+        # Calculate available width (with some padding)
+        available_width = self.width() - 40
         
-        super().setText(scrolled_text)
+        # Elide text if too long
+        elided_text = fm.elidedText(self._full_text, Qt.ElideRight, available_width)
+        
+        # Draw elided text
+        painter.setPen(QColor(Theme.TEXT_PRIMARY))
+        painter.setFont(self.font())
+        
+        # Center the text
+        text_rect = self.rect()
+        painter.drawText(text_rect, Qt.AlignCenter, elided_text)
+
+
+class SkipButton(QWidget):
+    """Circular button with curved arrow for skip forward/backward 30s"""
     
-    def resizeEvent(self, event):
-        """Recheck scroll when widget is resized"""
-        super().resizeEvent(event)
-        self._check_scroll_needed()
+    clicked = pyqtSignal()
+    
+    def __init__(self, direction='forward', parent=None):
+        super().__init__(parent)
+        self.direction = direction  # 'forward' or 'backward'
+        self.hovered = False
+        
+        # Standard media control size
+        self.setFixedSize(60, 60)
+        self.setMouseTracking(True)
+        
+        # Icon: circular arrows (different from triangular prev/next)
+        if direction == 'backward':
+            self.icon = '↺'  # Counterclockwise arrow
+            self.setToolTip("Skip back 30 seconds")
+        else:
+            self.icon = '↻'  # Clockwise arrow
+            self.setToolTip("Skip forward 30 seconds")
+    
+    def paintEvent(self, event):
+        """Paint circular button with curved arrow"""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        
+        # Background circle (outline style)
+        if self.hovered:
+            painter.setPen(QColor(255, 255, 255, 100))
+            painter.setBrush(QColor(255, 255, 255, 30))
+        else:
+            painter.setPen(QColor(255, 255, 255, 60))
+            painter.setBrush(Qt.NoBrush)
+        
+        painter.drawEllipse(2, 2, 56, 56)
+        
+        # Icon (circular arrow)
+        painter.setPen(QColor(255, 255, 255, 255) if self.hovered else QColor(255, 255, 255, 200))
+        font = QFont(Theme.FONT_FAMILY, 24)  # Larger for visibility
+        painter.setFont(font)
+        painter.drawText(self.rect(), Qt.AlignCenter, self.icon)
+    
+    def enterEvent(self, event):
+        """Mouse entered"""
+        self.hovered = True
+        self.update()
+        super().enterEvent(event)
+    
+    def leaveEvent(self, event):
+        """Mouse left"""
+        self.hovered = False
+        self.update()
+        super().leaveEvent(event)
+    
+    def mousePressEvent(self, event):
+        """Handle click"""
+        if event.button() == Qt.LeftButton:
+            self.clicked.emit()
+        super().mousePressEvent(event)
 
 
 class PlayerScreen(QWidget):
@@ -192,11 +228,11 @@ class PlayerScreen(QWidget):
         self.now_playing_label = None
         self.track_counter_label = None
         self.song_title_label = None
-        self.play_pause_btn = None
-        self.prev_btn = None
-        self.next_btn = None
-        self.skip_back_btn = None
-        self.skip_forward_btn = None
+        self.play_pause_btn = None  # IconButton (solid, 90px)
+        self.prev_btn = None  # IconButton (triangles ◀▶)
+        self.next_btn = None  # IconButton (triangles ◀▶)
+        self.skip_back_btn = None  # SkipButton (circular arrow ↺)
+        self.skip_forward_btn = None  # SkipButton (circular arrow ↻)
         self.progress_bar = None
         self.volume_control = None
         self.home_btn = None  # CornerButton (minimal)
@@ -390,15 +426,14 @@ class PlayerScreen(QWidget):
         
         layout.addSpacing(32)
         
-        # Song title (large, centered, scrolls if too long)
-        self.song_title_label = ScrollingLabel("Song Title")
+        # Song title (large, centered, truncates with ellipsis if too long)
+        self.song_title_label = ElidedLabel("Song Title")
         self.song_title_label.setStyleSheet(f"""
             color: {Theme.TEXT_PRIMARY};
             font-size: 48px;
             font-weight: bold;
             background: transparent;
         """)
-        self.song_title_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.song_title_label)
         
         layout.addSpacing(64)
@@ -446,7 +481,7 @@ class PlayerScreen(QWidget):
         return panel
     
     def create_media_controls(self):
-        """Create 5-button media control layout matching mockup"""
+        """Create 5-button media control layout with distinct icons"""
         controls_widget = QWidget()
         controls_widget.setStyleSheet("background: transparent;")
         
@@ -454,12 +489,12 @@ class PlayerScreen(QWidget):
         layout.setSpacing(24)
         layout.setContentsMargins(0, 0, 0, 0)
         
-        # Skip backward 30s (circular arrow left)
-        self.skip_back_btn = IconButton('back', variant='outline')
+        # Skip backward 30s (circular arrow ↺ - DIFFERENT from prev)
+        self.skip_back_btn = SkipButton('backward')
         self.skip_back_btn.clicked.connect(self.on_skip_backward)
         layout.addWidget(self.skip_back_btn)
         
-        # Previous track
+        # Previous track (triangle ◀ - solid button)
         self.prev_btn = IconButton('back', variant='solid')
         self.prev_btn.clicked.connect(self.on_previous_track)
         layout.addWidget(self.prev_btn)
@@ -470,13 +505,13 @@ class PlayerScreen(QWidget):
         self.play_pause_btn.clicked.connect(self.on_play_pause)
         layout.addWidget(self.play_pause_btn)
         
-        # Next track
+        # Next track (triangle ▶ - solid button)
         self.next_btn = IconButton('forward', variant='solid')
         self.next_btn.clicked.connect(self.on_next_track)
         layout.addWidget(self.next_btn)
         
-        # Skip forward 30s (circular arrow right)
-        self.skip_forward_btn = IconButton('forward', variant='outline')
+        # Skip forward 30s (circular arrow ↻ - DIFFERENT from next)
+        self.skip_forward_btn = SkipButton('forward')
         self.skip_forward_btn.clicked.connect(self.on_skip_forward)
         layout.addWidget(self.skip_forward_btn)
         
