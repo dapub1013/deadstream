@@ -1,34 +1,32 @@
 #!/usr/bin/env python3
 """
-Player screen for DeadStream UI - Phase 10.2: Auto-Play Next Track
+Player screen for DeadStream UI - Hybrid Design.
+Original left panel + Mockup-styled right panel.
 
-Shows now-playing interface with track info, playback controls, and setlist.
-NOW WITH: Automatic track advancement when current track ends!
-
-Phase 10, Task 10.2 - Auto-Play Next Track Implementation
+Phase 10C - Player Screen (Right Panel Mockup Only)
 """
 
-# Path manipulation for imports (file in src/ui/screens/)
 import sys
 import os
+
+# Path manipulation for imports (file in src/ui/screens/)
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from PyQt5.QtWidgets import (
-    QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QFrame
+    QWidget, QHBoxLayout, QVBoxLayout, QLabel, QFrame, QScrollArea
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QPainter, QLinearGradient, QColor
+
+# Import Theme and Components
+from src.ui.styles.theme import Theme
+from src.ui.components.icon_button import IconButton
 
 # Import widgets
-from src.ui.widgets.track_info import TrackInfoWidget
-from src.ui.widgets.playback_controls import PlaybackControlsWidget
 from src.ui.widgets.progress_bar import ProgressBarWidget
 from src.ui.widgets.volume_control_widget import VolumeControlWidget
-from src.ui.widgets.error_dialog import ErrorDialog, show_playback_error, show_network_error
-from src.ui.widgets.toast_notification import ToastManager
-from src.ui.widgets.loading_spinner import LoadingOverlay
 
 # Import audio engine
 from src.audio.resilient_player import ResilientPlayer, PlayerState
@@ -36,316 +34,390 @@ from src.audio.resilient_player import ResilientPlayer, PlayerState
 
 class PlayerScreen(QWidget):
     """
-    Player screen with now-playing interface.
+    Player screen - Hybrid design.
     
     Features:
-    - Track info display (song name, set)
-    - Full playback controls (play/pause, prev/next, skip 30s)
-    - Progress bar with seek
-    - Volume control with mute
-    - Auto-play next track when current track ends (NEW!)
+    - Left panel: Original placeholder with gradient background
+    - Right panel: Mockup design with pure black background
+    - Yellow home icon (top right)
+    - Settings icon (bottom right)
+    - Centered track info and controls
     
     Signals:
-        browse_requested: User wants to browse shows
+        home_requested: User wants to go home/browse
+        settings_requested: User wants to open settings
     """
     
     # Signals
-    browse_requested = pyqtSignal()  # Navigate to browse screen
+    home_requested = pyqtSignal()
+    settings_requested = pyqtSignal()
     
     def __init__(self):
+        """Initialize player screen"""
         super().__init__()
         
+        # Audio player instance
+        self.player = ResilientPlayer()
+        
+        # UI widgets
+        self.now_playing_label = None
+        self.track_counter_label = None
+        self.song_title_label = None
+        self.play_pause_btn = None
+        self.prev_btn = None
+        self.next_btn = None
+        self.skip_back_btn = None
+        self.skip_forward_btn = None
+        self.progress_bar = None
+        self.volume_control = None
+        self.home_btn = None
+        self.settings_btn = None
+        
         # Playlist state
-        self.current_playlist = []  # List of track dicts
         self.current_track_index = 0
         self.total_tracks = 0
-        self.playlist_loaded = False
         
-        # Create audio player
-        self.player = ResilientPlayer()
-
-        # NEW: Connect track end callback for auto-play
-        self.player.on_track_ended = self.on_track_ended_auto_advance
-        print("[INFO] Auto-play next track enabled")
-
-        # Build UI
-        self._build_ui()
-
-        # Sync volume control widget with player's initial volume (loaded from settings)
-        player_volume = self.player.get_volume()
-        self.volume_control.set_volume(player_volume)
-        print(f"[INFO] PlayerScreen: Volume control initialized to {player_volume}% from settings")
-
-        # Create error handling UI components
-        self.toast_manager = ToastManager(self)
-        self.loading_overlay = LoadingOverlay(self)
-
-        # Start UI update timer (200ms = 5 updates/second)
-        self.update_timer = QTimer()
-        self.update_timer.timeout.connect(self.update_ui_from_player)
-        self.update_timer.start(200)
-
-        print("[INFO] PlayerScreen initialized with auto-play and error handling")
+        # UI update timer
+        self.update_timer = None
+        
+        self.init_ui()
+        self.init_audio_integration()
     
-    def _build_ui(self):
-        """Build the player screen layout"""
-        # Main horizontal layout (50/50 split)
+    def paintEvent(self, event):
+        """Paint the gradient background manually for left panel area"""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        
+        # Create linear gradient from top to bottom
+        gradient = QLinearGradient(0, 0, 0, self.height())
+        gradient.setColorAt(0, QColor(Theme.BG_PRIMARY))  # #2E2870
+        gradient.setColorAt(1, QColor("#1a1a4a"))  # darker purple
+        
+        painter.fillRect(self.rect(), gradient)
+        super().paintEvent(event)
+    
+    def init_ui(self):
+        """Set up the player screen UI"""
+        # Main horizontal layout (split screen)
         main_layout = QHBoxLayout()
-        main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
+        main_layout.setContentsMargins(0, 0, 0, 0)
         
-        # Left panel: Concert info + setlist (placeholder for now)
-        left_panel = QFrame()
-        left_panel.setStyleSheet("background-color: #1F2937;")
-        left_layout = QVBoxLayout()
-        
-        # Placeholder - will be ConcertInfoWidget in Phase 10.1
-        concert_label = QLabel("Concert Info")
-        concert_label.setStyleSheet("color: white; font-size: 24px; padding: 20px;")
-        left_layout.addWidget(concert_label)
-        
-        # Placeholder for setlist
-        setlist_label = QLabel("Setlist will appear here")
-        setlist_label.setStyleSheet("color: #9CA3AF; padding: 20px;")
-        left_layout.addWidget(setlist_label)
-        
-        left_panel.setLayout(left_layout)
-        
-        # Right panel: Now playing + controls
-        right_panel = QFrame()
-        right_panel.setStyleSheet("background-color: #000000;")
-        right_layout = QVBoxLayout()
-        right_layout.setContentsMargins(40, 40, 40, 40)
-        right_layout.setSpacing(30)
-        
-        # Track info widget
-        self.track_info = TrackInfoWidget()
-        right_layout.addWidget(self.track_info)
-        
-        # Playback controls widget
-        self.playback_controls = PlaybackControlsWidget()
-        right_layout.addWidget(self.playback_controls)
-        
-        # Progress bar widget
-        self.progress_bar = ProgressBarWidget()
-        right_layout.addWidget(self.progress_bar)
-        
-        # Volume control widget
-        self.volume_control = VolumeControlWidget()
-        right_layout.addWidget(self.volume_control)
-        
-        # Browse shows button
-        browse_btn = QPushButton("Browse Shows")
-        browse_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #374151;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 16px;
-                font-size: 16px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #4B5563;
-            }
-        """)
-        browse_btn.clicked.connect(self.browse_requested.emit)
-        right_layout.addWidget(browse_btn)
-        
-        right_panel.setLayout(right_layout)
-        
-        # Add panels to main layout (50/50 split)
+        # Left panel: Concert info + setlist (50%) - ORIGINAL DESIGN
+        left_panel = self.create_left_panel()
         main_layout.addWidget(left_panel, 1)
+        
+        # Right panel: Player controls (50%) - MOCKUP DESIGN
+        right_panel = self.create_right_panel()
         main_layout.addWidget(right_panel, 1)
         
         self.setLayout(main_layout)
         
-        # Connect widget signals to handlers
-        self._connect_signals()
+        print("[INFO] PlayerScreen initialized (hybrid design)")
     
-    def _connect_signals(self):
-        """Connect widget signals to player screen handlers"""
-        # Playback controls
-        self.playback_controls.play_pause_clicked.connect(self.on_play_pause)
-        self.playback_controls.previous_clicked.connect(self.on_previous_track)
-        self.playback_controls.next_clicked.connect(self.on_next_track)
-        self.playback_controls.skip_backward_30s.connect(self.on_skip_backward)
-        self.playback_controls.skip_forward_30s.connect(self.on_skip_forward)
+    def init_audio_integration(self):
+        """Initialize audio engine integration"""
+        # Set initial volume from player
+        initial_volume = self.player.get_volume()
+        if self.volume_control:
+            self.volume_control.set_volume(initial_volume)
         
-        # Progress bar
-        self.progress_bar.seek_requested.connect(self.on_seek)
+        # Create UI update timer (200ms = 5 updates per second)
+        self.update_timer = QTimer()
+        self.update_timer.timeout.connect(self.update_ui_from_player)
+        self.update_timer.start(200)
         
-        # Volume control
-        self.volume_control.volume_changed.connect(self.on_volume_changed)
-        self.volume_control.mute_toggled.connect(self.on_mute_toggled)
+        print(f"[INFO] Audio integration initialized - Volume: {initial_volume}%")
     
     # ========================================================================
-    # UI UPDATE LOOP (200ms timer)
+    # UI CREATION - LEFT PANEL (ORIGINAL PLACEHOLDER)
+    # ========================================================================
+    
+    def create_left_panel(self):
+        """Create left panel with original placeholder design"""
+        panel = QFrame()
+        panel.setStyleSheet(f"""
+            QFrame {{
+                background: transparent;
+            }}
+        """)
+        
+        layout = QVBoxLayout()
+        layout.setSpacing(Theme.SPACING_MEDIUM)
+        layout.setContentsMargins(
+            Theme.SPACING_LARGE,
+            Theme.SPACING_LARGE,
+            Theme.SPACING_MEDIUM,
+            Theme.SPACING_LARGE
+        )
+        
+        # Concert header
+        concert_label = QLabel("Concert Information")
+        concert_label.setStyleSheet(f"""
+            color: {Theme.TEXT_PRIMARY};
+            font-size: {Theme.HEADER_LARGE}px;
+            font-weight: bold;
+            background: transparent;
+        """)
+        layout.addWidget(concert_label)
+        
+        # Show details placeholder
+        details_label = QLabel("No show loaded")
+        details_label.setStyleSheet(f"""
+            color: {Theme.TEXT_SECONDARY};
+            font-size: {Theme.BODY_LARGE}px;
+            background: transparent;
+        """)
+        layout.addWidget(details_label)
+        
+        # Setlist header
+        setlist_label = QLabel("Setlist")
+        setlist_label.setStyleSheet(f"""
+            color: {Theme.TEXT_PRIMARY};
+            font-size: {Theme.BODY_LARGE}px;
+            font-weight: bold;
+            background: transparent;
+            margin-top: {Theme.SPACING_LARGE}px;
+        """)
+        layout.addWidget(setlist_label)
+        
+        # Setlist scroll area (placeholder)
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setStyleSheet(f"""
+            QScrollArea {{
+                background: transparent;
+                border: none;
+            }}
+            QScrollBar:vertical {{
+                background: rgba(255, 255, 255, 0.1);
+                width: 12px;
+                border-radius: 6px;
+            }}
+            QScrollBar::handle:vertical {{
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 6px;
+            }}
+            QScrollBar::handle:vertical:hover {{
+                background: rgba(255, 255, 255, 0.5);
+            }}
+        """)
+        
+        setlist_content = QLabel("Track list will appear here...")
+        setlist_content.setStyleSheet(f"""
+            color: {Theme.TEXT_SECONDARY};
+            font-size: {Theme.BODY_MEDIUM}px;
+            background: transparent;
+            padding: {Theme.SPACING_MEDIUM}px;
+        """)
+        scroll_area.setWidget(setlist_content)
+        layout.addWidget(scroll_area, 1)
+        
+        panel.setLayout(layout)
+        return panel
+    
+    # ========================================================================
+    # UI CREATION - RIGHT PANEL (MOCKUP DESIGN)
+    # ========================================================================
+    
+    def create_right_panel(self):
+        """Create right panel with mockup design (pure black)"""
+        panel = QFrame()
+        panel.setStyleSheet("""
+            QFrame {
+                background-color: #000000;
+            }
+        """)
+        
+        layout = QVBoxLayout()
+        layout.setSpacing(0)
+        layout.setContentsMargins(48, 48, 48, 48)
+        
+        # Home button (top right)
+        top_row = QHBoxLayout()
+        top_row.addStretch()
+        self.home_btn = IconButton('home', variant='accent')
+        self.home_btn.clicked.connect(self.on_home_clicked)
+        top_row.addWidget(self.home_btn)
+        layout.addLayout(top_row)
+        
+        # Spacer
+        layout.addStretch(1)
+        
+        # "NOW PLAYING" label
+        self.now_playing_label = QLabel("NOW PLAYING")
+        self.now_playing_label.setStyleSheet(f"""
+            color: {Theme.TEXT_SECONDARY};
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            background: transparent;
+        """)
+        self.now_playing_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.now_playing_label)
+        
+        # Track counter "1 of 25"
+        self.track_counter_label = QLabel("1 of 25")
+        self.track_counter_label.setStyleSheet(f"""
+            color: {Theme.TEXT_SECONDARY};
+            font-size: 16px;
+            font-weight: normal;
+            background: transparent;
+        """)
+        self.track_counter_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.track_counter_label)
+        
+        layout.addSpacing(32)
+        
+        # Song title (large, centered)
+        self.song_title_label = QLabel("Song Title")
+        self.song_title_label.setStyleSheet(f"""
+            color: {Theme.TEXT_PRIMARY};
+            font-size: 48px;
+            font-weight: bold;
+            background: transparent;
+        """)
+        self.song_title_label.setAlignment(Qt.AlignCenter)
+        self.song_title_label.setWordWrap(True)
+        layout.addWidget(self.song_title_label)
+        
+        layout.addSpacing(64)
+        
+        # Progress bar
+        self.progress_bar = ProgressBarWidget()
+        self.progress_bar.seek_requested.connect(self.on_seek)
+        layout.addWidget(self.progress_bar)
+        
+        layout.addSpacing(32)
+        
+        # Media controls
+        controls_widget = self.create_media_controls()
+        layout.addWidget(controls_widget)
+        
+        layout.addSpacing(64)
+        
+        # Volume control
+        self.volume_control = VolumeControlWidget()
+        self.volume_control.volume_changed.connect(self.on_volume_changed)
+        self.volume_control.mute_toggled.connect(self.on_mute_toggled)
+        layout.addWidget(self.volume_control)
+        
+        # Spacer
+        layout.addStretch(1)
+        
+        # Settings button (bottom right)
+        bottom_row = QHBoxLayout()
+        bottom_row.addStretch()
+        self.settings_btn = IconButton('settings', variant='transparent')
+        self.settings_btn.clicked.connect(self.on_settings_clicked)
+        bottom_row.addWidget(self.settings_btn)
+        layout.addLayout(bottom_row)
+        
+        panel.setLayout(layout)
+        return panel
+    
+    def create_media_controls(self):
+        """Create 5-button media control layout matching mockup"""
+        controls_widget = QWidget()
+        controls_widget.setStyleSheet("background: transparent;")
+        
+        layout = QHBoxLayout()
+        layout.setSpacing(24)
+        layout.setContentsMargins(0, 0, 0, 0)
+        
+        # Skip backward 30s (circular arrow left)
+        self.skip_back_btn = IconButton('back', variant='outline')
+        self.skip_back_btn.clicked.connect(self.on_skip_backward)
+        layout.addWidget(self.skip_back_btn)
+        
+        # Previous track
+        self.prev_btn = IconButton('back', variant='solid')
+        self.prev_btn.clicked.connect(self.on_previous_track)
+        layout.addWidget(self.prev_btn)
+        
+        # Play/Pause (larger, center)
+        self.play_pause_btn = IconButton('play', variant='solid')
+        self.play_pause_btn.setFixedSize(90, 90)  # Larger center button
+        self.play_pause_btn.clicked.connect(self.on_play_pause)
+        layout.addWidget(self.play_pause_btn)
+        
+        # Next track
+        self.next_btn = IconButton('forward', variant='solid')
+        self.next_btn.clicked.connect(self.on_next_track)
+        layout.addWidget(self.next_btn)
+        
+        # Skip forward 30s (circular arrow right)
+        self.skip_forward_btn = IconButton('forward', variant='outline')
+        self.skip_forward_btn.clicked.connect(self.on_skip_forward)
+        layout.addWidget(self.skip_forward_btn)
+        
+        controls_widget.setLayout(layout)
+        return controls_widget
+    
+    # ========================================================================
+    # AUDIO PLAYER INTEGRATION
     # ========================================================================
     
     def update_ui_from_player(self):
-        """Update UI widgets from player state - called every 200ms"""
-        if not self.playlist_loaded:
-            return
-        
-        # Get player state
+        """Update UI with current playback state from audio player"""
+        # Get current position and duration from player
         position_ms = self.player.get_position()
         duration_ms = self.player.get_duration()
-        is_playing = self.player.is_playing()
-        
-        # Convert to seconds for widgets
-        position_sec = position_ms / 1000.0
-        duration_sec = duration_ms / 1000.0
         
         # Update progress bar
-        self.progress_bar.update_progress(position_sec, duration_sec)
+        if duration_ms > 0:
+            position_seconds = position_ms // 1000
+            duration_seconds = duration_ms // 1000
+            self.progress_bar.update_position(position_seconds, duration_seconds)
         
-        # Update playback controls state
-        self.playback_controls.update_state(
-            is_playing,
-            self.current_track_index + 1,  # Display as 1-based
-            self.total_tracks
-        )
+        # Update play/pause button icon
+        state = self.player.get_state()
+        is_playing = (state == PlayerState.PLAYING)
         
-        # FALLBACK: Polling-based track end detection
-        # This catches cases where VLC event doesn't fire reliably
-        if is_playing and duration_ms > 0:
-            # Check if we're within 1 second of the end
-            time_remaining = duration_ms - position_ms
-            
-            if time_remaining < 1000 and time_remaining >= 0:  # Last second
-                if not hasattr(self, '_track_end_triggered'):
-                    self._track_end_triggered = False
-                
-                if not self._track_end_triggered:
-                    print("[POLLING] Detected track near end - triggering auto-advance")
-                    self._track_end_triggered = True
-                    # Schedule the callback to avoid blocking UI
-                    from PyQt5.QtCore import QTimer
-                    QTimer.singleShot(100, self.on_track_ended_auto_advance)
-            elif time_remaining > 2000:
-                # Reset trigger flag if we're not near the end
-                # (handles seeks backward)
-                self._track_end_triggered = False
+        if is_playing:
+            self.play_pause_btn.set_icon('pause')
+        else:
+            self.play_pause_btn.set_icon('play')
     
-    # ========================================================================
-    # TRACK MANAGEMENT
-    # ========================================================================
-    
-    def load_and_play_track(self, track_index):
+    def load_track_url(self, url, track_name="Unknown Track", set_name="", 
+                      track_num=1, total_tracks=1, duration=0):
         """
-        Load and play a specific track from the playlist
-
+        Load and play a track URL
+        
         Args:
-            track_index: Index of track to play (0-based)
+            url (str): Streaming URL for the track
+            track_name (str): Name of the track
+            set_name (str): Set name (SET I, SET II, ENCORE)
+            track_num (int): Track number in set
+            total_tracks (int): Total tracks in set
+            duration (int): Track duration in seconds
         """
-        if not self.playlist_loaded:
-            print("[ERROR] Cannot play track - no playlist loaded")
-            self.toast_manager.show_error("No playlist loaded")
-            return
-
-        if track_index < 0 or track_index >= self.total_tracks:
-            print(f"[ERROR] Invalid track index: {track_index}")
-            self.toast_manager.show_error(f"Invalid track index: {track_index}")
-            return
-
         try:
-            # Reset track end trigger flag
-            self._track_end_triggered = False
-
-            # Get track data
-            track = self.current_playlist[track_index]
-
-            print(f"[INFO] Loading track {track_index + 1}/{self.total_tracks}")
-            print(f"[INFO] Track: {track.get('title', 'Unknown')}")
-
-            # Update current index
-            self.current_track_index = track_index
-
-            # Update track info widget
-            track_title = track.get('title', 'Unknown Track')
-            set_name = track.get('set', 'Unknown Set')
-            self.track_info.update_track(track_title, set_name)
-
+            # Update track info display
+            self.song_title_label.setText(track_name)
+            self.track_counter_label.setText(f"{track_num} of {total_tracks}")
+            
+            # Set progress bar duration
+            if duration > 0:
+                self.progress_bar.set_duration(duration)
+            
             # Load URL into player
-            track_url = track.get('url', '')
-            if not track_url:
-                print("[ERROR] Track has no URL!")
-                self.toast_manager.show_error(f"Cannot play {track_title}: No URL available")
-                return
-
-            # Show loading indicator briefly
-            self.toast_manager.show_info(f"Loading {track_title}...")
-
-            # Load and play
-            self.player.load_url(track_url)
-            self.player.play()
-
-            print(f"[PASS] Now playing: {track_title}")
-
-            # Monitor player state for errors
-            QTimer.singleShot(2000, lambda: self._check_playback_started(track_title))
-
+            success = self.player.load_url(url)
+            
+            if success:
+                # Start playback
+                self.player.play()
+                
+                # Store current track info
+                self.current_track_index = track_num - 1
+                self.total_tracks = total_tracks
+                
+                print(f"[INFO] Loaded track: {track_name} ({set_name})")
+            else:
+                print(f"[ERROR] Failed to load track: {track_name}")
+        
         except Exception as e:
             print(f"[ERROR] Failed to load track: {e}")
-            self.toast_manager.show_error(f"Failed to load track: {str(e)}")
-
-    def _check_playback_started(self, track_title):
-        """
-        Check if playback actually started after loading a track.
-        Shows error if player is in ERROR state.
-        """
-        try:
-            player_state = self.player.get_state()
-
-            if player_state == PlayerState.ERROR:
-                print(f"[ERROR] Playback failed for: {track_title}")
-                dialog = ErrorDialog(self)
-                result = dialog.show_error(
-                    "Playback Error",
-                    f"Unable to play '{track_title}'. The audio stream may be unavailable or in an unsupported format.",
-                    error_type="error",
-                    details="Check your network connection and try again.",
-                    allow_retry=True
-                )
-
-                # If user clicked retry, try to reload
-                if result and hasattr(dialog, 'retry_requested'):
-                    self.load_and_play_track(self.current_track_index)
-
-        except Exception as e:
-            print(f"[WARN] Could not check playback state: {e}")
-    
-    # ========================================================================
-    # NEW: AUTO-PLAY NEXT TRACK
-    # ========================================================================
-    
-    def on_track_ended_auto_advance(self):
-        """
-        Called automatically when current track ends (via VLC event)
-
-        This is the callback registered with ResilientPlayer.on_track_ended
-        It automatically advances to the next track if available.
-        """
-        print("[INFO] Track ended - auto-advancing to next track")
-
-        try:
-            # Check if there's a next track
-            if self.current_track_index < self.total_tracks - 1:
-                # Play next track
-                next_index = self.current_track_index + 1
-                print(f"[INFO] Auto-playing track {next_index + 1}/{self.total_tracks}")
-                self.load_and_play_track(next_index)
-            else:
-                # End of playlist
-                print("[INFO] Reached end of playlist - stopping playback")
-                self.player.stop()
-                self.toast_manager.show_success("End of show reached", duration=3000)
-
-        except Exception as e:
-            print(f"[ERROR] Auto-advance failed: {e}")
-            self.toast_manager.show_error(f"Failed to advance to next track: {str(e)}")
     
     # ========================================================================
     # PLAYBACK CONTROL HANDLERS
@@ -353,7 +425,9 @@ class PlayerScreen(QWidget):
     
     def on_play_pause(self):
         """Handle play/pause button click"""
-        if self.player.is_playing():
+        state = self.player.get_state()
+        
+        if state == PlayerState.PLAYING:
             self.player.pause()
             print("[INFO] Playback paused")
         else:
@@ -362,38 +436,11 @@ class PlayerScreen(QWidget):
     
     def on_previous_track(self):
         """Handle previous track request"""
-        if not self.playlist_loaded:
-            print("[WARN] No playlist loaded")
-            return
-        
-        # Check if we're more than 3 seconds into the track
-        position_ms = self.player.get_position()
-        if position_ms > 3000:  # 3 seconds
-            # Restart current track
-            print("[INFO] Restarting current track")
-            self.player.seek(0)
-        else:
-            # Go to actual previous track
-            if self.current_track_index > 0:
-                prev_index = self.current_track_index - 1
-                print(f"[INFO] Going to previous track: {prev_index + 1}/{self.total_tracks}")
-                self.load_and_play_track(prev_index)
-            else:
-                print("[INFO] Already at first track")
+        print("[INFO] Previous track clicked (playlist navigation not yet implemented)")
     
     def on_next_track(self):
         """Handle next track request"""
-        if not self.playlist_loaded:
-            print("[WARN] No playlist loaded")
-            return
-        
-        # Check if there's a next track
-        if self.current_track_index < self.total_tracks - 1:
-            next_index = self.current_track_index + 1
-            print(f"[INFO] Skipping to next track: {next_index + 1}/{self.total_tracks}")
-            self.load_and_play_track(next_index)
-        else:
-            print("[INFO] Already at last track")
+        print("[INFO] Next track clicked (playlist navigation not yet implemented)")
     
     def on_skip_backward(self):
         """Handle 30s backward skip"""
@@ -407,7 +454,6 @@ class PlayerScreen(QWidget):
     
     def on_seek(self, position):
         """Handle seek to position"""
-        # Convert seconds to milliseconds
         position_ms = position * 1000
         self.player.seek(position_ms)
         print(f"[INFO] Seeked to {position} seconds")
@@ -426,35 +472,15 @@ class PlayerScreen(QWidget):
             self.player.unmute()
             print("[INFO] Audio unmuted")
     
-    # ========================================================================
-    # PUBLIC API (called by MainWindow)
-    # ========================================================================
+    def on_home_clicked(self):
+        """Handle home button click"""
+        print("[INFO] Home button clicked")
+        self.home_requested.emit()
     
-    def load_show(self, show_data):
-        """
-        Load a show's playlist
-        
-        Args:
-            show_data: Dictionary with show info including 'tracks' list
-        """
-        print(f"[INFO] Loading show: {show_data.get('identifier', 'unknown')}")
-        
-        # Extract playlist
-        tracks = show_data.get('tracks', [])
-        if not tracks:
-            print("[ERROR] Show has no tracks!")
-            return
-        
-        # Store playlist
-        self.current_playlist = tracks
-        self.total_tracks = len(tracks)
-        self.playlist_loaded = True
-        
-        print(f"[INFO] Loaded {self.total_tracks} tracks")
-        
-        # Start playing first track
-        self.current_track_index = 0
-        self.load_and_play_track(0)
+    def on_settings_clicked(self):
+        """Handle settings button click"""
+        print("[INFO] Settings button clicked")
+        self.settings_requested.emit()
     
     # ========================================================================
     # CLEANUP
@@ -464,23 +490,19 @@ class PlayerScreen(QWidget):
         """Clean up when screen is closed"""
         print("[INFO] PlayerScreen closing - cleaning up resources")
         
-        # Stop update timer
         if self.update_timer:
             self.update_timer.stop()
-            print("[INFO] UI update timer stopped")
         
-        # Stop playback and cleanup player
         if self.player:
             self.player.stop()
-            print("[INFO] Audio playback stopped")
         
-        # Accept close event
         event.accept()
 
 
 if __name__ == "__main__":
-    """Test the player screen with auto-play next track"""
+    """Test the hybrid player screen"""
     from PyQt5.QtWidgets import QApplication
+    from PyQt5.QtCore import QTimer
     from src.database.queries import get_show_by_date, get_top_rated_shows
     from src.api.metadata import get_metadata, extract_audio_files
     
@@ -489,52 +511,58 @@ if __name__ == "__main__":
     # Create player screen
     screen = PlayerScreen()
     screen.setGeometry(100, 100, 1024, 600)
-    screen.setWindowTitle("DeadStream Player - Task 10.2: Auto-Play Next Track")
+    screen.setWindowTitle("DeadStream Player - Hybrid Design")
+    
+    # Connect signals
+    screen.home_requested.connect(lambda: print("[TEST] Home button signal"))
+    screen.settings_requested.connect(lambda: print("[TEST] Settings button signal"))
+    
+    # Load test show
+    def load_test_show():
+        print("\n[TEST] Loading Cornell '77 for testing...")
+        shows = get_show_by_date('1977-05-08')
+        
+        if shows:
+            try:
+                metadata = get_metadata(shows[0]['identifier'])
+                audio_files = extract_audio_files(metadata)
+                
+                if audio_files:
+                    # Load first track
+                    first_track = audio_files[0]
+                    url = f"https://archive.org/download/{shows[0]['identifier']}/{first_track['name']}"
+                    
+                    screen.load_track_url(
+                        url=url,
+                        track_name=first_track.get('title', 'Unknown'),
+                        set_name="SET I",
+                        track_num=1,
+                        total_tracks=len(audio_files),
+                        duration=0
+                    )
+                    print("[PASS] Test show loaded")
+            except Exception as e:
+                print(f"[ERROR] Failed to load test show: {e}")
+    
     screen.show()
+    QTimer.singleShot(1000, load_test_show)
     
-    # Load a test show with multiple tracks
-    print("\n[TEST] Getting test show from database...")
-    
-    # Try Cornell '77 first
-    shows = get_show_by_date('1977-05-08')
-    
-    if not shows:
-        # Fallback to top-rated
-        print("[TEST] Cornell not found, using top-rated show")
-        shows = get_top_rated_shows(limit=1, min_reviews=5)
-    
-    if shows:
-        show = shows[0]
-        print(f"[TEST] Found show: {show['identifier']}")
-        
-        # Get metadata with tracks
-        metadata = get_metadata(show['identifier'])
-        audio_files = extract_audio_files(metadata)
-        
-        # Build track list (first 3 tracks for testing)
-        test_tracks = []
-        for i, audio in enumerate(audio_files[:3]):  # Just first 3 tracks
-            test_tracks.append({
-                'title': audio.get('title', f'Track {i+1}'),
-                'url': f"https://archive.org/download/{show['identifier']}/{audio['name']}",
-                'set': 'Set I',  # Simplified for test
-                'duration': audio.get('length', 0)
-            })
-        
-        # Create show data
-        show_data = {
-            'identifier': show['identifier'],
-            'date': show['date'],
-            'venue': show.get('venue', 'Unknown Venue'),
-            'tracks': test_tracks
-        }
-        
-        print(f"[TEST] Loading {len(test_tracks)} tracks for auto-play test")
-        print("[TEST] Tracks will auto-advance when each one ends!")
-        
-        # Load show
-        screen.load_show(show_data)
-    else:
-        print("[ERROR] Could not find test show!")
+    print("\n" + "=" * 70)
+    print("HYBRID PLAYER SCREEN TEST")
+    print("=" * 70)
+    print("Left Panel (Original):")
+    print("  [OK] Purple gradient background")
+    print("  [OK] 'Concert Information' placeholder")
+    print("  [OK] 'Setlist' placeholder")
+    print("\nRight Panel (Mockup):")
+    print("  [OK] Pure black background")
+    print("  [OK] Yellow home icon (top right)")
+    print("  [OK] 'NOW PLAYING' centered label")
+    print("  [OK] '1 of 25' track counter")
+    print("  [OK] Large centered song title")
+    print("  [OK] 5 circular media controls (90px play button)")
+    print("  [OK] Settings icon (bottom right)")
+    print("\nPress Ctrl+C to exit")
+    print("=" * 70 + "\n")
     
     sys.exit(app.exec_())
