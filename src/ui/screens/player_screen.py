@@ -17,8 +17,8 @@ if PROJECT_ROOT not in sys.path:
 from PyQt5.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QLabel, QFrame, QScrollArea
 )
-from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPropertyAnimation, QEasingCurve
-from PyQt5.QtGui import QFont, QPainter, QLinearGradient, QColor, QFontMetrics
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPropertyAnimation, QEasingCurve, QPoint
+from PyQt5.QtGui import QFont, QPainter, QLinearGradient, QColor, QFontMetrics, QPolygon
 
 # Import Theme and Components
 from src.ui.styles.theme import Theme
@@ -197,6 +197,90 @@ class SkipButton(QWidget):
         super().mousePressEvent(event)
 
 
+class TrackButton(QWidget):
+    """Button for prev/next track with industry-standard bar+triangle icon"""
+    
+    clicked = pyqtSignal()
+    
+    def __init__(self, direction='next', parent=None):
+        super().__init__(parent)
+        self.direction = direction  # 'next' or 'previous'
+        self.hovered = False
+        
+        # Standard media control size
+        self.setFixedSize(60, 60)
+        self.setMouseTracking(True)
+        
+        # Tooltip
+        if direction == 'previous':
+            self.setToolTip("Previous track")
+        else:
+            self.setToolTip("Next track")
+    
+    def paintEvent(self, event):
+        """Paint button with bar+triangle icon (industry standard)"""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        
+        # Background circle (solid style)
+        if self.hovered:
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QColor(255, 255, 255, 200))
+        else:
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(QColor(255, 255, 255, 140))
+        
+        painter.drawEllipse(2, 2, 56, 56)
+        
+        # Draw bar + triangle (standard prev/next icon)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor(0, 0, 0, 255))
+        
+        if self.direction == 'previous':
+            # Previous: |◀ (bar on left, triangle pointing left)
+            # Bar
+            painter.drawRect(18, 20, 3, 20)
+            
+            # Triangle pointing left
+            triangle = QPolygon([
+                QPoint(39, 20),   # Top right
+                QPoint(39, 40),   # Bottom right
+                QPoint(24, 30)    # Left point
+            ])
+            painter.drawPolygon(triangle)
+            
+        else:
+            # Next: ▶| (triangle pointing right, bar on right)
+            # Triangle pointing right
+            triangle = QPolygon([
+                QPoint(21, 20),   # Top left
+                QPoint(21, 40),   # Bottom left
+                QPoint(36, 30)    # Right point
+            ])
+            painter.drawPolygon(triangle)
+            
+            # Bar
+            painter.drawRect(39, 20, 3, 20)
+    
+    def enterEvent(self, event):
+        """Mouse entered"""
+        self.hovered = True
+        self.update()
+        super().enterEvent(event)
+    
+    def leaveEvent(self, event):
+        """Mouse left"""
+        self.hovered = False
+        self.update()
+        super().leaveEvent(event)
+    
+    def mousePressEvent(self, event):
+        """Handle click"""
+        if event.button() == Qt.LeftButton:
+            self.clicked.emit()
+        super().mousePressEvent(event)
+
+
 class PlayerScreen(QWidget):
     """
     Player screen - Hybrid design.
@@ -229,10 +313,10 @@ class PlayerScreen(QWidget):
         self.track_counter_label = None
         self.song_title_label = None
         self.play_pause_btn = None  # IconButton (solid, 90px)
-        self.prev_btn = None  # IconButton (triangles ◀▶)
-        self.next_btn = None  # IconButton (triangles ◀▶)
-        self.skip_back_btn = None  # SkipButton (circular arrow ↺)
-        self.skip_forward_btn = None  # SkipButton (circular arrow ↻)
+        self.prev_btn = None  # TrackButton (|◀ bar+triangle)
+        self.next_btn = None  # TrackButton (▶| triangle+bar)
+        self.skip_back_btn = None  # SkipButton (↺ circular arrow)
+        self.skip_forward_btn = None  # SkipButton (↻ circular arrow)
         self.progress_bar = None
         self.volume_control = None
         self.home_btn = None  # CornerButton (minimal)
@@ -481,7 +565,7 @@ class PlayerScreen(QWidget):
         return panel
     
     def create_media_controls(self):
-        """Create 5-button media control layout with distinct icons"""
+        """Create 5-button media control layout with industry-standard icons"""
         controls_widget = QWidget()
         controls_widget.setStyleSheet("background: transparent;")
         
@@ -489,13 +573,13 @@ class PlayerScreen(QWidget):
         layout.setSpacing(24)
         layout.setContentsMargins(0, 0, 0, 0)
         
-        # Skip backward 30s (circular arrow ↺ - DIFFERENT from prev)
+        # Skip backward 30s (circular arrow ↺)
         self.skip_back_btn = SkipButton('backward')
         self.skip_back_btn.clicked.connect(self.on_skip_backward)
         layout.addWidget(self.skip_back_btn)
         
-        # Previous track (triangle ◀ - solid button)
-        self.prev_btn = IconButton('back', variant='solid')
+        # Previous track (bar + triangle: |◀)
+        self.prev_btn = TrackButton('previous')
         self.prev_btn.clicked.connect(self.on_previous_track)
         layout.addWidget(self.prev_btn)
         
@@ -505,12 +589,12 @@ class PlayerScreen(QWidget):
         self.play_pause_btn.clicked.connect(self.on_play_pause)
         layout.addWidget(self.play_pause_btn)
         
-        # Next track (triangle ▶ - solid button)
-        self.next_btn = IconButton('forward', variant='solid')
+        # Next track (triangle + bar: ▶|)
+        self.next_btn = TrackButton('next')
         self.next_btn.clicked.connect(self.on_next_track)
         layout.addWidget(self.next_btn)
         
-        # Skip forward 30s (circular arrow ↻ - DIFFERENT from next)
+        # Skip forward 30s (circular arrow ↻)
         self.skip_forward_btn = SkipButton('forward')
         self.skip_forward_btn.clicked.connect(self.on_skip_forward)
         layout.addWidget(self.skip_forward_btn)
