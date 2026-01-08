@@ -17,12 +17,12 @@ if PROJECT_ROOT not in sys.path:
 from PyQt5.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QLabel, QFrame, QScrollArea
 )
-from PyQt5.QtCore import Qt, pyqtSignal, QTimer
-from PyQt5.QtGui import QFont, QPainter, QLinearGradient, QColor
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPropertyAnimation, QEasingCurve
+from PyQt5.QtGui import QFont, QPainter, QLinearGradient, QColor, QFontMetrics
 
 # Import Theme and Components
 from src.ui.styles.theme import Theme
-from src.ui.components.icon_button import IconButton
+from src.ui.components.icon_button import IconButton  # For media controls
 
 # Import widgets
 from src.ui.widgets.progress_bar import ProgressBarWidget
@@ -30,6 +30,135 @@ from src.ui.widgets.volume_control_widget import VolumeControlWidget
 
 # Import audio engine
 from src.audio.resilient_player import ResilientPlayer, PlayerState
+
+
+class CornerButton(QWidget):
+    """Minimal, non-intrusive button for corners"""
+    
+    clicked = pyqtSignal()
+    
+    def __init__(self, icon_text, position='top-right', parent=None):
+        super().__init__(parent)
+        self.icon_text = icon_text
+        self.position = position
+        self.hovered = False
+        
+        # Fixed size - small and unobtrusive
+        self.setFixedSize(44, 44)
+        
+        # Enable mouse tracking for hover
+        self.setMouseTracking(True)
+        
+        # Style
+        self.bg_color = QColor(255, 255, 255, 20)  # Very subtle
+        self.hover_color = QColor(255, 255, 255, 40)  # Slightly more visible
+        self.icon_color = QColor(255, 255, 255, 180)  # Semi-transparent white
+        self.hover_icon_color = QColor(255, 255, 255, 255)  # Full white on hover
+        
+        # Tooltip
+        if 'home' in icon_text.lower() or position == 'top-right':
+            self.setToolTip("Home")
+        else:
+            self.setToolTip("Settings")
+    
+    def paintEvent(self, event):
+        """Custom paint for minimal circular button"""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        
+        # Background circle (only visible on hover)
+        if self.hovered:
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(self.hover_color)
+            painter.drawEllipse(2, 2, 40, 40)
+        
+        # Icon
+        painter.setPen(self.hover_icon_color if self.hovered else self.icon_color)
+        font = QFont(Theme.FONT_FAMILY, 18)
+        painter.setFont(font)
+        painter.drawText(self.rect(), Qt.AlignCenter, self.icon_text)
+    
+    def enterEvent(self, event):
+        """Mouse entered - show hover state"""
+        self.hovered = True
+        self.update()
+        super().enterEvent(event)
+    
+    def leaveEvent(self, event):
+        """Mouse left - hide hover state"""
+        self.hovered = False
+        self.update()
+        super().leaveEvent(event)
+    
+    def mousePressEvent(self, event):
+        """Handle click"""
+        if event.button() == Qt.LeftButton:
+            self.clicked.emit()
+        super().mousePressEvent(event)
+
+
+class ScrollingLabel(QLabel):
+    """Label that scrolls text horizontally if it doesn't fit"""
+    
+    def __init__(self, text="", parent=None):
+        super().__init__(text, parent)
+        self._scroll_pos = 0
+        self._scroll_timer = QTimer(self)
+        self._scroll_timer.timeout.connect(self._scroll_text)
+        self._needs_scroll = False
+        self._original_text = text
+        
+    def setText(self, text):
+        """Set text and check if scrolling is needed"""
+        self._original_text = text
+        super().setText(text)
+        self._check_scroll_needed()
+        
+    def _check_scroll_needed(self):
+        """Check if text is too wide and needs scrolling"""
+        if not self._original_text:
+            self._needs_scroll = False
+            self._scroll_timer.stop()
+            return
+            
+        # Get text width
+        fm = QFontMetrics(self.font())
+        text_width = fm.horizontalAdvance(self._original_text)
+        available_width = self.width() - 40  # Some padding
+        
+        if text_width > available_width:
+            # Text is too long, start scrolling
+            self._needs_scroll = True
+            self._scroll_pos = 0
+            if not self._scroll_timer.isActive():
+                self._scroll_timer.start(100)  # Scroll every 100ms
+        else:
+            # Text fits, no scrolling needed
+            self._needs_scroll = False
+            self._scroll_timer.stop()
+            self._scroll_pos = 0
+            super().setText(self._original_text)
+    
+    def _scroll_text(self):
+        """Scroll the text by moving characters"""
+        if not self._needs_scroll or not self._original_text:
+            return
+        
+        # Create scrolling effect by rotating text
+        text_len = len(self._original_text)
+        self._scroll_pos = (self._scroll_pos + 1) % (text_len + 10)  # Add pause at end
+        
+        if self._scroll_pos < text_len:
+            scrolled_text = self._original_text[self._scroll_pos:] + "   " + self._original_text[:self._scroll_pos]
+        else:
+            scrolled_text = self._original_text  # Pause at original position
+        
+        super().setText(scrolled_text)
+    
+    def resizeEvent(self, event):
+        """Recheck scroll when widget is resized"""
+        super().resizeEvent(event)
+        self._check_scroll_needed()
 
 
 class PlayerScreen(QWidget):
@@ -70,8 +199,8 @@ class PlayerScreen(QWidget):
         self.skip_forward_btn = None
         self.progress_bar = None
         self.volume_control = None
-        self.home_btn = None
-        self.settings_btn = None
+        self.home_btn = None  # CornerButton (minimal)
+        self.settings_btn = None  # CornerButton (minimal)
         
         # Playlist state
         self.current_track_index = 0
@@ -233,15 +362,7 @@ class PlayerScreen(QWidget):
         layout.setSpacing(0)
         layout.setContentsMargins(48, 48, 48, 48)
         
-        # Home button (top right)
-        top_row = QHBoxLayout()
-        top_row.addStretch()
-        self.home_btn = IconButton('home', variant='accent')
-        self.home_btn.clicked.connect(self.on_home_clicked)
-        top_row.addWidget(self.home_btn)
-        layout.addLayout(top_row)
-        
-        # Spacer
+        # Add stretch at top for centering content
         layout.addStretch(1)
         
         # "NOW PLAYING" label
@@ -269,8 +390,8 @@ class PlayerScreen(QWidget):
         
         layout.addSpacing(32)
         
-        # Song title (large, centered)
-        self.song_title_label = QLabel("Song Title")
+        # Song title (large, centered, scrolls if too long)
+        self.song_title_label = ScrollingLabel("Song Title")
         self.song_title_label.setStyleSheet(f"""
             color: {Theme.TEXT_PRIMARY};
             font-size: 48px;
@@ -278,7 +399,6 @@ class PlayerScreen(QWidget):
             background: transparent;
         """)
         self.song_title_label.setAlignment(Qt.AlignCenter)
-        self.song_title_label.setWordWrap(True)
         layout.addWidget(self.song_title_label)
         
         layout.addSpacing(64)
@@ -302,18 +422,27 @@ class PlayerScreen(QWidget):
         self.volume_control.mute_toggled.connect(self.on_mute_toggled)
         layout.addWidget(self.volume_control)
         
-        # Spacer
+        # Add stretch at bottom for centering content
         layout.addStretch(1)
         
-        # Settings button (bottom right)
-        bottom_row = QHBoxLayout()
-        bottom_row.addStretch()
-        self.settings_btn = IconButton('settings', variant='transparent')
-        self.settings_btn.clicked.connect(self.on_settings_clicked)
-        bottom_row.addWidget(self.settings_btn)
-        layout.addLayout(bottom_row)
-        
         panel.setLayout(layout)
+        
+        # Create corner buttons (positioned absolutely after panel is created)
+        # Home button (top-right corner)
+        self.home_btn = CornerButton('⌂', position='top-right')  # Unicode house symbol
+        self.home_btn.setParent(panel)
+        self.home_btn.move(panel.width() - 56, 12)  # Position in corner
+        self.home_btn.clicked.connect(self.on_home_clicked)
+        
+        # Settings button (bottom-right corner)
+        self.settings_btn = CornerButton('⚙', position='bottom-right')  # Unicode gear
+        self.settings_btn.setParent(panel)
+        # Position will be set in resizeEvent
+        self.settings_btn.clicked.connect(self.on_settings_clicked)
+        
+        # Store panel reference for repositioning buttons on resize
+        self._right_panel = panel
+        
         return panel
     
     def create_media_controls(self):
@@ -481,6 +610,25 @@ class PlayerScreen(QWidget):
         """Handle settings button click"""
         print("[INFO] Settings button clicked")
         self.settings_requested.emit()
+    
+    # ========================================================================
+    # LAYOUT MANAGEMENT
+    # ========================================================================
+    
+    def resizeEvent(self, event):
+        """Reposition corner buttons when window is resized"""
+        super().resizeEvent(event)
+        
+        # Reposition buttons if they exist and panel exists
+        if hasattr(self, '_right_panel') and self.home_btn and self.settings_btn:
+            panel_width = self._right_panel.width()
+            panel_height = self._right_panel.height()
+            
+            # Home button (top-right)
+            self.home_btn.move(panel_width - 56, 12)
+            
+            # Settings button (bottom-right)
+            self.settings_btn.move(panel_width - 56, panel_height - 56)
     
     # ========================================================================
     # CLEANUP
