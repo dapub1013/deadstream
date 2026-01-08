@@ -23,7 +23,7 @@ from PyQt5.QtWidgets import (
     QSizePolicy, QHBoxLayout
 )
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QPainter, QLinearGradient, QColor
 
 from src.ui.styles.theme import Theme
 from src.ui.components.pill_button import PillButton
@@ -55,22 +55,35 @@ class WelcomeScreen(QWidget):
         """Initialize the welcome screen"""
         super().__init__(parent)
         
-        # Apply gradient background explicitly
-        # Use both global stylesheet AND widget-specific background
-        self.setStyleSheet(f"""
-            QWidget {{
-                background: qlineargradient(
-                    x1:0, y1:0, x2:0, y2:1,
-                    stop:0 {Theme.BG_PRIMARY},
-                    stop:1 #1a1a4a
-                );
-            }}
-        """)
+        # Set object name for identification
+        self.setObjectName("welcomeScreen")
+        
+        # Enable auto-fill background so paintEvent is called
+        self.setAutoFillBackground(True)
         
         # Create UI
         self._create_ui()
         
         print("[INFO] Welcome screen initialized with component library")
+    
+    def paintEvent(self, event):
+        """
+        Paint the gradient background manually.
+        This is more reliable than stylesheets for gradients.
+        """
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+        
+        # Create linear gradient from top to bottom
+        gradient = QLinearGradient(0, 0, 0, self.height())
+        gradient.setColorAt(0, QColor(Theme.BG_PRIMARY))  # #2E2870 deep purple
+        gradient.setColorAt(1, QColor("#1a1a4a"))  # darker purple
+        
+        # Fill the entire widget with gradient
+        painter.fillRect(self.rect(), gradient)
+        
+        # Call parent paintEvent to ensure child widgets are drawn
+        super().paintEvent(event)
     
     def _create_ui(self):
         """Create the welcome screen UI"""
@@ -149,8 +162,11 @@ class WelcomeScreen(QWidget):
         title_font.setBold(True)
         title.setFont(title_font)
         
-        # Use Theme colors
-        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; background: transparent;")
+        # Use Theme colors with transparent background
+        title.setStyleSheet(f"""
+            color: {Theme.TEXT_PRIMARY};
+            background: transparent;
+        """)
         
         layout.addWidget(title)
         
@@ -162,7 +178,10 @@ class WelcomeScreen(QWidget):
         subtitle_font.setPixelSize(Theme.BODY_LARGE)  # 20px
         subtitle.setFont(subtitle_font)
         
-        subtitle.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; background: transparent;")
+        subtitle.setStyleSheet(f"""
+            color: {Theme.TEXT_SECONDARY};
+            background: transparent;
+        """)
         
         layout.addWidget(subtitle)
         
