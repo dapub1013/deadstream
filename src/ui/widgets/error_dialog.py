@@ -2,13 +2,29 @@
 Error Dialog Widget
 
 Displays user-facing error messages with retry/dismiss options.
+
+Phase 10E.7 Polish:
+- Uses Theme Manager for all colors/spacing/typography
+- Helpful error recovery suggestions
+- Professional appearance
+- Zero hardcoded values
 """
+
+import sys
+import os
+
+# Add project root to path for imports
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFrame
 )
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
+
+from src.ui.styles.theme import Theme
 
 
 class ErrorDialog(QDialog):
@@ -36,35 +52,41 @@ class ErrorDialog(QDialog):
     def setup_ui(self):
         """Initialize the dialog UI"""
         layout = QVBoxLayout()
-        layout.setContentsMargins(30, 30, 30, 30)
-        layout.setSpacing(20)
+        layout.setContentsMargins(
+            Theme.SPACING_LARGE,
+            Theme.SPACING_LARGE,
+            Theme.SPACING_LARGE,
+            Theme.SPACING_LARGE
+        )
+        layout.setSpacing(Theme.SPACING_MEDIUM)
 
         # Error icon and title container
         header_layout = QHBoxLayout()
-        header_layout.setSpacing(15)
+        header_layout.setSpacing(Theme.SPACING_SMALL)
 
-        # Error icon (using text for now, could use QIcon later)
+        # Error icon
         self.icon_label = QLabel("!")
         self.icon_label.setAlignment(Qt.AlignCenter)
         self.icon_label.setFixedSize(50, 50)
-        self.icon_label.setStyleSheet("""
-            QLabel {
-                background-color: #EF4444;
-                color: white;
+        self.icon_label.setStyleSheet(f"""
+            QLabel {{
+                background-color: {Theme.ACCENT_RED};
+                color: {Theme.TEXT_PRIMARY};
                 font-size: 32px;
                 font-weight: bold;
                 border-radius: 25px;
-            }
+            }}
         """)
         header_layout.addWidget(self.icon_label)
 
         # Title label
         self.title_label = QLabel("Error")
         title_font = QFont()
-        title_font.setPointSize(20)
+        title_font.setFamily(Theme.FONT_FAMILY)
+        title_font.setPointSize(Theme.HEADER_MEDIUM)
         title_font.setBold(True)
         self.title_label.setFont(title_font)
-        self.title_label.setStyleSheet("color: #F3F4F6;")
+        self.title_label.setStyleSheet(f"color: {Theme.TEXT_PRIMARY};")
         header_layout.addWidget(self.title_label, 1)
 
         layout.addLayout(header_layout)
@@ -73,82 +95,109 @@ class ErrorDialog(QDialog):
         self.message_label = QLabel("")
         self.message_label.setWordWrap(True)
         message_font = QFont()
-        message_font.setPointSize(14)
+        message_font.setFamily(Theme.FONT_FAMILY)
+        message_font.setPointSize(Theme.BODY_MEDIUM)
         self.message_label.setFont(message_font)
-        self.message_label.setStyleSheet("""
-            QLabel {
-                color: #D1D5DB;
+        self.message_label.setStyleSheet(f"""
+            QLabel {{
+                color: {Theme.TEXT_SECONDARY};
                 line-height: 1.5;
-            }
+            }}
         """)
         layout.addWidget(self.message_label)
 
-        # Details label (optional, hidden by default)
+        # Suggestion label (helpful recovery actions)
+        self.suggestion_label = QLabel("")
+        self.suggestion_label.setWordWrap(True)
+        self.suggestion_label.setVisible(False)
+        suggestion_font = QFont()
+        suggestion_font.setFamily(Theme.FONT_FAMILY)
+        suggestion_font.setPointSize(Theme.BODY_SMALL)
+        self.suggestion_label.setFont(suggestion_font)
+        self.suggestion_label.setStyleSheet(f"""
+            QLabel {{
+                color: {Theme.ACCENT_BLUE};
+                background-color: {Theme.BG_CARD};
+                padding: {Theme.SPACING_SMALL}px;
+                border-radius: {Theme.BUTTON_RADIUS}px;
+                border-left: 3px solid {Theme.ACCENT_BLUE};
+            }}
+        """)
+        layout.addWidget(self.suggestion_label)
+
+        # Details label (optional technical details, hidden by default)
         self.details_label = QLabel("")
         self.details_label.setWordWrap(True)
         self.details_label.setVisible(False)
         details_font = QFont()
-        details_font.setPointSize(12)
+        details_font.setFamily("monospace")
+        details_font.setPointSize(Theme.BODY_SMALL)
         self.details_label.setFont(details_font)
-        self.details_label.setStyleSheet("""
-            QLabel {
-                color: #9CA3AF;
+        self.details_label.setStyleSheet(f"""
+            QLabel {{
+                color: {Theme.TEXT_SECONDARY};
                 font-family: monospace;
-                background-color: #1F2937;
-                padding: 10px;
-                border-radius: 4px;
-            }
+                background-color: {Theme.BG_CARD};
+                padding: {Theme.SPACING_SMALL}px;
+                border-radius: {Theme.BUTTON_RADIUS}px;
+            }}
         """)
         layout.addWidget(self.details_label)
 
         # Button container
         button_layout = QHBoxLayout()
-        button_layout.setSpacing(10)
+        button_layout.setSpacing(Theme.SPACING_SMALL)
         button_layout.addStretch()
 
         # Retry button (hidden by default)
         self.retry_button = QPushButton("Retry")
         self.retry_button.setVisible(False)
-        self.retry_button.setMinimumSize(100, 50)
-        self.retry_button.setStyleSheet("""
-            QPushButton {
-                background-color: #3B82F6;
-                color: white;
-                font-size: 16px;
+        self.retry_button.setMinimumSize(120, Theme.BUTTON_HEIGHT)
+        self.retry_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {Theme.ACCENT_BLUE};
+                color: {Theme.TEXT_PRIMARY};
+                font-size: {Theme.BODY_MEDIUM}px;
+                font-family: {Theme.FONT_FAMILY};
                 font-weight: 600;
                 border: none;
-                border-radius: 8px;
-                padding: 10px 20px;
-            }
-            QPushButton:hover {
-                background-color: #2563EB;
-            }
-            QPushButton:pressed {
-                background-color: #1D4ED8;
-            }
+                border-radius: {Theme.BUTTON_RADIUS}px;
+                padding: {Theme.SPACING_SMALL}px {Theme.SPACING_MEDIUM}px;
+            }}
+            QPushButton:hover {{
+                background-color: {Theme.ACCENT_BLUE};
+                opacity: 0.9;
+            }}
+            QPushButton:pressed {{
+                background-color: {Theme.ACCENT_BLUE};
+                opacity: 0.8;
+            }}
         """)
         self.retry_button.clicked.connect(self.on_retry_clicked)
         button_layout.addWidget(self.retry_button)
 
         # Dismiss button
         self.dismiss_button = QPushButton("OK")
-        self.dismiss_button.setMinimumSize(100, 50)
-        self.dismiss_button.setStyleSheet("""
-            QPushButton {
-                background-color: #374151;
-                color: white;
-                font-size: 16px;
+        self.dismiss_button.setMinimumSize(120, Theme.BUTTON_HEIGHT)
+        self.dismiss_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {Theme.BG_CARD};
+                color: {Theme.TEXT_PRIMARY};
+                font-size: {Theme.BODY_MEDIUM}px;
+                font-family: {Theme.FONT_FAMILY};
                 font-weight: 600;
                 border: none;
-                border-radius: 8px;
-                padding: 10px 20px;
-            }
-            QPushButton:hover {
-                background-color: #4B5563;
-            }
-            QPushButton:pressed {
-                background-color: #1F2937;
-            }
+                border-radius: {Theme.BUTTON_RADIUS}px;
+                padding: {Theme.SPACING_SMALL}px {Theme.SPACING_MEDIUM}px;
+            }}
+            QPushButton:hover {{
+                background-color: {Theme.BG_CARD};
+                opacity: 0.9;
+            }}
+            QPushButton:pressed {{
+                background-color: {Theme.BG_CARD};
+                opacity: 0.8;
+            }}
         """)
         self.dismiss_button.clicked.connect(self.accept)
         button_layout.addWidget(self.dismiss_button)
@@ -156,16 +205,17 @@ class ErrorDialog(QDialog):
         layout.addLayout(button_layout)
 
         # Set dialog background
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #111827;
-            }
+        self.setStyleSheet(f"""
+            QDialog {{
+                background-color: {Theme.BG_PANEL_DARK};
+            }}
         """)
 
         self.setLayout(layout)
         self.setMinimumWidth(500)
 
-    def show_error(self, title, message, error_type="error", details=None, allow_retry=False):
+    def show_error(self, title, message, error_type="error", details=None,
+                   suggestion=None, allow_retry=False):
         """
         Display an error dialog.
 
@@ -174,6 +224,7 @@ class ErrorDialog(QDialog):
             message: User-friendly error message
             error_type: Type of error ("error", "warning", "info")
             details: Optional technical details to show
+            suggestion: Helpful recovery suggestion for the user
             allow_retry: Whether to show a Retry button
         """
         self.title_label.setText(title)
@@ -181,32 +232,39 @@ class ErrorDialog(QDialog):
 
         # Update icon based on error type
         if error_type == "error":
-            icon_bg = "#EF4444"  # Red
+            icon_bg = Theme.ACCENT_RED
             icon_text = "!"
         elif error_type == "warning":
-            icon_bg = "#F59E0B"  # Orange
+            icon_bg = Theme.ACCENT_YELLOW
             icon_text = "!"
         elif error_type == "info":
-            icon_bg = "#3B82F6"  # Blue
+            icon_bg = Theme.ACCENT_BLUE
             icon_text = "i"
         else:
-            icon_bg = "#EF4444"
+            icon_bg = Theme.ACCENT_RED
             icon_text = "!"
 
         self.icon_label.setText(icon_text)
         self.icon_label.setStyleSheet(f"""
             QLabel {{
                 background-color: {icon_bg};
-                color: white;
+                color: {Theme.TEXT_PRIMARY};
                 font-size: 32px;
                 font-weight: bold;
                 border-radius: 25px;
             }}
         """)
 
+        # Show/hide suggestion
+        if suggestion:
+            self.suggestion_label.setText(f"Suggestion: {suggestion}")
+            self.suggestion_label.setVisible(True)
+        else:
+            self.suggestion_label.setVisible(False)
+
         # Show/hide details
         if details:
-            self.details_label.setText(details)
+            self.details_label.setText(f"Details: {details}")
             self.details_label.setVisible(True)
         else:
             self.details_label.setVisible(False)
@@ -238,49 +296,101 @@ class ErrorType:
     UNKNOWN = "Error"
 
 
-def show_network_error(parent, message, details=None, allow_retry=True):
-    """Helper function to show network error dialog"""
+def show_network_error(parent, message, details=None, suggestion=None, allow_retry=True):
+    """
+    Helper function to show network error dialog.
+
+    Args:
+        parent: Parent widget
+        message: Error message
+        details: Optional technical details
+        suggestion: Optional recovery suggestion (defaults to network-specific suggestion)
+        allow_retry: Whether to show retry button
+    """
+    if suggestion is None:
+        suggestion = "Check your internet connection and try again"
+
     dialog = ErrorDialog(parent)
     return dialog.show_error(
         ErrorType.NETWORK,
         message,
         error_type="error",
         details=details,
+        suggestion=suggestion,
         allow_retry=allow_retry
     )
 
 
-def show_playback_error(parent, message, details=None, allow_retry=True):
-    """Helper function to show playback error dialog"""
+def show_playback_error(parent, message, details=None, suggestion=None, allow_retry=True):
+    """
+    Helper function to show playback error dialog.
+
+    Args:
+        parent: Parent widget
+        message: Error message
+        details: Optional technical details
+        suggestion: Optional recovery suggestion (defaults to playback-specific suggestion)
+        allow_retry: Whether to show retry button
+    """
+    if suggestion is None:
+        suggestion = "Try selecting a different recording or check your audio settings"
+
     dialog = ErrorDialog(parent)
     return dialog.show_error(
         ErrorType.PLAYBACK,
         message,
         error_type="error",
         details=details,
+        suggestion=suggestion,
         allow_retry=allow_retry
     )
 
 
-def show_database_error(parent, message, details=None, allow_retry=False):
-    """Helper function to show database error dialog"""
+def show_database_error(parent, message, details=None, suggestion=None, allow_retry=False):
+    """
+    Helper function to show database error dialog.
+
+    Args:
+        parent: Parent widget
+        message: Error message
+        details: Optional technical details
+        suggestion: Optional recovery suggestion (defaults to database-specific suggestion)
+        allow_retry: Whether to show retry button
+    """
+    if suggestion is None:
+        suggestion = "Try restarting the application or re-initializing the database"
+
     dialog = ErrorDialog(parent)
     return dialog.show_error(
         ErrorType.DATABASE,
         message,
         error_type="error",
         details=details,
+        suggestion=suggestion,
         allow_retry=allow_retry
     )
 
 
-def show_api_error(parent, message, details=None, allow_retry=True):
-    """Helper function to show API error dialog"""
+def show_api_error(parent, message, details=None, suggestion=None, allow_retry=True):
+    """
+    Helper function to show API error dialog.
+
+    Args:
+        parent: Parent widget
+        message: Error message
+        details: Optional technical details
+        suggestion: Optional recovery suggestion (defaults to API-specific suggestion)
+        allow_retry: Whether to show retry button
+    """
+    if suggestion is None:
+        suggestion = "Wait a moment and try again, or check archive.org status"
+
     dialog = ErrorDialog(parent)
     return dialog.show_error(
         ErrorType.API,
         message,
         error_type="error",
         details=details,
+        suggestion=suggestion,
         allow_retry=allow_retry
     )

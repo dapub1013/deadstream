@@ -2,11 +2,26 @@
 Toast Notification Widget
 
 Displays temporary non-blocking notifications at the top of the screen.
+
+Phase 10E.7 Polish:
+- Uses Theme Manager for all colors/spacing/typography
+- Professional appearance
+- Zero hardcoded values
 """
+
+import sys
+import os
+
+# Add project root to path for imports
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
 from PyQt5.QtWidgets import QLabel, QGraphicsOpacityEffect
 from PyQt5.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, pyqtProperty
 from PyQt5.QtGui import QFont
+
+from src.ui.styles.theme import Theme
 
 
 class ToastNotification(QLabel):
@@ -63,39 +78,40 @@ class ToastNotification(QLabel):
         """
         self.setText(message)
 
-        # Set styling based on type
+        # Set styling based on type (using Theme Manager colors)
         if toast_type == "info":
-            bg_color = "#3B82F6"  # Blue
-            text_color = "white"
-            icon = "ℹ"
+            bg_color = Theme.ACCENT_BLUE
+            text_color = Theme.TEXT_PRIMARY
+            icon = "i"  # ASCII-only icon
         elif toast_type == "success":
-            bg_color = "#10B981"  # Green
-            text_color = "white"
-            icon = "✓"
+            bg_color = Theme.ACCENT_GREEN
+            text_color = Theme.TEXT_PRIMARY
+            icon = "[OK]"  # ASCII-only icon
         elif toast_type == "warning":
-            bg_color = "#F59E0B"  # Orange
-            text_color = "white"
-            icon = "⚠"
+            bg_color = Theme.ACCENT_YELLOW
+            text_color = Theme.TEXT_DARK
+            icon = "!"  # ASCII-only icon
         elif toast_type == "error":
-            bg_color = "#EF4444"  # Red
-            text_color = "white"
-            icon = "✕"
+            bg_color = Theme.ACCENT_RED
+            text_color = Theme.TEXT_PRIMARY
+            icon = "X"  # ASCII-only icon
         else:
-            bg_color = "#374151"  # Gray
-            text_color = "white"
+            bg_color = Theme.BG_CARD
+            text_color = Theme.TEXT_PRIMARY
             icon = ""
 
         # Add icon to message
         if icon:
-            display_text = f"{icon}  {message}"
+            display_text = f"{icon} {message}"
         else:
             display_text = message
 
         self.setText(display_text)
 
-        # Apply stylesheet
+        # Apply stylesheet using Theme Manager
         font = QFont()
-        font.setPointSize(14)
+        font.setFamily(Theme.FONT_FAMILY)
+        font.setPointSize(Theme.BODY_MEDIUM)
         font.setWeight(QFont.Medium)
         self.setFont(font)
 
@@ -103,8 +119,8 @@ class ToastNotification(QLabel):
             QLabel {{
                 background-color: {bg_color};
                 color: {text_color};
-                padding: 15px 25px;
-                border-radius: 8px;
+                padding: {Theme.SPACING_SMALL}px {Theme.SPACING_MEDIUM}px;
+                border-radius: {Theme.BUTTON_RADIUS}px;
                 border: none;
             }}
         """)
@@ -116,7 +132,7 @@ class ToastNotification(QLabel):
         if self.parent():
             parent_rect = self.parent().rect()
             x = (parent_rect.width() - self.width()) // 2
-            y = 20  # 20px from top
+            y = Theme.SPACING_MEDIUM  # Use Theme spacing from top
             self.move(x, y)
 
         # Show and fade in

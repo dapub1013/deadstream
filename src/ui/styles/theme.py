@@ -67,7 +67,7 @@ class Theme:
     WEIGHT_NORMAL = "normal"
     
     # Font Family
-    FONT_FAMILY = "sans-serif"
+    FONT_FAMILY = "san serif"
     
     # ============================================
     # SPACING & LAYOUT
