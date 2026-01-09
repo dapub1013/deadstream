@@ -28,6 +28,7 @@ from src.ui.styles.button_styles import (
     BG_GRAY_800, BG_GRAY_900, BG_GRAY_700, TEXT_WHITE, TEXT_GRAY_400
 )
 from src.ui.styles.text_styles import TITLE_SECTION_STYLE, TEXT_SUPPORTING_STYLE
+from src.ui.widgets.loading_spinner import LoadingIndicator
 from src.database.queries import get_random_show
 from src.api.metadata import get_metadata, extract_audio_files
 
@@ -105,19 +106,13 @@ class RandomShowWidget(QWidget):
         self.show_loading()
 
     def show_loading(self):
-        """Display loading state"""
+        """Display animated loading indicator"""
         self.clear_content()
 
-        loading_label = QLabel("Loading random show...")
-        loading_label.setStyleSheet(f"""
-            QLabel {{
-                color: {TEXT_GRAY_400};
-                font-size: 18px;
-                padding: 40px;
-            }}
-        """)
-        loading_label.setAlignment(Qt.AlignCenter)
-        self.content_layout.addWidget(loading_label)
+        # Add animated loading indicator
+        self.loading_indicator = LoadingIndicator(self, message="Loading random show...")
+        self.loading_indicator.start()
+        self.content_layout.addWidget(self.loading_indicator)
         self.content_layout.addStretch()
 
     def show_error(self, message):

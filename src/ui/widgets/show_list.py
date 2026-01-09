@@ -30,7 +30,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QScrollArea, QFrame
+    QWidget, QVBoxLayout, QScrollArea, QFrame, QLabel
 )
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
@@ -38,6 +38,7 @@ from PyQt5.QtGui import QFont
 # Import Phase 10A components
 from src.ui.styles.theme import Theme
 from src.ui.components.concert_list_item import ConcertListItem
+from src.ui.widgets.loading_spinner import LoadingIndicator
 
 
 class ShowListWidget(QWidget):
@@ -241,34 +242,26 @@ class ShowListWidget(QWidget):
         self.list_layout.addWidget(empty_label)
 
     def set_loading_state(self):
-        """Display loading message"""
+        """Display animated loading indicator"""
         self.clear_shows()
 
-        # Create loading state label
-        loading_label = QFrame()
-        loading_layout = QVBoxLayout(loading_label)
-        loading_layout.setContentsMargins(
+        # Create loading indicator with spinner
+        loading_container = QFrame()
+        loading_container_layout = QVBoxLayout(loading_container)
+        loading_container_layout.setContentsMargins(
             Theme.SPACING_XLARGE,
             Theme.SPACING_XXLARGE,
             Theme.SPACING_XLARGE,
             Theme.SPACING_XXLARGE
         )
-        loading_layout.setAlignment(Qt.AlignCenter)
+        loading_container_layout.setAlignment(Qt.AlignCenter)
 
-        from PyQt5.QtWidgets import QLabel
-        
-        # Loading text
-        loading_font = QFont()
-        loading_font.setFamily(Theme.FONT_FAMILY)
-        loading_font.setPointSize(Theme.BODY_LARGE)
-        
-        msg = QLabel("Loading shows...")
-        msg.setFont(loading_font)
-        msg.setAlignment(Qt.AlignCenter)
-        msg.setStyleSheet(f"color: {Theme.TEXT_SECONDARY};")
-        
-        loading_layout.addWidget(msg)
-        self.list_layout.addWidget(loading_label)
+        # Add animated loading indicator
+        self.loading_indicator = LoadingIndicator(self, message="Loading shows...")
+        self.loading_indicator.start()
+        loading_container_layout.addWidget(self.loading_indicator)
+
+        self.list_layout.addWidget(loading_container)
 
 
 # Test code

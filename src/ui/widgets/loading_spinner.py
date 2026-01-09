@@ -4,9 +4,19 @@ Loading Spinner Widget
 Animated loading indicator to replace text-only loading states.
 """
 
+import sys
+import os
+
+# Add project root to path for imports
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal
 from PyQt5.QtGui import QPainter, QColor, QPen, QFont
+
+from src.ui.styles.theme import Theme
 
 
 class LoadingSpinner(QWidget):
@@ -22,9 +32,12 @@ class LoadingSpinner(QWidget):
 
     cancel_requested = pyqtSignal()
 
-    def __init__(self, parent=None, size=60, color="#3B82F6"):
+    def __init__(self, parent=None, size=60, color=None):
         super().__init__(parent)
         self.size = size
+        # Use Theme accent color if no color specified
+        if color is None:
+            color = Theme.ACCENT_BLUE
         self.color = QColor(color)
         self.angle = 0
         self.setFixedSize(size, size)
@@ -97,10 +110,10 @@ class LoadingOverlay(QWidget):
         """Initialize the overlay UI"""
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignCenter)
-        layout.setSpacing(20)
+        layout.setSpacing(Theme.SPACING_MEDIUM)
 
         # Spinner
-        self.spinner = LoadingSpinner(self, size=80, color="#3B82F6")
+        self.spinner = LoadingSpinner(self, size=80, color=Theme.ACCENT_BLUE)
         spinner_container = QWidget()
         spinner_layout = QVBoxLayout(spinner_container)
         spinner_layout.setAlignment(Qt.AlignCenter)
@@ -111,32 +124,28 @@ class LoadingOverlay(QWidget):
         self.message_label = QLabel("Loading...")
         self.message_label.setAlignment(Qt.AlignCenter)
         font = QFont()
-        font.setPointSize(16)
-        font.setWeight(QFont.Medium)
+        font.setFamily(Theme.FONT_FAMILY)
+        font.setPointSize(Theme.BODY_LARGE)
+        font.setWeight(QFont.Normal)
         self.message_label.setFont(font)
-        self.message_label.setStyleSheet("color: #D1D5DB;")
+        self.message_label.setStyleSheet(f"color: {Theme.TEXT_SECONDARY};")
         layout.addWidget(self.message_label)
 
         # Cancel button (hidden by default)
         self.cancel_button = QPushButton("Cancel")
         self.cancel_button.setVisible(False)
         self.cancel_button.setMinimumSize(120, 50)
-        self.cancel_button.setStyleSheet("""
-            QPushButton {
-                background-color: #374151;
-                color: white;
-                font-size: 14px;
+        self.cancel_button.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {Theme.BG_CARD};
+                color: {Theme.TEXT_PRIMARY};
+                font-size: {Theme.BODY_SMALL}px;
+                font-family: {Theme.FONT_FAMILY};
                 font-weight: 600;
                 border: none;
-                border-radius: 8px;
-                padding: 10px 20px;
-            }
-            QPushButton:hover {
-                background-color: #4B5563;
-            }
-            QPushButton:pressed {
-                background-color: #1F2937;
-            }
+                border-radius: {Theme.BUTTON_RADIUS}px;
+                padding: {Theme.SPACING_SMALL}px {Theme.SPACING_MEDIUM}px;
+            }}
         """)
         self.cancel_button.clicked.connect(self.on_cancel_clicked)
 
@@ -148,10 +157,10 @@ class LoadingOverlay(QWidget):
 
         self.setLayout(layout)
 
-        # Semi-transparent background
+        # Semi-transparent black overlay background
         self.setStyleSheet("""
             QWidget {
-                background-color: rgba(17, 24, 39, 0.9);
+                background-color: rgba(0, 0, 0, 0.85);
             }
         """)
 
@@ -209,11 +218,16 @@ class LoadingIndicator(QWidget):
         """Initialize the indicator UI"""
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignCenter)
-        layout.setSpacing(10)
-        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(Theme.SPACING_SMALL)
+        layout.setContentsMargins(
+            Theme.SPACING_MEDIUM,
+            Theme.SPACING_MEDIUM,
+            Theme.SPACING_MEDIUM,
+            Theme.SPACING_MEDIUM
+        )
 
         # Spinner
-        self.spinner = LoadingSpinner(self, size=40, color="#3B82F6")
+        self.spinner = LoadingSpinner(self, size=40, color=Theme.ACCENT_BLUE)
         spinner_container = QWidget()
         spinner_layout = QVBoxLayout(spinner_container)
         spinner_layout.setAlignment(Qt.AlignCenter)
@@ -224,9 +238,10 @@ class LoadingIndicator(QWidget):
         self.message_label = QLabel(message)
         self.message_label.setAlignment(Qt.AlignCenter)
         font = QFont()
-        font.setPointSize(14)
+        font.setFamily(Theme.FONT_FAMILY)
+        font.setPointSize(Theme.BODY_MEDIUM)
         self.message_label.setFont(font)
-        self.message_label.setStyleSheet("color: #9CA3AF;")
+        self.message_label.setStyleSheet(f"color: {Theme.TEXT_SECONDARY};")
         layout.addWidget(self.message_label)
 
         self.setLayout(layout)
