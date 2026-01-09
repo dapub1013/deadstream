@@ -20,11 +20,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 
 from src.database.queries import get_show_count_by_year, get_shows_by_month
-from src.ui.styles.button_styles import (
-    PRIMARY_BUTTON_STYLE, BG_GRAY_800, BG_GRAY_700,
-    BG_GRAY_900, TEXT_WHITE, TEXT_GRAY_400
-)
-from src.ui.styles.text_styles import TITLE_SECTION_STYLE, TEXT_SUPPORTING_STYLE
+from src.ui.styles.theme import Theme
 
 
 class DateSelectorWidget(QWidget):
@@ -64,9 +60,11 @@ class DateSelectorWidget(QWidget):
         header = QLabel("Browse by Date")
         header.setStyleSheet(f"""
             QLabel {{
-                {TITLE_SECTION_STYLE}
-                padding-bottom: 8px;
-                border-bottom: 2px solid {BG_GRAY_700};
+                font-size: {Theme.HEADER_MEDIUM}px;
+                font-weight: {Theme.WEIGHT_BOLD};
+                color: {Theme.TEXT_PRIMARY};
+                padding-bottom: {Theme.SPACING_SMALL}px;
+                border-bottom: 2px solid {Theme.BORDER_SUBTLE};
             }}
         """)
         main_layout.addWidget(header)
@@ -75,7 +73,9 @@ class DateSelectorWidget(QWidget):
         instructions = QLabel("Choose Year, then Month, then Day")
         instructions.setStyleSheet(f"""
             QLabel {{
-                {TEXT_SUPPORTING_STYLE}
+                font-size: {Theme.BODY_SMALL}px;
+                font-weight: {Theme.WEIGHT_NORMAL};
+                color: {Theme.TEXT_SECONDARY};
             }}
         """)
         main_layout.addWidget(instructions)
@@ -115,20 +115,20 @@ class DateSelectorWidget(QWidget):
         self.status_label.setAlignment(Qt.AlignCenter)
         self.status_label.setStyleSheet(f"""
             QLabel {{
-                font-size: 16px;
-                color: {TEXT_GRAY_400};
-                padding: 16px;
-                background-color: {BG_GRAY_900};
+                font-size: {Theme.BODY_MEDIUM}px;
+                color: {Theme.TEXT_SECONDARY};
+                padding: {Theme.SPACING_MEDIUM}px;
+                background-color: {Theme.BG_CARD};
                 border-radius: 8px;
-                min-height: 60px;
+                min-height: {Theme.BUTTON_HEIGHT}px;
             }}
         """)
         main_layout.addWidget(self.status_label)
 
         # Action button
         self.select_button = QPushButton("Load Shows for Selected Date")
-        self.select_button.setStyleSheet(PRIMARY_BUTTON_STYLE)
-        self.select_button.setMinimumHeight(60)
+        self.select_button.setStyleSheet(Theme.get_button_style(Theme.ACCENT_BLUE, Theme.TEXT_PRIMARY))
+        self.select_button.setMinimumHeight(Theme.BUTTON_HEIGHT)
         self.select_button.setEnabled(False)
         self.select_button.clicked.connect(self.on_select_clicked)
         main_layout.addWidget(self.select_button)
@@ -138,9 +138,9 @@ class DateSelectorWidget(QWidget):
         column = QFrame()
         column.setStyleSheet(f"""
             QFrame {{
-                background-color: {BG_GRAY_900};
+                background-color: {Theme.BG_CARD};
                 border-radius: 8px;
-                border: 2px solid {BG_GRAY_700};
+                border: 2px solid {Theme.BORDER_SUBTLE};
             }}
         """)
 
@@ -153,11 +153,11 @@ class DateSelectorWidget(QWidget):
         title_label.setAlignment(Qt.AlignCenter)
         title_label.setStyleSheet(f"""
             QLabel {{
-                font-size: 18px;
-                font-weight: bold;
-                color: {TEXT_WHITE};
-                padding: 8px;
-                background-color: {BG_GRAY_800};
+                font-size: {Theme.BODY_LARGE}px;
+                font-weight: {Theme.WEIGHT_BOLD};
+                color: {Theme.TEXT_PRIMARY};
+                padding: {Theme.SPACING_SMALL}px;
+                background-color: {Theme.BG_PANEL_DARK};
                 border-radius: 6px;
             }}
         """)
@@ -169,12 +169,12 @@ class DateSelectorWidget(QWidget):
         """Apply consistent styling to list widgets"""
         list_widget.setStyleSheet(f"""
             QListWidget {{
-                background-color: {BG_GRAY_800};
-                color: {TEXT_WHITE};
+                background-color: {Theme.BG_PANEL_DARK};
+                color: {Theme.TEXT_PRIMARY};
                 border: none;
                 border-radius: 6px;
                 padding: 4px;
-                font-size: 20px;
+                font-size: {Theme.BODY_LARGE}px;
             }}
             QListWidget::item {{
                 padding: 14px 8px;
@@ -182,12 +182,12 @@ class DateSelectorWidget(QWidget):
                 margin: 2px 0px;
             }}
             QListWidget::item:hover {{
-                background-color: #374151;
+                background-color: {Theme._lighten_color(Theme.BG_PANEL_DARK, 10)};
             }}
             QListWidget::item:selected {{
-                background-color: #2563eb;
-                color: white;
-                font-weight: bold;
+                background-color: {Theme.ACCENT_BLUE};
+                color: {Theme.TEXT_PRIMARY};
+                font-weight: {Theme.WEIGHT_BOLD};
             }}
         """)
 
@@ -310,13 +310,13 @@ class DateSelectorWidget(QWidget):
             self.status_label.setText(f"Selected: {formatted}")
             self.status_label.setStyleSheet(f"""
                 QLabel {{
-                    font-size: 18px;
-                    font-weight: bold;
-                    color: {TEXT_WHITE};
-                    padding: 16px;
-                    background-color: #2563eb;
+                    font-size: {Theme.BODY_LARGE}px;
+                    font-weight: {Theme.WEIGHT_BOLD};
+                    color: {Theme.TEXT_PRIMARY};
+                    padding: {Theme.SPACING_MEDIUM}px;
+                    background-color: {Theme.ACCENT_BLUE};
                     border-radius: 8px;
-                    min-height: 60px;
+                    min-height: {Theme.BUTTON_HEIGHT}px;
                 }}
             """)
             self.select_button.setEnabled(True)
@@ -331,12 +331,12 @@ class DateSelectorWidget(QWidget):
             self.status_label.setText(f"{month_names[self.selected_month-1]} {self.selected_year} - Select a day")
             self.status_label.setStyleSheet(f"""
                 QLabel {{
-                    font-size: 16px;
-                    color: {TEXT_GRAY_400};
-                    padding: 16px;
-                    background-color: {BG_GRAY_900};
+                    font-size: {Theme.BODY_MEDIUM}px;
+                    color: {Theme.TEXT_SECONDARY};
+                    padding: {Theme.SPACING_MEDIUM}px;
+                    background-color: {Theme.BG_CARD};
                     border-radius: 8px;
-                    min-height: 60px;
+                    min-height: {Theme.BUTTON_HEIGHT}px;
                 }}
             """)
             self.select_button.setEnabled(False)
@@ -346,12 +346,12 @@ class DateSelectorWidget(QWidget):
             self.status_label.setText(f"{self.selected_year} - Select a month")
             self.status_label.setStyleSheet(f"""
                 QLabel {{
-                    font-size: 16px;
-                    color: {TEXT_GRAY_400};
-                    padding: 16px;
-                    background-color: {BG_GRAY_900};
+                    font-size: {Theme.BODY_MEDIUM}px;
+                    color: {Theme.TEXT_SECONDARY};
+                    padding: {Theme.SPACING_MEDIUM}px;
+                    background-color: {Theme.BG_CARD};
                     border-radius: 8px;
-                    min-height: 60px;
+                    min-height: {Theme.BUTTON_HEIGHT}px;
                 }}
             """)
             self.select_button.setEnabled(False)
@@ -360,12 +360,12 @@ class DateSelectorWidget(QWidget):
             self.status_label.setText("Select a year to begin")
             self.status_label.setStyleSheet(f"""
                 QLabel {{
-                    font-size: 16px;
-                    color: {TEXT_GRAY_400};
-                    padding: 16px;
-                    background-color: {BG_GRAY_900};
+                    font-size: {Theme.BODY_MEDIUM}px;
+                    color: {Theme.TEXT_SECONDARY};
+                    padding: {Theme.SPACING_MEDIUM}px;
+                    background-color: {Theme.BG_CARD};
                     border-radius: 8px;
-                    min-height: 60px;
+                    min-height: {Theme.BUTTON_HEIGHT}px;
                 }}
             """)
             self.select_button.setEnabled(False)
@@ -396,13 +396,8 @@ if __name__ == "__main__":
 
     app = QApplication(sys.argv)
 
-    # Apply dark theme
-    app.setStyleSheet(f"""
-        QWidget {{
-            background-color: {BG_GRAY_800};
-            color: {TEXT_WHITE};
-        }}
-    """)
+    # Apply global theme
+    app.setStyleSheet(Theme.get_global_stylesheet())
 
     widget = DateSelectorWidget()
     widget.setWindowTitle("Date Selector Test")
