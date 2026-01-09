@@ -37,16 +37,8 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, pyqtSignal, QPropertyAnimation, QEasingCurve, QTimer
 from PyQt5.QtGui import QFont, QTransform
 
-# Import centralized styles
-from src.ui.styles.button_styles import (
-    BG_BLACK, BG_GRAY_900, BG_GRAY_800, BG_GRAY_700, BG_GRAY_600,
-    TEXT_WHITE, TEXT_GRAY_400, TEXT_GRAY_500,
-    BLUE_600, BLUE_700, BLUE_800,
-    GREEN_400, GREEN_500,
-    ORANGE_400, ORANGE_600,
-    RED_500, YELLOW_500,
-    BORDER_RADIUS
-)
+# Import Theme Manager
+from src.ui.styles.theme import Theme
 
 
 class ShowCard(QWidget):
@@ -84,53 +76,53 @@ class ShowCard(QWidget):
         # Main container with dark background
         self.setStyleSheet(f"""
             ShowCard {{
-                background-color: {BG_GRAY_900};
-                border-radius: {BORDER_RADIUS};
+                background-color: {Theme.BG_CARD};
+                border-radius: {Theme.BUTTON_RADIUS}px;
             }}
         """)
 
         # Main layout
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(32, 32, 32, 32)
-        main_layout.setSpacing(24)
+        main_layout.setContentsMargins(Theme.MARGIN_XLARGE, Theme.MARGIN_XLARGE, Theme.MARGIN_XLARGE, Theme.MARGIN_XLARGE)
+        main_layout.setSpacing(Theme.SPACING_LARGE)
 
         # Content container (for fade animation)
         self.content_widget = QWidget()
         content_layout = QVBoxLayout(self.content_widget)
         content_layout.setContentsMargins(0, 0, 0, 0)
-        content_layout.setSpacing(16)
+        content_layout.setSpacing(Theme.SPACING_MEDIUM)
 
-        # Date label - Large, vintage-inspired (48pt)
+        # Date label - Large, vintage-inspired
         self.date_label = QLabel()
         self.date_label.setStyleSheet(f"""
             QLabel {{
-                color: {TEXT_WHITE};
-                font-size: 48px;
-                font-weight: 700;
+                color: {Theme.TEXT_PRIMARY};
+                font-size: {Theme.HEADER_LARGE}px;
+                font-weight: {Theme.WEIGHT_BOLD};
             }}
         """)
         self.date_label.setAlignment(Qt.AlignCenter)
         content_layout.addWidget(self.date_label)
 
-        # Venue label - Medium (24pt)
+        # Venue label - Medium
         self.venue_label = QLabel()
         self.venue_label.setStyleSheet(f"""
             QLabel {{
-                color: {TEXT_WHITE};
-                font-size: 24px;
-                font-weight: 600;
+                color: {Theme.TEXT_PRIMARY};
+                font-size: {Theme.HEADER_SMALL}px;
+                font-weight: {Theme.WEIGHT_BOLD};
             }}
         """)
         self.venue_label.setAlignment(Qt.AlignCenter)
         self.venue_label.setWordWrap(True)
         content_layout.addWidget(self.venue_label)
 
-        # Location label - Medium (18pt)
+        # Location label - Medium
         self.location_label = QLabel()
         self.location_label.setStyleSheet(f"""
             QLabel {{
-                color: {TEXT_GRAY_400};
-                font-size: 18px;
+                color: {Theme.TEXT_SECONDARY};
+                font-size: {Theme.BODY_LARGE}px;
             }}
         """)
         self.location_label.setAlignment(Qt.AlignCenter)
@@ -146,13 +138,13 @@ class ShowCard(QWidget):
         setlist_container = QFrame()
         setlist_container.setStyleSheet(f"""
             QFrame {{
-                background-color: {BG_GRAY_800};
-                border-radius: {BORDER_RADIUS};
-                border: 1px solid {BG_GRAY_700};
+                background-color: {Theme.BG_PANEL_DARK};
+                border-radius: {Theme.BUTTON_RADIUS}px;
+                border: 1px solid {Theme.BORDER_SUBTLE};
             }}
         """)
         setlist_layout = QVBoxLayout(setlist_container)
-        setlist_layout.setContentsMargins(16, 12, 16, 12)
+        setlist_layout.setContentsMargins(Theme.SPACING_MEDIUM, Theme.SPACING_SMALL, Theme.SPACING_MEDIUM, Theme.SPACING_SMALL)
 
         # Setlist scroll area
         scroll_area = QScrollArea()
@@ -165,17 +157,17 @@ class ShowCard(QWidget):
                 border: none;
             }}
             QScrollBar:vertical {{
-                background-color: {BG_GRAY_700};
+                background-color: {Theme.BORDER_SUBTLE};
                 width: 12px;
                 border-radius: 6px;
             }}
             QScrollBar::handle:vertical {{
-                background-color: {BG_GRAY_600};
+                background-color: {Theme.TEXT_SECONDARY};
                 border-radius: 6px;
                 min-height: 30px;
             }}
             QScrollBar::handle:vertical:hover {{
-                background-color: {TEXT_GRAY_500};
+                background-color: {Theme.TEXT_PRIMARY};
             }}
         """)
 
@@ -183,8 +175,8 @@ class ShowCard(QWidget):
         self.setlist_label = QLabel()
         self.setlist_label.setStyleSheet(f"""
             QLabel {{
-                color: {TEXT_WHITE};
-                font-size: 16px;
+                color: {Theme.TEXT_PRIMARY};
+                font-size: {Theme.BODY_MEDIUM}px;
                 line-height: 1.8;
             }}
         """)
@@ -199,50 +191,18 @@ class ShowCard(QWidget):
 
         # Button container
         button_layout = QHBoxLayout()
-        button_layout.setSpacing(16)
+        button_layout.setSpacing(Theme.SPACING_MEDIUM)
 
-        # PLAY button - Large, always visible
+        # PLAY button - Large, always visible (uses red accent)
         self.play_button = QPushButton("PLAY")
-        self.play_button.setMinimumSize(200, 60)
-        self.play_button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {RED_500};
-                color: {TEXT_WHITE};
-                border: none;
-                border-radius: {BORDER_RADIUS};
-                font-size: 24px;
-                font-weight: 700;
-                padding: 16px 32px;
-            }}
-            QPushButton:hover {{
-                background-color: #dc2626;
-            }}
-            QPushButton:pressed {{
-                background-color: #b91c1c;
-            }}
-        """)
+        self.play_button.setMinimumSize(200, Theme.BUTTON_HEIGHT)
+        self.play_button.setStyleSheet(Theme.get_button_style(Theme.ACCENT_RED, Theme.TEXT_PRIMARY))
         button_layout.addWidget(self.play_button)
 
         # Try Another button - Hidden by default, shown in random mode
         self.try_another_button = QPushButton("Try Another")
-        self.try_another_button.setMinimumSize(200, 60)
-        self.try_another_button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {BG_GRAY_700};
-                color: {TEXT_WHITE};
-                border: none;
-                border-radius: {BORDER_RADIUS};
-                font-size: 18px;
-                font-weight: 600;
-                padding: 12px 24px;
-            }}
-            QPushButton:hover {{
-                background-color: {BG_GRAY_600};
-            }}
-            QPushButton:pressed {{
-                background-color: {TEXT_GRAY_500};
-            }}
-        """)
+        self.try_another_button.setMinimumSize(200, Theme.BUTTON_HEIGHT)
+        self.try_another_button.setStyleSheet(Theme.get_button_style(Theme.BORDER_SUBTLE, Theme.TEXT_PRIMARY))
         self.try_another_button.setVisible(False)  # Hidden by default
         button_layout.addWidget(self.try_another_button)
 
@@ -259,9 +219,9 @@ class ShowCard(QWidget):
         self.loading_spinner = QLabel("Loading...")
         self.loading_spinner.setStyleSheet(f"""
             QLabel {{
-                color: {TEXT_GRAY_400};
-                font-size: 32px;
-                font-weight: 600;
+                color: {Theme.TEXT_SECONDARY};
+                font-size: {Theme.HEADER_MEDIUM}px;
+                font-weight: {Theme.WEIGHT_BOLD};
             }}
         """)
         self.loading_spinner.setAlignment(Qt.AlignCenter)
@@ -271,8 +231,8 @@ class ShowCard(QWidget):
         self.loading_text = QLabel("Finding you a show...")
         self.loading_text.setStyleSheet(f"""
             QLabel {{
-                color: {TEXT_GRAY_400};
-                font-size: 18px;
+                color: {Theme.TEXT_SECONDARY};
+                font-size: {Theme.BODY_LARGE}px;
             }}
         """)
         self.loading_text.setAlignment(Qt.AlignCenter)
@@ -365,10 +325,10 @@ class ShowCard(QWidget):
         Update quality badge with appropriate color coding.
 
         Color scheme:
-        - Soundboard: Gold/yellow background
-        - Score 9.0+: Green indicator
-        - Score 8.0-8.9: Blue indicator
-        - Default: Gray
+        - Soundboard: Gold/yellow background (Theme.ACCENT_YELLOW)
+        - Score 9.0+: Green indicator (Theme.ACCENT_GREEN)
+        - Score 8.0-8.9: Blue indicator (Theme.ACCENT_BLUE)
+        - Default: Gray (Theme.BORDER_SUBTLE)
 
         Args:
             show_data (dict): Show information
@@ -381,33 +341,33 @@ class ShowCard(QWidget):
 
         if is_sbd:
             # Soundboard: Gold background
-            bg_color = YELLOW_500
-            text_color = BG_BLACK
+            bg_color = Theme.ACCENT_YELLOW
+            text_color = Theme.TEXT_DARK
             label_text = "SOUNDBOARD"
         elif score >= 9.0:
             # Excellent: Green
-            bg_color = GREEN_500
-            text_color = TEXT_WHITE
+            bg_color = Theme.ACCENT_GREEN
+            text_color = Theme.TEXT_PRIMARY
             label_text = f"EXCELLENT ({score:.1f})"
         elif score >= 8.0:
             # Very Good: Blue
-            bg_color = BLUE_600
-            text_color = TEXT_WHITE
+            bg_color = Theme.ACCENT_BLUE
+            text_color = Theme.TEXT_PRIMARY
             label_text = f"VERY GOOD ({score:.1f})"
         else:
             # Good: Gray
-            bg_color = BG_GRAY_700
-            text_color = TEXT_WHITE
+            bg_color = Theme.BORDER_SUBTLE
+            text_color = Theme.TEXT_PRIMARY
             label_text = f"GOOD ({score:.1f})" if score > 0 else "QUALITY VARIES"
 
         self.quality_badge.setStyleSheet(f"""
             QLabel {{
                 background-color: {bg_color};
                 color: {text_color};
-                padding: 8px 16px;
+                padding: {Theme.SPACING_SMALL}px {Theme.SPACING_MEDIUM}px;
                 border-radius: 4px;
-                font-weight: 700;
-                font-size: 14px;
+                font-weight: {Theme.WEIGHT_BOLD};
+                font-size: {Theme.BODY_SMALL}px;
             }}
         """)
         self.quality_badge.setText(label_text)
@@ -558,11 +518,14 @@ if __name__ == '__main__':
 
     app = QApplication(sys.argv)
 
+    # Apply global theme
+    app.setStyleSheet(Theme.get_global_stylesheet())
+
     # Test window
     window = QWidget()
     window.setWindowTitle("ShowCard Test")
     window.setGeometry(100, 100, 800, 600)
-    window.setStyleSheet(f"background-color: {BG_BLACK};")
+    window.setStyleSheet(f"background-color: {Theme.BG_PRIMARY};")
 
     layout = QVBoxLayout(window)
 
