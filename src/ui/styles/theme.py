@@ -67,7 +67,7 @@ class Theme:
     WEIGHT_NORMAL = "normal"
     
     # Font Family
-    FONT_FAMILY = "san serif"
+    FONT_FAMILY = "sans-serif"
     
     # ============================================
     # SPACING & LAYOUT
@@ -123,18 +123,22 @@ class Theme:
     @classmethod
     def get_button_style(cls, bg_color, text_color=None):
         """
-        Generate standard button stylesheet.
-        
+        Generate standard button stylesheet with enhanced touch feedback.
+
         Args:
             bg_color: Background color (hex)
             text_color: Text color (hex), defaults to TEXT_PRIMARY
-            
+
         Returns:
             str: Complete CSS stylesheet for button
+
+        Enhanced in Phase 10E Task 10E.8:
+            - More pronounced pressed state (15% darker vs 10%)
+            - Subtle padding adjustment for tactile feedback
         """
         if text_color is None:
             text_color = cls.TEXT_PRIMARY
-            
+
         return f"""
             QPushButton {{
                 background-color: {bg_color};
@@ -150,7 +154,8 @@ class Theme:
                 background-color: {cls._lighten_color(bg_color, 10)};
             }}
             QPushButton:pressed {{
-                background-color: {cls._darken_color(bg_color, 10)};
+                background-color: {cls._darken_color(bg_color, 15)};
+                padding: 2px {cls.SPACING_LARGE}px 0px {cls.SPACING_LARGE}px;
             }}
             QPushButton:disabled {{
                 background-color: {cls.BORDER_SUBTLE};

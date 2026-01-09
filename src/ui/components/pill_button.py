@@ -95,7 +95,13 @@ class PillButton(QPushButton):
         self.setStyleSheet(Theme.get_button_style(bg_color, text_color))
     
     def _apply_gradient_style(self):
-        """Apply gradient background styling."""
+        """
+        Apply gradient background styling with enhanced touch feedback.
+
+        Enhanced in Phase 10E Task 10E.8:
+            - More pronounced pressed state (15% darker vs 10%)
+            - Subtle padding adjustment for tactile feedback
+        """
         gradient_style = f"""
             QPushButton {{
                 background: qlineargradient(
@@ -121,9 +127,10 @@ class PillButton(QPushButton):
             QPushButton:pressed {{
                 background: qlineargradient(
                     x1:0, y1:0, x2:1, y2:0,
-                    stop:0 {Theme._darken_color(Theme.GRADIENT_START, 10)},
-                    stop:1 {Theme._darken_color(Theme.GRADIENT_END, 10)}
+                    stop:0 {Theme._darken_color(Theme.GRADIENT_START, 15)},
+                    stop:1 {Theme._darken_color(Theme.GRADIENT_END, 15)}
                 );
+                padding: 2px {Theme.SPACING_LARGE}px 0px {Theme.SPACING_LARGE}px;
             }}
             QPushButton:disabled {{
                 background-color: {Theme.BORDER_SUBTLE};
