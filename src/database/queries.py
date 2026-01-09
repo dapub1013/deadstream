@@ -409,10 +409,10 @@ def get_venue_count() -> int:
 def get_most_played_venues(limit: int = 20) -> List[Tuple[str, int]]:
     """
     Get venues with the most shows
-    
+
     Args:
         limit: Maximum number of venues to return
-        
+
     Returns:
         List of tuples: [(venue_name, show_count), ...]
     """
@@ -425,8 +425,30 @@ def get_most_played_venues(limit: int = 20) -> List[Tuple[str, int]]:
             ORDER BY count DESC
             LIMIT ?
         """, (limit,))
-        
+
         return [(row[0], row[1]) for row in cursor.fetchall()]
+
+
+def get_show_count_by_venue(db_path: str, venue_name: str) -> int:
+    """
+    Get number of shows at a specific venue
+
+    Args:
+        db_path: Path to database file
+        venue_name: Name of venue (case-insensitive partial match)
+
+    Returns:
+        Number of shows at that venue
+    """
+    with DatabaseConnection(db_path) as cursor:
+        cursor.execute("""
+            SELECT COUNT(*) as count
+            FROM shows
+            WHERE venue LIKE ?
+        """, (f'%{venue_name}%',))
+
+        result = cursor.fetchone()
+        return result[0] if result else 0
 
 
 def get_shows_by_state_stats() -> List[Tuple[str, int]]:
