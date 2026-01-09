@@ -184,14 +184,20 @@ class ConcertListItem(QWidget):
         self._update_background()
     
     def _update_background(self, hover=False, pressed=False):
-        """Update background color based on state."""
+        """
+        Update background color based on state.
+
+        Enhanced in Phase 10E Task 10E.8:
+            - More pronounced pressed state (15% darker vs 10%)
+            - Improved hover state (8% lighter vs 5%)
+        """
         if pressed:
-            bg_color = Theme._darken_color(Theme.BG_CARD, 10)
+            bg_color = Theme._darken_color(Theme.BG_CARD, 15)
         elif hover:
-            bg_color = Theme._lighten_color(Theme.BG_CARD, 5)
+            bg_color = Theme._lighten_color(Theme.BG_CARD, 8)
         else:
             bg_color = Theme.BG_CARD
-        
+
         self.setStyleSheet(f"""
             ConcertListItem {{
                 background-color: {bg_color};

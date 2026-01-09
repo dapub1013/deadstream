@@ -124,8 +124,8 @@ class IconButton(QPushButton):
             bg_color = Theme.BG_CARD
             text_color = Theme.TEXT_PRIMARY
             hover_bg = Theme._lighten_color(bg_color, 15)
-            pressed_bg = Theme._darken_color(bg_color, 10)
-            
+            pressed_bg = Theme._darken_color(bg_color, 15)
+
             stylesheet = f"""
                 QPushButton {{
                     background-color: {bg_color};
@@ -138,6 +138,7 @@ class IconButton(QPushButton):
                 }}
                 QPushButton:pressed {{
                     background-color: {pressed_bg};
+                    padding: 2px 0px 0px 0px;
                 }}
             """
         
@@ -145,7 +146,7 @@ class IconButton(QPushButton):
             # Semi-transparent background
             bg_color = Theme.BG_CARD
             text_color = Theme.TEXT_PRIMARY
-            
+
             # Create semi-transparent version of bg_color
             stylesheet = f"""
                 QPushButton {{
@@ -158,7 +159,8 @@ class IconButton(QPushButton):
                     background-color: rgba(30, 41, 54, 0.8);
                 }}
                 QPushButton:pressed {{
-                    background-color: rgba(30, 41, 54, 0.9);
+                    background-color: rgba(30, 41, 54, 1.0);
+                    padding: 2px 0px 0px 0px;
                 }}
             """
         
@@ -166,7 +168,7 @@ class IconButton(QPushButton):
             # Just outline, no fill
             text_color = Theme.TEXT_PRIMARY
             border_color = Theme.BORDER_SUBTLE
-            
+
             stylesheet = f"""
                 QPushButton {{
                     background-color: transparent;
@@ -179,7 +181,8 @@ class IconButton(QPushButton):
                     background-color: rgba(255, 255, 255, 0.1);
                 }}
                 QPushButton:pressed {{
-                    background-color: rgba(255, 255, 255, 0.2);
+                    background-color: rgba(255, 255, 255, 0.3);
+                    padding: 2px 0px 0px 0px;
                 }}
             """
         
@@ -188,8 +191,8 @@ class IconButton(QPushButton):
             bg_color = Theme.ACCENT_YELLOW
             text_color = Theme.TEXT_DARK
             hover_bg = Theme._lighten_color(bg_color, 10)
-            pressed_bg = Theme._darken_color(bg_color, 10)
-            
+            pressed_bg = Theme._darken_color(bg_color, 15)
+
             stylesheet = f"""
                 QPushButton {{
                     background-color: {bg_color};
@@ -202,6 +205,7 @@ class IconButton(QPushButton):
                 }}
                 QPushButton:pressed {{
                     background-color: {pressed_bg};
+                    padding: 2px 0px 0px 0px;
                 }}
             """
         
