@@ -17,6 +17,7 @@ from src.ui.screen_manager import ScreenManager
 from src.ui.screens.player_screen import PlayerScreen
 from src.ui.screens.browse_screen import BrowseScreen
 from src.ui.screens.settings_screen import SettingsScreen
+from src.ui.transitions import TransitionType
 from src.settings import get_settings
 
 
@@ -64,7 +65,8 @@ class MainWindow(QMainWindow):
             'settings': ScreenManager.SETTINGS_SCREEN
         }
         initial_screen = screen_map.get(last_screen, ScreenManager.BROWSE_SCREEN)
-        self.screen_manager.show_screen(initial_screen)
+        # Use instant transition for initial screen (no animation on app launch)
+        self.screen_manager.show_screen(initial_screen, transition_type=TransitionType.INSTANT)
 
         print("[INFO] MainWindow initialization complete")
     
@@ -213,16 +215,16 @@ class MainWindow(QMainWindow):
         print("[INFO] Keyboard handler configured")
     
     def show_player(self):
-        """Navigate to player screen"""
-        self.screen_manager.show_screen(ScreenManager.PLAYER_SCREEN)
+        """Navigate to player screen with fade transition"""
+        self.screen_manager.show_screen(ScreenManager.PLAYER_SCREEN, transition_type=TransitionType.FADE)
 
     def show_browse(self):
-        """Navigate to browse screen"""
-        self.screen_manager.show_screen(ScreenManager.BROWSE_SCREEN)
+        """Navigate to browse screen with fade transition"""
+        self.screen_manager.show_screen(ScreenManager.BROWSE_SCREEN, transition_type=TransitionType.FADE)
 
     def show_settings(self):
-        """Navigate to settings screen"""
-        self.screen_manager.show_screen(ScreenManager.SETTINGS_SCREEN)
+        """Navigate to settings screen with fade transition"""
+        self.screen_manager.show_screen(ScreenManager.SETTINGS_SCREEN, transition_type=TransitionType.FADE)
 
     def on_show_selected(self, show):
         """Handle show selection from browse screen"""
