@@ -51,7 +51,7 @@ def test_visual_inspection():
             color: {Theme.TEXT_PRIMARY};
             font-size: {Theme.HEADER_MEDIUM}px;
             font-weight: bold;
-            padding: {Theme.SPACING_MD}px;
+            padding: {Theme.SPACING_MEDIUM}px;
         }}
     """)
     layout.addWidget(title)
@@ -77,9 +77,9 @@ def test_visual_inspection():
         QLabel {{
             color: {Theme.TEXT_SECONDARY};
             font-size: {Theme.BODY_SMALL}px;
-            padding: {Theme.SPACING_MD}px;
-            background-color: {Theme.BG_GRAY_800};
-            border-radius: {Theme.BORDER_RADIUS_MD}px;
+            padding: {Theme.SPACING_MEDIUM}px;
+            background-color: {Theme.BG_CARD};
+            border-radius: 8px;
         }}
     """)
     layout.addWidget(instructions)
@@ -95,9 +95,9 @@ def test_visual_inspection():
             color: {Theme.ACCENT_GREEN};
             font-size: {Theme.BODY_LARGE}px;
             font-weight: bold;
-            padding: {Theme.SPACING_MD}px;
-            background-color: {Theme.BG_GRAY_900};
-            border-radius: {Theme.BORDER_RADIUS_MD}px;
+            padding: {Theme.SPACING_MEDIUM}px;
+            background-color: {Theme.BG_PANEL_DARK};
+            border-radius: 8px;
         }}
     """)
     

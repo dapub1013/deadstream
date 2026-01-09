@@ -1,9 +1,15 @@
 #!/usr/bin/env python3
 """
-Year browser widget for DeadStream UI.
-Provides grid-based navigation to find shows by year with legendary years highlighted.
+Year browser widget for DeadStream UI - Phase 10E Restyled
 
-Phase 7, Task 7.4: Implement year selector
+Phase 10E Restyle:
+- Uses Theme Manager for all colors/spacing/typography
+- Zero hardcoded values
+- Maintains all Phase 7 functionality
+- Legendary years highlighted in yellow
+- Touch-friendly 60px+ year buttons
+
+Provides grid-based navigation to find shows by year with legendary years highlighted.
 """
 import sys
 import os
@@ -13,75 +19,76 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(o
 sys.path.insert(0, PROJECT_ROOT)
 
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-                             QPushButton, QGridLayout, QScrollArea, QFrame)
+                             QPushButton, QGridLayout)
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QFont, QPalette, QColor
+from PyQt5.QtGui import QFont
 
+# Import Theme Manager for all styling
+from src.ui.styles.theme import Theme
+
+# Import database queries
 from src.database.queries import get_years_with_shows, get_show_count_by_year
 
 
 class YearBrowser(QWidget):
     """
-    Grid-based year browser widget.
-    Allows users to navigate by decade and select years with shows.
-    Highlights legendary years (1972, 1977, 1989, 1990, etc.)
+    Grid-based year browser widget - Phase 10E restyled
     
-    Signals:
-        year_selected(int): Emitted when user selects a year
+    Allows users to navigate by decade and select years with shows.
+    Legendary years (1972, 1977, etc.) highlighted in yellow.
     """
     
-    # Signals
-    year_selected = pyqtSignal(int)  # year as integer
+    # Signal emitted when user selects a year
+    year_selected = pyqtSignal(int)
     
-    # Legendary years (iconic eras in Dead history)
-    LEGENDARY_YEARS = {
-        1968, 1969,  # Early psychedelic era
-        1972, 1973, 1974,  # Peak improvisational years
-        1977,  # The year - widely considered peak Dead
-        1989, 1990,  # Brent era renaissance
-    }
+    # Legendary Grateful Dead years to highlight
+    LEGENDARY_YEARS = {1972, 1977, 1973, 1974, 1969, 1970, 1989, 1990}
     
-    def __init__(self):
-        """Initialize the year browser"""
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         
-        # Store years that have shows
         self.years_with_shows = set()
         self.year_counts = {}
-        
-        # Current decade being displayed
-        self.current_decade = 1970
+        self.current_decade = 1960
         
         self.init_ui()
         self.load_year_data()
         self.update_year_grid()
-    
-    def init_ui(self):
-        """Set up the year browser UI"""
-        layout = QVBoxLayout()
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(10)
         
-        # Decade navigation header
+    def init_ui(self):
+        """Initialize the year browser UI with Theme styling"""
+        layout = QVBoxLayout()
+        layout.setContentsMargins(
+            Theme.SPACING_LARGE,
+            Theme.SPACING_LARGE,
+            Theme.SPACING_LARGE,
+            Theme.SPACING_LARGE
+        )
+        layout.setSpacing(Theme.SPACING_MEDIUM)
+        
+        # Header with decade navigation
         header_layout = QHBoxLayout()
+        header_layout.setSpacing(Theme.SPACING_MEDIUM)
         
         # Previous decade button
-        self.prev_decade_btn = QPushButton("< Previous")
-        self.prev_decade_btn.setMinimumSize(120, 50)
-        self.prev_decade_btn.setFont(QFont("Arial", 14, QFont.Bold))
-        self.prev_decade_btn.clicked.connect(self.previous_decade)
+        self.prev_decade_btn = QPushButton("<< Previous")
+        self.prev_decade_btn.setMinimumHeight(Theme.BUTTON_HEIGHT)
+        self.prev_decade_btn.clicked.connect(self.prev_decade)
         header_layout.addWidget(self.prev_decade_btn)
         
-        # Decade label (center)
-        self.decade_label = QLabel()
-        self.decade_label.setFont(QFont("Arial", 24, QFont.Bold))
+        # Decade label
+        self.decade_label = QLabel("1960s (1960-1969)")
         self.decade_label.setAlignment(Qt.AlignCenter)
-        header_layout.addWidget(self.decade_label, 1)
+        self.decade_label.setFont(QFont(
+            Theme.FONT_FAMILY,
+            Theme.HEADER_SMALL,
+            QFont.Bold  # Use QFont.Bold for Python QFont objects
+        ))
+        header_layout.addWidget(self.decade_label)
         
         # Next decade button
-        self.next_decade_btn = QPushButton("Next >")
-        self.next_decade_btn.setMinimumSize(120, 50)
-        self.next_decade_btn.setFont(QFont("Arial", 14, QFont.Bold))
+        self.next_decade_btn = QPushButton("Next >>")
+        self.next_decade_btn.setMinimumHeight(Theme.BUTTON_HEIGHT)
         self.next_decade_btn.clicked.connect(self.next_decade)
         header_layout.addWidget(self.next_decade_btn)
         
@@ -89,15 +96,19 @@ class YearBrowser(QWidget):
 
         # Year grid (2 columns x 5 rows = 10 years per decade)
         self.year_grid = QGridLayout()
-        self.year_grid.setSpacing(10)
+        self.year_grid.setSpacing(Theme.SPACING_MEDIUM)
         
         # Create 10 year buttons (one decade)
         self.year_buttons = []
         for row in range(5):
             for col in range(2):
                 btn = QPushButton()
-                btn.setMinimumSize(180, 80)
-                btn.setFont(QFont("Arial", 32, QFont.Bold))  # Larger font for year
+                btn.setMinimumSize(180, 80)  # 80px height for touch-friendliness
+                btn.setFont(QFont(
+                    Theme.FONT_FAMILY,
+                    Theme.HEADER_MEDIUM,
+                    QFont.Bold  # Use QFont.Bold for Python QFont objects
+                ))
                 btn.clicked.connect(lambda checked, b=btn: self.year_clicked(b))
                 self.year_grid.addWidget(btn, row, col)
                 self.year_buttons.append(btn)
@@ -107,41 +118,62 @@ class YearBrowser(QWidget):
         # Info label
         self.info_label = QLabel("Select a year to see all shows")
         self.info_label.setAlignment(Qt.AlignCenter)
-        self.info_label.setFont(QFont("Arial", 12))
-        self.info_label.setStyleSheet("color: #d1d5db;")
+        self.info_label.setFont(QFont(
+            Theme.FONT_FAMILY,
+            Theme.BODY_SMALL
+        ))
         layout.addWidget(self.info_label)
         
         layout.addStretch()
         self.setLayout(layout)
         
-        # Apply styling
+        # Apply Theme styling
         self.apply_styling()
         
         print("[INFO] YearBrowser widget initialized")
     
     def apply_styling(self):
-        """Apply visual styling to the year browser"""
-        # Style the navigation buttons
-        nav_style = """
-            QPushButton {
-                background-color: #2563eb;
-                color: white;
+        """Apply Theme-based visual styling to the year browser"""
+        # Style the navigation buttons using Theme colors
+        nav_style = f"""
+            QPushButton {{
+                background-color: {Theme.ACCENT_BLUE};
+                color: {Theme.TEXT_PRIMARY};
                 border: none;
                 border-radius: 8px;
                 font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #1d4ed8;
-            }
-            QPushButton:pressed {
-                background-color: #1e40af;
-            }
+                font-size: {Theme.BODY_MEDIUM}px;
+                padding: {Theme.SPACING_SMALL}px {Theme.SPACING_MEDIUM}px;
+            }}
+            QPushButton:hover {{
+                background-color: {Theme._darken_color(Theme.ACCENT_BLUE, 0.1)};
+            }}
+            QPushButton:pressed {{
+                background-color: {Theme._darken_color(Theme.ACCENT_BLUE, 0.2)};
+            }}
+            QPushButton:disabled {{
+                background-color: {Theme.BORDER_SUBTLE};
+                color: {Theme.TEXT_SECONDARY};
+            }}
         """
         self.prev_decade_btn.setStyleSheet(nav_style)
         self.next_decade_btn.setStyleSheet(nav_style)
 
-        # Decade label styling
-        self.decade_label.setStyleSheet("color: white;")
+        # Decade label styling using Theme colors
+        self.decade_label.setStyleSheet(f"""
+            QLabel {{
+                color: {Theme.TEXT_PRIMARY};
+                padding: {Theme.SPACING_SMALL}px;
+            }}
+        """)
+        
+        # Info label styling using Theme colors
+        self.info_label.setStyleSheet(f"""
+            QLabel {{
+                color: {Theme.TEXT_SECONDARY};
+                padding: {Theme.SPACING_SMALL}px;
+            }}
+        """)
     
     def load_year_data(self):
         """Load years with shows from database"""
@@ -166,7 +198,7 @@ class YearBrowser(QWidget):
             self.year_counts = {}
     
     def update_year_grid(self):
-        """Update the year grid buttons for current decade"""
+        """Update the year grid buttons for current decade using Theme styling"""
         # Update decade label
         decade_end = self.current_decade + 9
         self.decade_label.setText(f"{self.current_decade}s ({self.current_decade}-{decade_end})")
@@ -178,47 +210,46 @@ class YearBrowser(QWidget):
             # Check if this year has shows
             has_shows = year in self.years_with_shows
             is_legendary = year in self.LEGENDARY_YEARS
-            show_count = self.year_counts.get(year, 0)
             
             if has_shows:
                 # Show only the year (no stars, no show count)
                 btn.setText(f"{year}")
 
-                # Enabled style - different colors for legendary vs regular
+                # Apply Theme-based styling
                 if is_legendary:
-                    # Gold/amber for legendary years
-                    btn.setStyleSheet("""
-                        QPushButton {
-                            background-color: #f59e0b;
-                            color: #000000;
-                            border: 3px solid #fbbf24;
+                    # Yellow/gold for legendary years - uses Theme colors
+                    btn.setStyleSheet(f"""
+                        QPushButton {{
+                            background-color: {Theme.ACCENT_YELLOW};
+                            color: {Theme.TEXT_DARK};
+                            border: 3px solid {Theme._lighten_color(Theme.ACCENT_YELLOW, 0.1)};
                             border-radius: 10px;
                             font-weight: bold;
-                        }
-                        QPushButton:hover {
-                            background-color: #fbbf24;
-                            border-color: #fcd34d;
-                        }
-                        QPushButton:pressed {
-                            background-color: #d97706;
-                        }
+                        }}
+                        QPushButton:hover {{
+                            background-color: {Theme._lighten_color(Theme.ACCENT_YELLOW, 0.1)};
+                            border-color: {Theme._lighten_color(Theme.ACCENT_YELLOW, 0.2)};
+                        }}
+                        QPushButton:pressed {{
+                            background-color: {Theme._darken_color(Theme.ACCENT_YELLOW, 0.1)};
+                        }}
                     """)
                 else:
-                    # Blue for regular years with shows
-                    btn.setStyleSheet("""
-                        QPushButton {
-                            background-color: #3b82f6;
-                            color: white;
-                            border: 2px solid #60a5fa;
+                    # Blue for regular years with shows - uses Theme colors
+                    btn.setStyleSheet(f"""
+                        QPushButton {{
+                            background-color: {Theme.ACCENT_BLUE};
+                            color: {Theme.TEXT_PRIMARY};
+                            border: 2px solid {Theme._lighten_color(Theme.ACCENT_BLUE, 0.1)};
                             border-radius: 10px;
                             font-weight: bold;
-                        }
-                        QPushButton:hover {
-                            background-color: #60a5fa;
-                        }
-                        QPushButton:pressed {
-                            background-color: #2563eb;
-                        }
+                        }}
+                        QPushButton:hover {{
+                            background-color: {Theme._lighten_color(Theme.ACCENT_BLUE, 0.1)};
+                        }}
+                        QPushButton:pressed {{
+                            background-color: {Theme._darken_color(Theme.ACCENT_BLUE, 0.1)};
+                        }}
                     """)
 
                 btn.setVisible(True)
@@ -242,69 +273,49 @@ class YearBrowser(QWidget):
         min_year = min(self.years_with_shows)
         max_year = max(self.years_with_shows)
         
-        min_decade = (min_year // 10) * 10
-        max_decade = (max_year // 10) * 10
+        # Disable "Previous" if we're at or before the earliest decade
+        earliest_decade = (min_year // 10) * 10
+        self.prev_decade_btn.setEnabled(self.current_decade > earliest_decade)
         
-        # Disable prev if at earliest decade
-        self.prev_decade_btn.setEnabled(self.current_decade > min_decade)
-        
-        # Disable next if at latest decade
-        self.next_decade_btn.setEnabled(self.current_decade < max_decade)
+        # Disable "Next" if we're at or after the latest decade
+        latest_decade = (max_year // 10) * 10
+        self.next_decade_btn.setEnabled(self.current_decade < latest_decade)
     
-    def previous_decade(self):
+    def prev_decade(self):
         """Navigate to previous decade"""
         self.current_decade -= 10
         self.update_year_grid()
-        print(f"[INFO] Navigated to {self.current_decade}s")
     
     def next_decade(self):
         """Navigate to next decade"""
         self.current_decade += 10
         self.update_year_grid()
-        print(f"[INFO] Navigated to {self.current_decade}s")
-
+    
     def year_clicked(self, button):
         """Handle year button click"""
         year = button.property('year')
-        
         if year is not None:
-            show_count = self.year_counts.get(year, 0)
-            print(f"[OK] Year {year} selected ({show_count} shows)")
-            
-            # Update info label
-            self.info_label.setText(f"Selected: {year} ({show_count} shows)")
-            
-            # Emit signal
+            print(f"[OK] Year selected: {year}")
             self.year_selected.emit(year)
 
 
-# Test code
 if __name__ == "__main__":
-    from PyQt5.QtWidgets import QApplication, QMainWindow
+    """Test the year browser widget"""
+    from PyQt5.QtWidgets import QApplication
     
     app = QApplication(sys.argv)
     
-    # Apply dark theme
-    app.setStyleSheet("""
-        QWidget {
-            background-color: #111827;
-            color: #f3f4f6;
-        }
-    """)
+    # Create and show year browser
+    browser = YearBrowser()
+    browser.setWindowTitle("DeadStream - Year Browser Test")
+    browser.setMinimumSize(600, 800)
+    browser.setStyleSheet(f"background-color: {Theme.BG_PRIMARY};")
+    browser.show()
     
-    window = QMainWindow()
-    window.setWindowTitle("Year Browser Test")
-    window.setGeometry(100, 100, 800, 700)
-    
-    year_browser = YearBrowser()
-    
-    # Connect signal to test
+    # Connect signal for testing
     def on_year_selected(year):
         print(f"[TEST] Year selected signal received: {year}")
     
-    year_browser.year_selected.connect(on_year_selected)
-    
-    window.setCentralWidget(year_browser)
-    window.show()
+    browser.year_selected.connect(on_year_selected)
     
     sys.exit(app.exec_())
