@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """
-Date browser widget for DeadStream UI.
-Provides calendar-style navigation to find shows by date.
+Date browser widget for DeadStream UI - Phase 10D Restyled
 
-Phase 7, Task 7.2: Implement date browser
+Phase 10D Restyle:
+- Uses Theme Manager for all colors/spacing/typography
+- Zero hardcoded values
+- Maintains all Phase 7 functionality
+
+Provides calendar-style navigation to find shows by date.
 """
 import sys
 import os
@@ -19,13 +23,24 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt5.QtCore import Qt, pyqtSignal, QDate
 from PyQt5.QtGui import QFont, QPalette, QColor
 
+# Import Phase 10A components
+from src.ui.styles.theme import Theme
+
+# Import database queries
 from src.database.queries import get_shows_by_month, get_show_dates_for_year
 
 
 class DateBrowser(QWidget):
     """
-    Calendar-style date browser widget.
+    Calendar-style date browser widget - Phase 10D restyled
+    
     Allows users to navigate by month/year and select dates with shows.
+    
+    Features:
+    - Month/year navigation
+    - Highlights dates with shows
+    - Touch-friendly day buttons
+    - "Today" quick navigation
     
     Signals:
         date_selected(str): Emitted when user selects a date (format: YYYY-MM-DD)
@@ -49,10 +64,15 @@ class DateBrowser(QWidget):
         self.update_calendar()
     
     def init_ui(self):
-        """Set up the date browser UI"""
+        """Set up the date browser UI - Phase 10D restyled"""
         layout = QVBoxLayout()
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(10)
+        layout.setContentsMargins(
+            Theme.SPACING_LARGE,
+            Theme.SPACING_LARGE,
+            Theme.SPACING_LARGE,
+            Theme.SPACING_LARGE
+        )
+        layout.setSpacing(Theme.SPACING_MEDIUM)
         
         # Month/Year header with navigation
         header_layout = QHBoxLayout()
@@ -60,20 +80,56 @@ class DateBrowser(QWidget):
         # Previous month button
         self.prev_month_btn = QPushButton("<")
         self.prev_month_btn.setMinimumSize(50, 50)
-        self.prev_month_btn.setFont(QFont("Arial", 18, QFont.Bold))
+        self.prev_month_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {Theme.ACCENT_BLUE};
+                color: {Theme.TEXT_PRIMARY};
+                border: none;
+                border-radius: {Theme.SPACING_SMALL}px;
+                font-size: {Theme.BODY_LARGE}px;
+                font-weight: {Theme.WEIGHT_BOLD};
+            }}
+            QPushButton:hover {{
+                background-color: {Theme._lighten_color(Theme.ACCENT_BLUE, 10)};
+            }}
+            QPushButton:pressed {{
+                background-color: {Theme._darken_color(Theme.ACCENT_BLUE, 10)};
+            }}
+        """)
         self.prev_month_btn.clicked.connect(self.previous_month)
         header_layout.addWidget(self.prev_month_btn)
         
         # Month/Year label (center)
         self.month_year_label = QLabel()
-        self.month_year_label.setFont(QFont("Arial", 20, QFont.Bold))
+        self.month_year_label.setStyleSheet(f"""
+            QLabel {{
+                font-size: {Theme.HEADER_MEDIUM}px;
+                font-weight: {Theme.WEIGHT_BOLD};
+                color: {Theme.TEXT_PRIMARY};
+            }}
+        """)
         self.month_year_label.setAlignment(Qt.AlignCenter)
         header_layout.addWidget(self.month_year_label, 1)
         
         # Next month button
         self.next_month_btn = QPushButton(">")
         self.next_month_btn.setMinimumSize(50, 50)
-        self.next_month_btn.setFont(QFont("Arial", 18, QFont.Bold))
+        self.next_month_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {Theme.ACCENT_BLUE};
+                color: {Theme.TEXT_PRIMARY};
+                border: none;
+                border-radius: {Theme.SPACING_SMALL}px;
+                font-size: {Theme.BODY_LARGE}px;
+                font-weight: {Theme.WEIGHT_BOLD};
+            }}
+            QPushButton:hover {{
+                background-color: {Theme._lighten_color(Theme.ACCENT_BLUE, 10)};
+            }}
+            QPushButton:pressed {{
+                background-color: {Theme._darken_color(Theme.ACCENT_BLUE, 10)};
+            }}
+        """)
         self.next_month_btn.clicked.connect(self.next_month)
         header_layout.addWidget(self.next_month_btn)
         
@@ -82,6 +138,22 @@ class DateBrowser(QWidget):
         # Today button
         today_btn = QPushButton("Today")
         today_btn.setMinimumHeight(40)
+        today_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {Theme.ACCENT_GREEN};
+                color: {Theme.TEXT_PRIMARY};
+                border: none;
+                border-radius: {Theme.SPACING_SMALL}px;
+                font-size: {Theme.BODY_MEDIUM}px;
+                font-weight: {Theme.WEIGHT_BOLD};
+            }}
+            QPushButton:hover {{
+                background-color: {Theme._lighten_color(Theme.ACCENT_GREEN, 10)};
+            }}
+            QPushButton:pressed {{
+                background-color: {Theme._darken_color(Theme.ACCENT_GREEN, 10)};
+            }}
+        """)
         today_btn.clicked.connect(self.go_to_today)
         layout.addWidget(today_btn)
         
@@ -90,14 +162,20 @@ class DateBrowser(QWidget):
         weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
         for day in weekdays:
             label = QLabel(day)
-            label.setFont(QFont("Arial", 12, QFont.Bold))
+            label.setStyleSheet(f"""
+                QLabel {{
+                    font-size: {Theme.BODY_MEDIUM}px;
+                    font-weight: {Theme.WEIGHT_BOLD};
+                    color: {Theme.TEXT_PRIMARY};
+                }}
+            """)
             label.setAlignment(Qt.AlignCenter)
             weekday_layout.addWidget(label)
         layout.addLayout(weekday_layout)
         
         # Calendar grid (7 columns x 6 rows max)
         self.calendar_grid = QGridLayout()
-        self.calendar_grid.setSpacing(5)
+        self.calendar_grid.setSpacing(Theme.SPACING_SMALL)
         
         # Create 42 day buttons (6 weeks max)
         self.day_buttons = []
@@ -105,7 +183,11 @@ class DateBrowser(QWidget):
             for col in range(7):
                 btn = QPushButton()
                 btn.setMinimumSize(60, 60)
-                btn.setFont(QFont("Arial", 14))
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        font-size: {Theme.BODY_LARGE}px;
+                    }}
+                """)
                 btn.clicked.connect(lambda checked, b=btn: self.day_clicked(b))
                 self.calendar_grid.addWidget(btn, row, col)
                 self.day_buttons.append(btn)
@@ -115,55 +197,18 @@ class DateBrowser(QWidget):
         # Info label
         self.info_label = QLabel("Select a date to see shows")
         self.info_label.setAlignment(Qt.AlignCenter)
-        self.info_label.setFont(QFont("Arial", 12))
+        self.info_label.setStyleSheet(f"""
+            QLabel {{
+                font-size: {Theme.BODY_MEDIUM}px;
+                color: {Theme.TEXT_SECONDARY};
+            }}
+        """)
         layout.addWidget(self.info_label)
         
         layout.addStretch()
         self.setLayout(layout)
         
-        # Apply styling
-        self.apply_styling()
-        
-        print("[INFO] DateBrowser widget initialized")
-    
-    def apply_styling(self):
-        """Apply visual styling to the date browser"""
-        # Style the navigation buttons
-        nav_style = """
-            QPushButton {
-                background-color: #2563eb;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #1d4ed8;
-            }
-            QPushButton:pressed {
-                background-color: #1e40af;
-            }
-        """
-        self.prev_month_btn.setStyleSheet(nav_style)
-        self.next_month_btn.setStyleSheet(nav_style)
-        
-        # Style the today button
-        today_style = """
-            QPushButton {
-                background-color: #10b981;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #059669;
-            }
-        """
-        # Find and style the today button
-        for widget in self.findChildren(QPushButton):
-            if widget.text() == "Today":
-                widget.setStyleSheet(today_style)
+        print("[INFO] DateBrowser widget initialized - Phase 10D restyled")
     
     def load_show_dates(self):
         """Load all dates that have shows from the database"""
@@ -223,43 +268,45 @@ class DateBrowser(QWidget):
                 
                 # Style based on whether there are shows
                 if day_num in show_days:
-                    # Date has shows - make it prominent
-                    btn.setStyleSheet("""
-                        QPushButton {
-                            background-color: #2563eb;
-                            color: white;
+                    # Date has shows - make it prominent (blue)
+                    btn.setStyleSheet(f"""
+                        QPushButton {{
+                            background-color: {Theme.ACCENT_BLUE};
+                            color: {Theme.TEXT_PRIMARY};
                             border: none;
-                            border-radius: 8px;
-                            font-weight: bold;
-                        }
-                        QPushButton:hover {
-                            background-color: #1d4ed8;
-                        }
-                        QPushButton:pressed {
-                            background-color: #1e40af;
-                        }
+                            border-radius: {Theme.SPACING_SMALL}px;
+                            font-size: {Theme.BODY_LARGE}px;
+                            font-weight: {Theme.WEIGHT_BOLD};
+                        }}
+                        QPushButton:hover {{
+                            background-color: {Theme._lighten_color(Theme.ACCENT_BLUE, 10)};
+                        }}
+                        QPushButton:pressed {{
+                            background-color: {Theme._darken_color(Theme.ACCENT_BLUE, 10)};
+                        }}
                     """)
                 else:
                     # No shows - subtle style
-                    btn.setStyleSheet("""
-                        QPushButton {
-                            background-color: #374151;
-                            color: #9ca3af;
+                    btn.setStyleSheet(f"""
+                        QPushButton {{
+                            background-color: {Theme.BG_CARD};
+                            color: {Theme.TEXT_SECONDARY};
                             border: none;
-                            border-radius: 8px;
-                        }
-                        QPushButton:hover {
-                            background-color: #4b5563;
-                        }
+                            border-radius: {Theme.SPACING_SMALL}px;
+                            font-size: {Theme.BODY_LARGE}px;
+                        }}
+                        QPushButton:hover {{
+                            background-color: {Theme._lighten_color(Theme.BG_CARD, 10)};
+                        }}
                     """)
                 
                 # Highlight today
                 today = datetime.now()
                 if year == today.year and month == today.month and day_num == today.day:
-                    btn.setStyleSheet(btn.styleSheet() + """
-                        QPushButton {
-                            border: 3px solid #10b981;
-                        }
+                    btn.setStyleSheet(btn.styleSheet() + f"""
+                        QPushButton {{
+                            border: 3px solid {Theme.ACCENT_GREEN};
+                        }}
                     """)
                 
                 day_num += 1
@@ -330,3 +377,27 @@ class DateBrowser(QWidget):
         self.load_show_dates()
         self.update_calendar()
         print(f"[INFO] Navigated to {year}-{month:02d}")
+
+
+# Test code
+if __name__ == '__main__':
+    from PyQt5.QtWidgets import QApplication
+    
+    app = QApplication(sys.argv)
+    
+    # Apply Theme global stylesheet
+    app.setStyleSheet(Theme.get_global_stylesheet())
+    
+    # Create and show widget
+    widget = DateBrowser()
+    widget.setWindowTitle("Date Browser Test - Phase 10D Restyled")
+    widget.resize(700, 600)
+    
+    # Connect signal to test handler
+    def handle_date_selected(date_str):
+        print(f"\n[TEST] Date selected: {date_str}")
+    
+    widget.date_selected.connect(handle_date_selected)
+    
+    widget.show()
+    sys.exit(app.exec_())

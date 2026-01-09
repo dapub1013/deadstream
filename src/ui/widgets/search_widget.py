@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
 """
-Search widget for DeadStream UI.
-Provides flexible search with text query and optional filters.
+Search widget for DeadStream UI - Phase 10D Restyled
 
-Phase 7, Task 7.5: Implement search functionality
+Phase 10D Restyle:
+- Uses Theme Manager for all colors/spacing/typography
+- Uses PillButton for Search button (yellow variant)
+- Zero hardcoded values
+- Maintains all Phase 7 functionality
+
+Provides flexible search with text query and optional filters.
 """
 import sys
 import os
@@ -17,10 +22,14 @@ from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 
+# Import Phase 10A components
+from src.ui.styles.theme import Theme
+from src.ui.components.pill_button import PillButton
+
 
 class SearchWidget(QWidget):
     """
-    Search widget for finding shows with flexible criteria.
+    Search widget for finding shows with flexible criteria - Phase 10D restyled
     
     Features:
     - Text search (venue, city, or other text)
@@ -54,39 +63,53 @@ class SearchWidget(QWidget):
         self.init_ui()
     
     def init_ui(self):
-        """Set up the search widget UI"""
+        """Set up the search widget UI - Phase 10D restyled"""
         layout = QVBoxLayout()
-        layout.setContentsMargins(10, 10, 10, 10)
-        layout.setSpacing(15)
+        layout.setContentsMargins(
+            Theme.SPACING_LARGE,
+            Theme.SPACING_LARGE,
+            Theme.SPACING_LARGE,
+            Theme.SPACING_LARGE
+        )
+        layout.setSpacing(Theme.SPACING_LARGE)
         
         # Title
         title = QLabel("Search Shows")
-        title.setFont(QFont("Arial", 20, QFont.Bold))
+        title.setStyleSheet(f"""
+            QLabel {{
+                font-size: {Theme.HEADER_MEDIUM}px;
+                font-weight: {Theme.WEIGHT_BOLD};
+                color: {Theme.TEXT_PRIMARY};
+            }}
+        """)
         title.setAlignment(Qt.AlignLeft)
-        title.setStyleSheet("color: white;")
         layout.addWidget(title)
         
         # Search text input
         search_label = QLabel("Search for venue, city, or location:")
-        search_label.setFont(QFont("Arial", 12))
-        search_label.setStyleSheet("color: #9ca3af;")
+        search_label.setStyleSheet(f"""
+            QLabel {{
+                font-size: {Theme.BODY_MEDIUM}px;
+                color: {Theme.TEXT_SECONDARY};
+            }}
+        """)
         layout.addWidget(search_label)
         
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("e.g., Fillmore, Boston, Capitol Theatre")
-        self.search_input.setMinimumHeight(60)
-        self.search_input.setFont(QFont("Arial", 14))
-        self.search_input.setStyleSheet("""
-            QLineEdit {
-                background-color: #1f2937;
-                color: white;
-                border: 2px solid #374151;
-                border-radius: 8px;
-                padding: 0 16px;
-            }
-            QLineEdit:focus {
-                border-color: #f59e0b;
-            }
+        self.search_input.setMinimumHeight(Theme.BUTTON_HEIGHT)
+        self.search_input.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: {Theme.BG_CARD};
+                color: {Theme.TEXT_PRIMARY};
+                border: 2px solid {Theme.BORDER_SUBTLE};
+                border-radius: {Theme.SPACING_SMALL}px;
+                padding: 0 {Theme.SPACING_MEDIUM}px;
+                font-size: {Theme.BODY_LARGE}px;
+            }}
+            QLineEdit:focus {{
+                border-color: {Theme.ACCENT_YELLOW};
+            }}
         """)
         # Submit search on Enter key
         self.search_input.returnPressed.connect(self.submit_search)
@@ -95,56 +118,65 @@ class SearchWidget(QWidget):
         # Divider
         divider1 = QFrame()
         divider1.setFrameShape(QFrame.HLine)
-        divider1.setStyleSheet("background-color: #374151;")
+        divider1.setStyleSheet(f"background-color: {Theme.BORDER_SUBTLE};")
         divider1.setFixedHeight(2)
         layout.addWidget(divider1)
         
         # Filters section
         filters_label = QLabel("Optional Filters:")
-        filters_label.setFont(QFont("Arial", 14, QFont.Bold))
-        filters_label.setStyleSheet("color: white;")
+        filters_label.setStyleSheet(f"""
+            QLabel {{
+                font-size: {Theme.BODY_LARGE}px;
+                font-weight: {Theme.WEIGHT_BOLD};
+                color: {Theme.TEXT_PRIMARY};
+            }}
+        """)
         layout.addWidget(filters_label)
         
         # Year filter
         year_layout = QHBoxLayout()
         year_label = QLabel("Year:")
-        year_label.setFont(QFont("Arial", 12))
-        year_label.setStyleSheet("color: #9ca3af;")
+        year_label.setStyleSheet(f"""
+            QLabel {{
+                font-size: {Theme.BODY_MEDIUM}px;
+                color: {Theme.TEXT_SECONDARY};
+            }}
+        """)
         year_label.setFixedWidth(80)
         year_layout.addWidget(year_label)
         
         self.year_combo = QComboBox()
         self.year_combo.addItems(self.years)
-        self.year_combo.setMinimumHeight(50)
-        self.year_combo.setFont(QFont("Arial", 13))
-        self.year_combo.setStyleSheet("""
-            QComboBox {
-                background-color: #1f2937;
-                color: white;
-                border: 2px solid #374151;
-                border-radius: 8px;
-                padding: 8px 12px;
-            }
-            QComboBox:hover {
-                border-color: #4b5563;
-            }
-            QComboBox::drop-down {
+        self.year_combo.setMinimumHeight(Theme.BUTTON_HEIGHT_SMALL)
+        self.year_combo.setStyleSheet(f"""
+            QComboBox {{
+                background-color: {Theme.BG_CARD};
+                color: {Theme.TEXT_PRIMARY};
+                border: 2px solid {Theme.BORDER_SUBTLE};
+                border-radius: {Theme.SPACING_SMALL}px;
+                padding: {Theme.SPACING_SMALL}px {Theme.SPACING_MEDIUM}px;
+                font-size: {Theme.BODY_MEDIUM}px;
+            }}
+            QComboBox:hover {{
+                border-color: {Theme.TEXT_SECONDARY};
+            }}
+            QComboBox::drop-down {{
                 border: none;
                 width: 30px;
-            }
-            QComboBox::down-arrow {
+            }}
+            QComboBox::down-arrow {{
                 image: none;
                 border-left: 5px solid transparent;
                 border-right: 5px solid transparent;
-                border-top: 8px solid white;
+                border-top: 8px solid {Theme.TEXT_PRIMARY};
                 margin-right: 10px;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #1f2937;
-                color: white;
-                selection-background-color: #374151;
-                border: 2px solid #374151;
-            }
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: {Theme.BG_CARD};
+                color: {Theme.TEXT_PRIMARY};
+                selection-background-color: {Theme.ACCENT_BLUE};
+                border: 2px solid {Theme.BORDER_SUBTLE};
+            }}
         """)
         year_layout.addWidget(self.year_combo)
         layout.addLayout(year_layout)
@@ -152,60 +184,73 @@ class SearchWidget(QWidget):
         # State filter
         state_layout = QHBoxLayout()
         state_label = QLabel("State:")
-        state_label.setFont(QFont("Arial", 12))
-        state_label.setStyleSheet("color: #9ca3af;")
+        state_label.setStyleSheet(f"""
+            QLabel {{
+                font-size: {Theme.BODY_MEDIUM}px;
+                color: {Theme.TEXT_SECONDARY};
+            }}
+        """)
         state_label.setFixedWidth(80)
         state_layout.addWidget(state_label)
         
         self.state_combo = QComboBox()
         self.state_combo.addItems(self.states)
-        self.state_combo.setMinimumHeight(50)
-        self.state_combo.setFont(QFont("Arial", 13))
-        self.state_combo.setStyleSheet("""
-            QComboBox {
-                background-color: #1f2937;
-                color: white;
-                border: 2px solid #374151;
-                border-radius: 8px;
-                padding: 8px 12px;
-            }
-            QComboBox:hover {
-                border-color: #4b5563;
-            }
-            QComboBox::drop-down {
+        self.state_combo.setMinimumHeight(Theme.BUTTON_HEIGHT_SMALL)
+        self.state_combo.setStyleSheet(f"""
+            QComboBox {{
+                background-color: {Theme.BG_CARD};
+                color: {Theme.TEXT_PRIMARY};
+                border: 2px solid {Theme.BORDER_SUBTLE};
+                border-radius: {Theme.SPACING_SMALL}px;
+                padding: {Theme.SPACING_SMALL}px {Theme.SPACING_MEDIUM}px;
+                font-size: {Theme.BODY_MEDIUM}px;
+            }}
+            QComboBox:hover {{
+                border-color: {Theme.TEXT_SECONDARY};
+            }}
+            QComboBox::drop-down {{
                 border: none;
                 width: 30px;
-            }
-            QComboBox::down-arrow {
+            }}
+            QComboBox::down-arrow {{
                 image: none;
                 border-left: 5px solid transparent;
                 border-right: 5px solid transparent;
-                border-top: 8px solid white;
+                border-top: 8px solid {Theme.TEXT_PRIMARY};
                 margin-right: 10px;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #1f2937;
-                color: white;
-                selection-background-color: #374151;
-                border: 2px solid #374151;
-            }
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: {Theme.BG_CARD};
+                color: {Theme.TEXT_PRIMARY};
+                selection-background-color: {Theme.ACCENT_BLUE};
+                border: 2px solid {Theme.BORDER_SUBTLE};
+            }}
         """)
         state_layout.addWidget(self.state_combo)
         layout.addLayout(state_layout)
         
         # Rating filter
         rating_layout = QVBoxLayout()
-        rating_layout.setSpacing(8)
+        rating_layout.setSpacing(Theme.SPACING_SMALL)
         
         rating_header = QHBoxLayout()
         rating_label = QLabel("Min Rating:")
-        rating_label.setFont(QFont("Arial", 12))
-        rating_label.setStyleSheet("color: #9ca3af;")
+        rating_label.setStyleSheet(f"""
+            QLabel {{
+                font-size: {Theme.BODY_MEDIUM}px;
+                color: {Theme.TEXT_SECONDARY};
+            }}
+        """)
         rating_header.addWidget(rating_label)
         
         self.rating_value_label = QLabel("Any")
-        self.rating_value_label.setFont(QFont("Arial", 12, QFont.Bold))
-        self.rating_value_label.setStyleSheet("color: #f59e0b;")
+        self.rating_value_label.setStyleSheet(f"""
+            QLabel {{
+                font-size: {Theme.BODY_MEDIUM}px;
+                font-weight: {Theme.WEIGHT_BOLD};
+                color: {Theme.ACCENT_YELLOW};
+            }}
+        """)
         rating_header.addWidget(self.rating_value_label)
         rating_header.addStretch()
         rating_layout.addLayout(rating_header)
@@ -217,26 +262,26 @@ class SearchWidget(QWidget):
         self.rating_slider.setTickPosition(QSlider.TicksBelow)
         self.rating_slider.setTickInterval(10)
         self.rating_slider.setMinimumHeight(40)
-        self.rating_slider.setStyleSheet("""
-            QSlider::groove:horizontal {
-                background: #374151;
-                height: 8px;
+        self.rating_slider.setStyleSheet(f"""
+            QSlider::groove:horizontal {{
+                background: {Theme.BG_CARD};
+                height: {Theme.PROGRESS_HEIGHT}px;
                 border-radius: 4px;
-            }
-            QSlider::handle:horizontal {
-                background: #f59e0b;
-                width: 24px;
-                height: 24px;
-                margin: -8px 0;
-                border-radius: 12px;
-            }
-            QSlider::handle:horizontal:hover {
-                background: #d97706;
-            }
-            QSlider::sub-page:horizontal {
-                background: #f59e0b;
+            }}
+            QSlider::handle:horizontal {{
+                background: {Theme.ACCENT_YELLOW};
+                width: {Theme.PROGRESS_HANDLE_SIZE}px;
+                height: {Theme.PROGRESS_HANDLE_SIZE}px;
+                margin: -{Theme.PROGRESS_HANDLE_SIZE // 4}px 0;
+                border-radius: {Theme.PROGRESS_HANDLE_SIZE // 2}px;
+            }}
+            QSlider::handle:horizontal:hover {{
+                background: {Theme._lighten_color(Theme.ACCENT_YELLOW, 10)};
+            }}
+            QSlider::sub-page:horizontal {{
+                background: {Theme.ACCENT_YELLOW};
                 border-radius: 4px;
-            }
+            }}
         """)
         self.rating_slider.valueChanged.connect(self.update_rating_label)
         rating_layout.addWidget(self.rating_slider)
@@ -246,55 +291,41 @@ class SearchWidget(QWidget):
         # Divider
         divider2 = QFrame()
         divider2.setFrameShape(QFrame.HLine)
-        divider2.setStyleSheet("background-color: #374151;")
+        divider2.setStyleSheet(f"background-color: {Theme.BORDER_SUBTLE};")
         divider2.setFixedHeight(2)
         layout.addWidget(divider2)
         
         # Buttons
         button_layout = QHBoxLayout()
-        button_layout.setSpacing(12)
+        button_layout.setSpacing(Theme.SPACING_MEDIUM)
         
-        # Clear button
+        # Clear button (outline style)
         clear_btn = QPushButton("Clear Filters")
-        clear_btn.setMinimumHeight(60)
-        clear_btn.setFont(QFont("Arial", 14))
-        clear_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #374151;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 12px;
-            }
-            QPushButton:hover {
-                background-color: #4b5563;
-            }
-            QPushButton:pressed {
-                background-color: #6b7280;
-            }
+        clear_btn.setMinimumHeight(Theme.BUTTON_HEIGHT)
+        clear_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: transparent;
+                color: {Theme.TEXT_PRIMARY};
+                border: 2px solid {Theme.BORDER_SUBTLE};
+                border-radius: {Theme.BUTTON_RADIUS}px;
+                font-size: {Theme.BODY_LARGE}px;
+                font-weight: {Theme.WEIGHT_BOLD};
+                padding: {Theme.SPACING_MEDIUM}px;
+            }}
+            QPushButton:hover {{
+                border-color: {Theme.TEXT_SECONDARY};
+                background-color: {Theme._lighten_color(Theme.BG_PRIMARY, 5)};
+            }}
+            QPushButton:pressed {{
+                background-color: {Theme._darken_color(Theme.BG_PRIMARY, 5)};
+            }}
         """)
         clear_btn.clicked.connect(self.clear_filters)
         button_layout.addWidget(clear_btn)
         
-        # Search button
-        search_btn = QPushButton("Search")
-        search_btn.setMinimumHeight(60)
-        search_btn.setFont(QFont("Arial", 14, QFont.Bold))
-        search_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #f59e0b;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                padding: 12px;
-            }
-            QPushButton:hover {
-                background-color: #d97706;
-            }
-            QPushButton:pressed {
-                background-color: #b45309;
-            }
-        """)
+        # Search button (PillButton - yellow variant)
+        search_btn = PillButton("Search", variant='yellow')
+        search_btn.setMinimumHeight(Theme.BUTTON_HEIGHT)
         search_btn.clicked.connect(self.submit_search)
         button_layout.addWidget(search_btn)
         
@@ -303,7 +334,7 @@ class SearchWidget(QWidget):
         layout.addStretch()
         self.setLayout(layout)
         
-        print("[INFO] SearchWidget initialized")
+        print("[INFO] SearchWidget initialized - Phase 10D restyled")
     
     def update_rating_label(self, value):
         """Update the rating value label when slider moves"""
@@ -366,10 +397,12 @@ if __name__ == '__main__':
     
     app = QApplication(sys.argv)
     
+    # Apply Theme global stylesheet
+    app.setStyleSheet(Theme.get_global_stylesheet())
+    
     # Create and show widget
     widget = SearchWidget()
-    widget.setStyleSheet("background-color: #111827;")
-    widget.setWindowTitle("Search Widget Test")
+    widget.setWindowTitle("Search Widget Test - Phase 10D Restyled")
     widget.resize(600, 700)
     
     # Connect signal to test handler

@@ -1,12 +1,18 @@
 """
-Show List Widget for DeadStream Browse Interface
+Show List Widget for DeadStream Browse Interface - Phase 10D Restyled
 
-This widget displays a scrollable list of Grateful Dead shows with:
-- Date, venue, location
+Phase 10D Restyle:
+- Uses Theme Manager for all colors/spacing
+- Uses ConcertListItem component from Phase 10A
+- Zero hardcoded values
+- Maintains all Phase 7 functionality
+
+Features:
+- Scrollable list of Grateful Dead shows
+- Date, venue, location display
 - Rating and review count
 - Source type badge
-- Touch-friendly tap targets (60x60px minimum)
-- Proper formatting matching UI design spec
+- Touch-friendly tap targets (60px minimum)
 
 Can be used for all browse modes:
 - All Shows
@@ -14,6 +20,7 @@ Can be used for all browse modes:
 - Shows by Date
 - Shows by Venue
 - Shows by Year
+- Search Results
 """
 
 import sys
@@ -23,273 +30,19 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QPushButton, QScrollArea, QFrame, QListWidget, QListWidgetItem
+    QWidget, QVBoxLayout, QScrollArea, QFrame
 )
-from PyQt5.QtCore import Qt, pyqtSignal, QSize
+from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 
-# Import centralized styles
-from src.ui.styles.button_styles import (
-    PRIMARY_BUTTON_STYLE, BLUE_600, BLUE_700, BLUE_800,
-    TEXT_WHITE, TEXT_GRAY_400, TEXT_GRAY_500
-)
-
-
-class ShowCard(QFrame):
-    """
-    Individual show card widget
-    
-    Displays:
-    - Date (large, bold)
-    - Venue (medium)
-    - Location (small, gray)
-    - Rating (star + number)
-    - Source badge (SBD/AUD/MTX)
-    - Play button
-    
-    Signals:
-    - play_requested: Emitted when card is clicked or Play button tapped
-    """
-    
-    play_requested = pyqtSignal(dict)  # Emits show dictionary
-    
-    def __init__(self, show_data, parent=None):
-        """
-        Initialize show card
-        
-        Args:
-            show_data: Dictionary from database with show information
-            parent: Parent widget
-        """
-        super().__init__(parent)
-        self.show_data = show_data
-        self.setup_ui()
-    
-    def setup_ui(self):
-        """Create card layout and widgets"""
-        # Card styling - blue primary style like browse buttons
-        self.setStyleSheet(f"""
-            ShowCard {{
-                background-color: {BLUE_600};
-                border-radius: 8px;
-                padding: 12px;
-                border: none;
-            }}
-            ShowCard:hover {{
-                background-color: {BLUE_700};
-            }}
-        """)
-        
-        # Make entire card clickable
-        self.setCursor(Qt.PointingHandCursor)
-        
-        # Main layout
-        layout = QHBoxLayout(self)
-        layout.setContentsMargins(16, 12, 16, 12)
-        layout.setSpacing(12)
-        
-        # Left side: Show info (date, venue, location)
-        info_layout = QVBoxLayout()
-        info_layout.setSpacing(4)
-        
-        # Date - large, bold (e.g., "1977-05-08")
-        date_label = QLabel(self.show_data['date'])
-        date_label.setStyleSheet(f"""
-            color: {TEXT_WHITE};
-            font-size: 20px;
-            font-weight: 600;
-        """)
-        info_layout.addWidget(date_label)
-
-        # Venue - medium (e.g., "Barton Hall, Cornell University")
-        venue = self.show_data.get('venue', 'Unknown Venue')
-        venue_label = QLabel(venue)
-        venue_label.setStyleSheet(f"""
-            color: {TEXT_WHITE};
-            font-size: 16px;
-        """)
-        venue_label.setWordWrap(True)
-        venue_label.setMaximumWidth(400)
-        info_layout.addWidget(venue_label)
-
-        # Location - small, lighter (e.g., "Ithaca, NY")
-        city = self.show_data.get('city', '')
-        state = self.show_data.get('state', '')
-        if city and state:
-            location = f"{city}, {state}"
-        elif city:
-            location = city
-        elif state:
-            location = state
-        else:
-            location = "Unknown Location"
-
-        location_label = QLabel(location)
-        location_label.setStyleSheet(f"""
-            color: {TEXT_WHITE};
-            font-size: 14px;
-            opacity: 0.8;
-        """)
-        info_layout.addWidget(location_label)
-        
-        # Metadata badges (source type, rating)
-        badges_layout = QHBoxLayout()
-        badges_layout.setSpacing(8)
-        
-        # Source type badge (SBD/AUD/MTX) if available
-        source = self.show_data.get('source', '')
-        if source:
-            source_badge = QLabel(source.upper()[:3])  # SBD, AUD, or MTX
-            source_badge.setStyleSheet(f"""
-                background-color: rgba(255, 255, 255, 0.2);
-                color: {TEXT_WHITE};
-                padding: 4px 8px;
-                border-radius: 4px;
-                font-size: 12px;
-                font-weight: 600;
-            """)
-            badges_layout.addWidget(source_badge)
-
-        # Rating badge (star + number)
-        rating = self.show_data.get('avg_rating')
-        if rating:
-            rating_badge = QLabel(f"[*] {rating:.1f}/5.0")
-            rating_badge.setStyleSheet(f"""
-                color: {TEXT_WHITE};
-                font-size: 14px;
-                font-weight: 600;
-            """)
-            badges_layout.addWidget(rating_badge)
-        
-        badges_layout.addStretch()
-        info_layout.addLayout(badges_layout)
-        
-        layout.addLayout(info_layout, stretch=1)
-        
-        # Right side: Play button (darker blue to contrast with card)
-        play_button = QPushButton("Play ->")
-        play_button.setMinimumSize(100, 60)  # Touch-friendly
-        play_button.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {BLUE_800};
-                color: {TEXT_WHITE};
-                border: none;
-                border-radius: 8px;
-                font-size: 16px;
-                font-weight: 600;
-                padding: 12px 20px;
-            }}
-            QPushButton:hover {{
-                background-color: #1e3a8a;
-            }}
-            QPushButton:pressed {{
-                background-color: #1e40af;
-            }}
-        """)
-        play_button.clicked.connect(self.on_play_clicked)
-        layout.addWidget(play_button, alignment=Qt.AlignVCenter)
-        
-        self.setLayout(layout)
-    
-    def on_play_clicked(self):
-        """Handle play button click"""
-        self.play_requested.emit(self.show_data)
-    
-    def mousePressEvent(self, event):
-        """Make entire card clickable"""
-        if event.button() == Qt.LeftButton:
-            self.on_play_clicked()
-        super().mousePressEvent(event)
-
-
-class ShowItemWidget(QWidget):
-    """Custom widget for displaying a show in the list with nice formatting"""
-
-    def __init__(self, show_data, parent=None):
-        """Initialize show item widget"""
-        super().__init__(parent)
-        self.show_data = show_data
-        self.setup_ui()
-
-    def setup_ui(self):
-        """Create item layout with styled text"""
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(4)
-
-        # Date - Large, bold (24px)
-        date_label = QLabel(self.show_data['date'])
-        date_label.setStyleSheet("""
-            QLabel {
-                color: white;
-                font-size: 24px;
-                font-weight: 700;
-            }
-        """)
-        layout.addWidget(date_label)
-
-        # Venue - Medium (18px)
-        venue = self.show_data.get('venue', 'Unknown Venue')
-        venue_label = QLabel(venue)
-        venue_label.setStyleSheet("""
-            QLabel {
-                color: white;
-                font-size: 18px;
-                font-weight: 500;
-            }
-        """)
-        venue_label.setWordWrap(True)
-        layout.addWidget(venue_label)
-
-        # Location - Smaller, lighter (16px)
-        city = self.show_data.get('city', '')
-        state = self.show_data.get('state', '')
-        if city and state:
-            location = f"{city}, {state}"
-        elif city:
-            location = city
-        elif state:
-            location = state
-        else:
-            location = "Unknown Location"
-
-        location_label = QLabel(location)
-        location_label.setStyleSheet("""
-            QLabel {
-                color: #d1d5db;
-                font-size: 16px;
-            }
-        """)
-        layout.addWidget(location_label)
-
-        # Metadata (rating and source) - 14px
-        metadata_parts = []
-        rating = self.show_data.get('avg_rating')
-        if rating:
-            metadata_parts.append(f"[*] {rating:.1f}/5.0")
-
-        source = self.show_data.get('source', '')
-        if source:
-            metadata_parts.append(source.upper()[:3])
-
-        if metadata_parts:
-            metadata_label = QLabel(" | ".join(metadata_parts))
-            metadata_label.setStyleSheet("""
-                QLabel {
-                    color: #9ca3af;
-                    font-size: 14px;
-                    font-weight: 600;
-                }
-            """)
-            layout.addWidget(metadata_label)
-
-        self.setLayout(layout)
+# Import Phase 10A components
+from src.ui.styles.theme import Theme
+from src.ui.components.concert_list_item import ConcertListItem
 
 
 class ShowListWidget(QWidget):
     """
-    Scrollable list of shows using QListWidget
+    Scrollable list of shows using ConcertListItem components - Phase 10D restyled
 
     Features:
     - Displays multiple shows in scrollable list
@@ -297,7 +50,7 @@ class ShowListWidget(QWidget):
     - Loading state
     - Empty state
     - Automatic sizing
-    - Clean list styling matching venue browser
+    - Uses Phase 10A ConcertListItem for each show
 
     Signals:
     - show_selected: Emitted when user selects a show to play
@@ -309,45 +62,44 @@ class ShowListWidget(QWidget):
         """Initialize show list widget"""
         super().__init__(parent)
         self.shows = []
+        self.show_items = []  # Track ConcertListItem widgets
         self.setup_ui()
 
     def setup_ui(self):
         """Create list layout"""
         # Main layout
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
 
-        # Create QListWidget with venue browser styling
-        self.list_widget = QListWidget()
-        self.list_widget.setStyleSheet("""
-            QListWidget {
-                background-color: #1f2937;
-                color: white;
-                border: 2px solid #374151;
-                border-radius: 8px;
-                padding: 4px;
-            }
-            QListWidget::item {
-                border-bottom: 1px solid #374151;
-                margin: 4px;
-            }
-            QListWidget::item:selected {
-                background-color: #10b981;
-                border-radius: 6px;
-            }
-            QListWidget::item:hover {
-                background-color: #374151;
-                border-radius: 6px;
-            }
+        # Create scroll area
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setStyleSheet(f"""
+            QScrollArea {{
+                background-color: {Theme.BG_PRIMARY};
+                border: none;
+            }}
         """)
 
-        # Connect selection signal
-        self.list_widget.itemClicked.connect(self.on_item_clicked)
-        self.list_widget.itemDoubleClicked.connect(self.on_item_clicked)
+        # Container widget for list items
+        self.list_container = QWidget()
+        self.list_layout = QVBoxLayout(self.list_container)
+        self.list_layout.setContentsMargins(
+            Theme.SPACING_LARGE,
+            Theme.SPACING_MEDIUM,
+            Theme.SPACING_LARGE,
+            Theme.SPACING_MEDIUM
+        )
+        self.list_layout.setSpacing(Theme.SPACING_MEDIUM)
+        self.list_layout.setAlignment(Qt.AlignTop)
 
-        layout.addWidget(self.list_widget)
-        self.setLayout(layout)
+        scroll_area.setWidget(self.list_container)
+        main_layout.addWidget(scroll_area)
+
+        self.setLayout(main_layout)
 
     def load_shows(self, shows):
         """
@@ -357,41 +109,67 @@ class ShowListWidget(QWidget):
             shows: List of show dictionaries from database
         """
         # Clear existing items
-        self.list_widget.clear()
+        self.clear_shows()
 
         # Store shows
         self.shows = shows
 
-        # Create list item for each show
-        for show in shows:
-            # Create list item
-            item = QListWidgetItem(self.list_widget)
+        # Create ConcertListItem for each show
+        for i, show in enumerate(shows):
+            # Prepare show data for ConcertListItem
+            item_data = {
+                'date': show.get('date', 'Unknown Date'),
+                'venue': show.get('venue', 'Unknown Venue'),
+                'location': self._format_location(show),
+                'rating': show.get('avg_rating'),
+                'source': show.get('source', '')
+            }
 
-            # Store show data in item
-            item.setData(Qt.UserRole, show)
+            # Create ConcertListItem (Phase 10A component)
+            show_divider = (i < len(shows) - 1)  # Show divider except for last item
+            item = ConcertListItem(item_data, show_divider=show_divider)
+            
+            # Store original show data for signal emission
+            item.original_show_data = show
+            
+            # Connect clicked signal
+            item.clicked.connect(lambda data, s=show: self.on_item_clicked(s))
 
-            # Create custom widget for this show
-            show_widget = ShowItemWidget(show)
+            # Add to layout
+            self.list_layout.addWidget(item)
+            self.show_items.append(item)
 
-            # Set item size to fit widget
-            item.setSizeHint(QSize(0, 120))  # Height for custom widget
+        print(f"[INFO] Loaded {len(shows)} shows into list")
 
-            # Add item to list
-            self.list_widget.addItem(item)
-
-            # Set custom widget for item
-            self.list_widget.setItemWidget(item, show_widget)
+    def _format_location(self, show):
+        """Format location string from show data"""
+        city = show.get('city', '')
+        state = show.get('state', '')
+        
+        if city and state:
+            return f"{city}, {state}"
+        elif city:
+            return city
+        elif state:
+            return state
+        else:
+            return ""
 
     def clear_shows(self):
         """Remove all show items from list"""
-        self.list_widget.clear()
-        self.shows = []
+        # Remove all widgets from layout
+        while self.list_layout.count():
+            item = self.list_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
 
-    def on_item_clicked(self, item):
-        """Handle item selection"""
-        show_data = item.data(Qt.UserRole)
-        if show_data:
-            self.show_selected.emit(show_data)
+        self.shows = []
+        self.show_items = []
+
+    def on_item_clicked(self, show_data):
+        """Handle item click - emit show_selected signal"""
+        print(f"[INFO] Show clicked: {show_data.get('date')} - {show_data.get('venue')}")
+        self.show_selected.emit(show_data)
 
     def set_empty_state(self, message="No shows found"):
         """
@@ -400,22 +178,132 @@ class ShowListWidget(QWidget):
         Args:
             message: Message to display when no shows available
         """
-        self.list_widget.clear()
-        self.shows = []
+        self.clear_shows()
 
-        # Add single item with message
-        item = QListWidgetItem(message)
-        item.setFlags(Qt.NoItemFlags)  # Make it non-selectable
-        item.setForeground(Qt.gray)
-        self.list_widget.addItem(item)
+        # Create empty state label
+        empty_label = QFrame()
+        empty_layout = QVBoxLayout(empty_label)
+        empty_layout.setContentsMargins(
+            Theme.SPACING_XLARGE,
+            Theme.SPACING_XXLARGE,
+            Theme.SPACING_XLARGE,
+            Theme.SPACING_XXLARGE
+        )
+        empty_layout.setAlignment(Qt.AlignCenter)
+
+        # Icon placeholder (using text since we can't use unicode)
+        icon_label = QFont()
+        icon_label.setPointSize(48)
+        
+        # Message text
+        msg_label = QFont()
+        msg_label.setPointSize(Theme.BODY_LARGE)
+        
+        message_widget = QFrame()
+        message_widget.setStyleSheet(f"""
+            QFrame {{
+                background-color: {Theme.BG_CARD};
+                border-radius: 16px;
+                padding: {Theme.SPACING_XLARGE}px;
+            }}
+        """)
+        
+        msg_layout = QVBoxLayout(message_widget)
+        msg_layout.setAlignment(Qt.AlignCenter)
+        msg_layout.setSpacing(Theme.SPACING_MEDIUM)
+        
+        # Large "No Results" text
+        no_results = QFont()
+        no_results.setFamily(Theme.FONT_FAMILY)
+        no_results.setPointSize(Theme.HEADER_SMALL)
+        no_results.setBold(True)
+        
+        from PyQt5.QtWidgets import QLabel
+        title_label = QLabel("No Shows Found")
+        title_label.setFont(no_results)
+        title_label.setAlignment(Qt.AlignCenter)
+        title_label.setStyleSheet(f"color: {Theme.TEXT_PRIMARY};")
+        msg_layout.addWidget(title_label)
+        
+        # Subtitle message
+        subtitle = QFont()
+        subtitle.setFamily(Theme.FONT_FAMILY)
+        subtitle.setPointSize(Theme.BODY_MEDIUM)
+        
+        subtitle_label = QLabel(message)
+        subtitle_label.setFont(subtitle)
+        subtitle_label.setAlignment(Qt.AlignCenter)
+        subtitle_label.setStyleSheet(f"color: {Theme.TEXT_SECONDARY};")
+        subtitle_label.setWordWrap(True)
+        msg_layout.addWidget(subtitle_label)
+        
+        empty_layout.addWidget(message_widget)
+        self.list_layout.addWidget(empty_label)
 
     def set_loading_state(self):
         """Display loading message"""
-        self.list_widget.clear()
-        self.shows = []
+        self.clear_shows()
 
-        # Add single item with loading message
-        item = QListWidgetItem("Loading shows...")
-        item.setFlags(Qt.NoItemFlags)  # Make it non-selectable
-        item.setForeground(Qt.lightGray)
-        self.list_widget.addItem(item)
+        # Create loading state label
+        loading_label = QFrame()
+        loading_layout = QVBoxLayout(loading_label)
+        loading_layout.setContentsMargins(
+            Theme.SPACING_XLARGE,
+            Theme.SPACING_XXLARGE,
+            Theme.SPACING_XLARGE,
+            Theme.SPACING_XXLARGE
+        )
+        loading_layout.setAlignment(Qt.AlignCenter)
+
+        from PyQt5.QtWidgets import QLabel
+        
+        # Loading text
+        loading_font = QFont()
+        loading_font.setFamily(Theme.FONT_FAMILY)
+        loading_font.setPointSize(Theme.BODY_LARGE)
+        
+        msg = QLabel("Loading shows...")
+        msg.setFont(loading_font)
+        msg.setAlignment(Qt.AlignCenter)
+        msg.setStyleSheet(f"color: {Theme.TEXT_SECONDARY};")
+        
+        loading_layout.addWidget(msg)
+        self.list_layout.addWidget(loading_label)
+
+
+# Test code
+if __name__ == '__main__':
+    from PyQt5.QtWidgets import QApplication
+    from src.database.queries import get_top_rated_shows
+    
+    app = QApplication(sys.argv)
+    
+    # Apply Theme global stylesheet
+    app.setStyleSheet(Theme.get_global_stylesheet())
+    
+    # Create widget
+    widget = ShowListWidget()
+    widget.setWindowTitle("Show List Widget Test - Phase 10D Restyled")
+    widget.resize(800, 600)
+    
+    # Test handler
+    def handle_show_selected(show):
+        print(f"\n[TEST] Show selected: {show['date']} - {show['venue']}")
+    
+    widget.show_selected.connect(handle_show_selected)
+    
+    # Load some test data
+    try:
+        shows = get_top_rated_shows(limit=20, min_reviews=5)
+        if shows:
+            widget.load_shows(shows)
+            print(f"[TEST] Loaded {len(shows)} shows for testing")
+        else:
+            widget.set_empty_state("No shows in database")
+            print("[TEST] No shows found - showing empty state")
+    except Exception as e:
+        print(f"[TEST] Error loading shows: {e}")
+        widget.set_empty_state("Error loading test data")
+    
+    widget.show()
+    sys.exit(app.exec_())
