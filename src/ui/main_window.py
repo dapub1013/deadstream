@@ -4,7 +4,7 @@ Main window for DeadStream application.
 Integrates screen manager and navigation system.
 """
 import sys
-from PyQt5.QtWidgets import QMainWindow, QApplication
+from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPalette, QColor
 
@@ -54,6 +54,9 @@ class MainWindow(QMainWindow):
         
         # Initialize keyboard handler
         self._setup_keyboard_handler()
+
+        # Add fullscreen toggle button for testing
+        self._setup_fullscreen_toggle()
 
         # Show welcome screen on app launch (always start here)
         print("[INFO] Starting at welcome screen")
@@ -126,7 +129,52 @@ class MainWindow(QMainWindow):
         self.move(x, y)
 
         print(f"[INFO] Window size set to {window_width}x{window_height}")
-    
+
+    def _setup_fullscreen_toggle(self):
+        """Create a floating fullscreen toggle button for testing"""
+        self.fullscreen_toggle_btn = QPushButton("Toggle Fullscreen", self)
+        self.fullscreen_toggle_btn.setGeometry(10, 10, 160, 40)
+        self.fullscreen_toggle_btn.clicked.connect(self._toggle_fullscreen)
+        self.fullscreen_toggle_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #1F2937;
+                color: #9CA3AF;
+                border: 1px solid #374151;
+                border-radius: 6px;
+                padding: 8px;
+                font-size: 12px;
+                font-weight: normal;
+            }
+            QPushButton:hover {
+                background-color: #374151;
+                color: white;
+            }
+            QPushButton:pressed {
+                background-color: #4B5563;
+            }
+        """)
+        self.fullscreen_toggle_btn.raise_()
+        print("[INFO] Fullscreen toggle button created")
+
+    def _toggle_fullscreen(self):
+        """Toggle between fullscreen and windowed mode"""
+        if self.isFullScreen():
+            self.showNormal()
+            # Return to fixed size for development
+            self.setFixedSize(1280, 720)
+            # Re-center window
+            screen = QApplication.primaryScreen().geometry()
+            x = (screen.width() - 1280) // 2
+            y = (screen.height() - 720) // 2
+            self.move(x, y)
+            print("[INFO] Exited fullscreen mode")
+        else:
+            # Remove size constraints for fullscreen
+            self.setMinimumSize(0, 0)
+            self.setMaximumSize(16777215, 16777215)
+            self.showFullScreen()
+            print("[INFO] Entered fullscreen mode")
+
     def create_screens(self):
         """Create and add all screens to the screen manager"""
         try:
