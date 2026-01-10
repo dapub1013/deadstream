@@ -20,15 +20,8 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 
-# Import centralized styles
-from src.ui.styles.button_styles import (
-    SETTINGS_CATEGORY_SELECTED, SETTINGS_CATEGORY_UNSELECTED,
-    SECONDARY_BUTTON_STYLE, BG_GRAY_800, BG_GRAY_900, BG_BLACK,
-    TEXT_WHITE, BG_GRAY_700
-)
-from src.ui.styles.text_styles import (
-    TITLE_MAIN_STYLE, FONT_3XL
-)
+# Import Theme Manager (centralized styling)
+from src.ui.styles.theme import Theme
 
 # Import settings widgets
 from src.ui.widgets.about_widget import AboutWidget
@@ -84,19 +77,19 @@ class SettingsScreen(QWidget):
         header = QFrame()
         header.setStyleSheet(f"""
             QFrame {{
-                background-color: {BG_GRAY_800};
-                border-bottom: 1px solid {BG_GRAY_700};
+                background-color: {Theme.BG_PANEL_DARK};
+                border-bottom: 1px solid {Theme.BORDER_SUBTLE};
             }}
         """)
         header.setFixedHeight(80)
 
         layout = QHBoxLayout(header)
-        layout.setContentsMargins(20, 0, 20, 0)
+        layout.setContentsMargins(Theme.SPACING_LARGE, 0, Theme.SPACING_LARGE, 0)
 
         # Back button
         back_btn = QPushButton("< Back to Browse")
-        back_btn.setFixedSize(200, 60)
-        back_btn.setStyleSheet(SECONDARY_BUTTON_STYLE)
+        back_btn.setFixedSize(200, Theme.BUTTON_HEIGHT)
+        back_btn.setStyleSheet(Theme.get_button_style(Theme.ACCENT_BLUE))
         back_btn.clicked.connect(self.back_clicked.emit)
         layout.addWidget(back_btn)
 
@@ -104,7 +97,10 @@ class SettingsScreen(QWidget):
         title = QLabel("Settings")
         title.setStyleSheet(f"""
             QLabel {{
-                {TITLE_MAIN_STYLE}
+                color: {Theme.TEXT_PRIMARY};
+                font-size: {Theme.HEADER_MEDIUM}px;
+                font-weight: {Theme.WEIGHT_BOLD};
+                background-color: transparent;
             }}
         """)
         title.setAlignment(Qt.AlignCenter)
@@ -120,15 +116,15 @@ class SettingsScreen(QWidget):
         sidebar = QFrame()
         sidebar.setStyleSheet(f"""
             QFrame {{
-                background-color: {BG_BLACK};
-                border-right: 1px solid {BG_GRAY_700};
+                background-color: {Theme.BG_PANEL_BLACK};
+                border-right: 1px solid {Theme.BORDER_SUBTLE};
             }}
         """)
         sidebar.setFixedWidth(280)
-        
+
         layout = QVBoxLayout(sidebar)
-        layout.setContentsMargins(20, 30, 20, 30)
-        layout.setSpacing(15)
+        layout.setContentsMargins(Theme.SPACING_LARGE, Theme.SPACING_XLARGE, Theme.SPACING_LARGE, Theme.SPACING_XLARGE)
+        layout.setSpacing(Theme.BUTTON_SPACING)
         
         # Category buttons
         self.category_buttons = {}
@@ -155,12 +151,12 @@ class SettingsScreen(QWidget):
     def _create_category_button(self, category_id, label, color):
         """Create a single category button"""
         btn = QPushButton(label)
-        btn.setFixedHeight(70)
+        btn.setFixedHeight(Theme.BUTTON_HEIGHT)
         btn.setProperty("category_id", category_id)
         btn.setProperty("base_color", color)
 
-        # Set initial style (will be updated by update_button_styles)
-        btn.setStyleSheet(SETTINGS_CATEGORY_UNSELECTED)
+        # Set initial unselected style (will be updated by update_button_styles)
+        btn.setStyleSheet(self._get_unselected_button_style())
 
         btn.clicked.connect(lambda: self.show_category(category_id))
         return btn
@@ -171,7 +167,7 @@ class SettingsScreen(QWidget):
         self.content_stack = QStackedWidget()
         self.content_stack.setStyleSheet(f"""
             QStackedWidget {{
-                background-color: {BG_GRAY_900};
+                background-color: {Theme.BG_PRIMARY};
                 border: none;
             }}
         """)
@@ -245,6 +241,25 @@ class SettingsScreen(QWidget):
         elif category_id == "about":
             self.content_stack.setCurrentWidget(self.about_widget)
     
+    def _get_unselected_button_style(self):
+        """Get the stylesheet for unselected category buttons"""
+        return f"""
+            QPushButton {{
+                background-color: transparent;
+                color: {Theme.TEXT_SECONDARY};
+                border: 1px solid {Theme.BORDER_SUBTLE};
+                border-radius: {Theme.SPACING_SMALL}px;
+                font-size: {Theme.BODY_LARGE}px;
+                font-weight: {Theme.WEIGHT_BOLD};
+                text-align: left;
+                padding: {Theme.SPACING_MEDIUM}px;
+            }}
+            QPushButton:hover {{
+                background-color: {Theme.BORDER_SUBTLE};
+                color: {Theme.TEXT_PRIMARY};
+            }}
+        """
+
     def update_button_styles(self):
         """Update category button styles based on selection"""
         for category_id, btn in self.category_buttons.items():
@@ -256,21 +271,24 @@ class SettingsScreen(QWidget):
                 btn.setStyleSheet(f"""
                     QPushButton {{
                         background-color: {color};
-                        color: {TEXT_WHITE};
+                        color: {Theme.TEXT_PRIMARY};
                         border: none;
-                        border-radius: 8px;
-                        font-size: 18px;
-                        font-weight: 600;
+                        border-radius: {Theme.SPACING_SMALL}px;
+                        font-size: {Theme.BODY_LARGE}px;
+                        font-weight: {Theme.WEIGHT_BOLD};
                         text-align: left;
-                        padding: 16px;
+                        padding: {Theme.SPACING_MEDIUM}px;
                     }}
                     QPushButton:hover {{
-                        opacity: 0.9;
+                        background-color: {Theme._lighten_color(color, 10)};
+                    }}
+                    QPushButton:pressed {{
+                        background-color: {Theme._darken_color(color, 10)};
                     }}
                 """)
             else:
-                # Unselected state - use centralized dark style
-                btn.setStyleSheet(SETTINGS_CATEGORY_UNSELECTED)
+                # Unselected state
+                btn.setStyleSheet(self._get_unselected_button_style())
 
 
 if __name__ == "__main__":
@@ -282,7 +300,7 @@ if __name__ == "__main__":
     settings = SettingsScreen()
     settings.setWindowTitle("DeadStream Settings")
     settings.setGeometry(100, 100, 1024, 600)
-    settings.setStyleSheet("background-color: #121212;")
+    settings.setStyleSheet(f"background-color: {Theme.BG_PRIMARY};")
     
     # Connect back button to close for testing
     settings.back_clicked.connect(app.quit)
