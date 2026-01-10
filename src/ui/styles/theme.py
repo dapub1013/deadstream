@@ -78,6 +78,7 @@ class Theme:
     SPACING_MEDIUM = 16         # 16px - standard gap
     SPACING_LARGE = 24          # 24px - large gap
     SPACING_XLARGE = 32         # 32px - extra large gap
+    SPACING_XXLARGE = 48        # 48px - extra extra large gap
     
     MARGIN_SMALL = 8
     MARGIN_MEDIUM = 16

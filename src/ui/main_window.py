@@ -14,6 +14,7 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(_
 sys.path.insert(0, PROJECT_ROOT)
 
 from src.ui.screen_manager import ScreenManager
+from src.ui.screens.welcome_screen import WelcomeScreen
 from src.ui.screens.player_screen import PlayerScreen
 from src.ui.screens.browse_screen import BrowseScreen
 from src.ui.screens.settings_screen import SettingsScreen
@@ -53,20 +54,10 @@ class MainWindow(QMainWindow):
         # Initialize keyboard handler
         self._setup_keyboard_handler()
 
-        # Restore last screen from settings (default to browse)
-        settings = get_settings()
-        last_screen = settings.get('app', 'last_screen', 'browse')
-        print(f"[INFO] Restoring last screen from settings: {last_screen}")
-
-        # Map setting value to screen constant
-        screen_map = {
-            'player': ScreenManager.PLAYER_SCREEN,
-            'browse': ScreenManager.BROWSE_SCREEN,
-            'settings': ScreenManager.SETTINGS_SCREEN
-        }
-        initial_screen = screen_map.get(last_screen, ScreenManager.BROWSE_SCREEN)
+        # Show welcome screen on app launch (always start here)
+        print("[INFO] Starting at welcome screen")
         # Use instant transition for initial screen (no animation on app launch)
-        self.screen_manager.show_screen(initial_screen, transition_type=TransitionType.INSTANT)
+        self.screen_manager.show_screen(ScreenManager.WELCOME_SCREEN, transition_type=TransitionType.INSTANT)
 
         print("[INFO] MainWindow initialization complete")
     
@@ -139,11 +130,16 @@ class MainWindow(QMainWindow):
         """Create and add all screens to the screen manager"""
         try:
             # Create screen instances
+            self.welcome_screen = WelcomeScreen()
             self.player_screen = PlayerScreen()
             self.browse_screen = BrowseScreen()
             self.settings_screen = SettingsScreen()
-            
+
             # Add to screen manager
+            self.screen_manager.add_screen(
+                ScreenManager.WELCOME_SCREEN,
+                self.welcome_screen
+            )
             self.screen_manager.add_screen(
                 ScreenManager.PLAYER_SCREEN,
                 self.player_screen
@@ -156,32 +152,38 @@ class MainWindow(QMainWindow):
                 ScreenManager.SETTINGS_SCREEN,
                 self.settings_screen
             )
-            
+
             print("[INFO] All screens created and added")
-            
+
         except Exception as e:
             print(f"[ERROR] Failed to create screens: {e}")
     
     def connect_navigation(self):
         """Connect navigation signals from screens to screen manager"""
         try:
+            # Welcome screen navigation
+            self.welcome_screen.browse_requested.connect(self.show_browse)
+            self.welcome_screen.random_show_requested.connect(self.on_random_show_requested)
+            self.welcome_screen.settings_requested.connect(self.show_settings)
+
             # Player screen navigation
-            self.player_screen.browse_requested.connect(self.show_browse)
-            
+            self.player_screen.home_requested.connect(self.show_browse)
+            self.player_screen.settings_requested.connect(self.show_settings)
+
             # Browse screen navigation
             self.browse_screen.player_requested.connect(self.show_player)
             self.browse_screen.settings_requested.connect(self.show_settings)
             self.browse_screen.show_selected.connect(self.on_show_selected)
-            
+
             # Settings screen navigation
             self.settings_screen.browse_requested.connect(self.show_browse)
-            self.settings_screen.back_clicked.connect(self.show_browse)
-            
+            self.settings_screen.back_clicked.connect(self.show_welcome)
+
             # Screen manager change signal
             self.screen_manager.screen_changed.connect(self.on_screen_changed)
-            
+
             print("[INFO] Navigation signals connected")
-            
+
         except Exception as e:
             print(f"[ERROR] Failed to connect navigation: {e}")
     
@@ -214,6 +216,10 @@ class MainWindow(QMainWindow):
         
         print("[INFO] Keyboard handler configured")
     
+    def show_welcome(self):
+        """Navigate to welcome screen with fade transition"""
+        self.screen_manager.show_screen(ScreenManager.WELCOME_SCREEN, transition_type=TransitionType.FADE)
+
     def show_player(self):
         """Navigate to player screen with fade transition"""
         self.screen_manager.show_screen(ScreenManager.PLAYER_SCREEN, transition_type=TransitionType.FADE)
@@ -225,6 +231,13 @@ class MainWindow(QMainWindow):
     def show_settings(self):
         """Navigate to settings screen with fade transition"""
         self.screen_manager.show_screen(ScreenManager.SETTINGS_SCREEN, transition_type=TransitionType.FADE)
+
+    def on_random_show_requested(self):
+        """Handle random show request from welcome screen"""
+        print("[INFO] Random show requested - selecting random show from database")
+        # TODO: Implement random show selection logic
+        # For now, just go to browse screen
+        self.show_browse()
 
     def on_show_selected(self, show):
         """Handle show selection from browse screen"""
@@ -257,6 +270,7 @@ class MainWindow(QMainWindow):
 
         # Update window title
         titles = {
+            ScreenManager.WELCOME_SCREEN: "DeadStream - Grateful Dead Concert Player",
             ScreenManager.PLAYER_SCREEN: "DeadStream - Now Playing",
             ScreenManager.BROWSE_SCREEN: "DeadStream - Browse Shows",
             ScreenManager.SETTINGS_SCREEN: "DeadStream - Settings"

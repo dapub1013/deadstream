@@ -18,12 +18,13 @@ from src.ui.transitions import ScreenTransition, TransitionType
 class ScreenManager(QStackedWidget):
     """
     Manages screen transitions for the DeadStream application.
-    
+
     Handles navigation between:
+    - Welcome Screen (app launch)
     - Player Screen (now playing)
     - Browse Screen (find shows)
     - Settings Screen (configuration)
-    
+
     Features smooth animated transitions between screens.
     """
     
@@ -31,6 +32,7 @@ class ScreenManager(QStackedWidget):
     screen_changed = pyqtSignal(str)  # Emits screen name
     
     # Screen constants
+    WELCOME_SCREEN = "welcome"
     PLAYER_SCREEN = "player"
     BROWSE_SCREEN = "browse"
     SETTINGS_SCREEN = "settings"
@@ -55,7 +57,7 @@ class ScreenManager(QStackedWidget):
         Add a screen to the manager
         
         Args:
-            screen_name: Name identifier (PLAYER_SCREEN, BROWSE_SCREEN, SETTINGS_SCREEN)
+            screen_name: Name identifier (WELCOME_SCREEN, PLAYER_SCREEN, BROWSE_SCREEN, SETTINGS_SCREEN)
             screen_widget: QWidget instance for the screen
         """
         try:

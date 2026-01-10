@@ -14,7 +14,12 @@ import sys
 import os
 
 # Add project root to path
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# __file__ is: .../deadstream/src/ui/screens/welcome_screen.py
+# dirname(__file__) = .../deadstream/src/ui/screens
+# dirname(dirname(__file__)) = .../deadstream/src/ui
+# dirname(dirname(dirname(__file__))) = .../deadstream/src
+# dirname(dirname(dirname(dirname(__file__)))) = .../deadstream (PROJECT ROOT)
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
