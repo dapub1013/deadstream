@@ -16,6 +16,10 @@ class Theme:
     BG_PANEL_DARK = "#1A2332"   # Dark blue-gray - concert info panel
     BG_PANEL_BLACK = "#000000"  # Pure black - player panel
     BG_CARD = "#1E2936"         # Darker gray - list items
+
+    # Aliases for test compatibility
+    BG_BLACK = "#000000"        # Alias for BG_PANEL_BLACK
+    BG_NAVY = "#1A2332"         # Alias for BG_PANEL_DARK
     
     # ============================================
     # ACCENT COLORS
@@ -49,6 +53,7 @@ class Theme:
     # ============================================
     GRADIENT_START = "#9C27B0"  # Purple start
     GRADIENT_END = "#2196F3"    # Blue end
+    BG_GRADIENT_END = "#2196F3" # Alias for GRADIENT_END (test compatibility)
     
     # ============================================
     # TYPOGRAPHY

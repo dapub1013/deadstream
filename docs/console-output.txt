@@ -1,0 +1,139 @@
+python3 tests/phase_10_integration_test.py
+
+============================================================
+  PHASE 10 PRE-HARDWARE INTEGRATION TEST SUITE
+============================================================
+[INFO] Starting comprehensive test suite...
+[INFO] Target platform: Raspberry Pi 4 with 7" touchscreen
+[INFO] Current platform: darwin
+
+============================================================
+  Test Category 1: Visual Consistency
+============================================================
+[INFO] Testing Theme Manager constants...
+[PASS] Theme.BG_PRIMARY = #2E2870
+[FAIL] Theme.BG_GRADIENT_END is missing
+[FAIL] Theme.BG_BLACK is missing
+[FAIL] Theme.BG_NAVY is missing
+[PASS] Theme.TEXT_PRIMARY = #FFFFFF
+[PASS] Theme.TEXT_SECONDARY = #B0B0B0
+[PASS] Theme.ACCENT_YELLOW = #FFD700
+[PASS] Theme.ACCENT_BLUE = #1976D2
+[PASS] Theme.ACCENT_GREEN = #0F9D58
+[PASS] Theme.FONT_FAMILY = sans-serif
+[PASS] Theme.HEADER_LARGE = 48
+[PASS] Theme.HEADER_MEDIUM = 36
+[PASS] Theme.BODY_LARGE = 20
+[PASS] Theme.BODY_MEDIUM = 16
+[PASS] Theme.BODY_SMALL = 14
+[PASS] Theme.SPACING_TINY = 4px
+[PASS] Theme.SPACING_SMALL = 8px
+[PASS] Theme.SPACING_MEDIUM = 16px
+[PASS] Theme.SPACING_LARGE = 24px
+[PASS] Theme.SPACING_XLARGE = 32px
+[PASS] Theme.SPACING_XXLARGE = 48px
+
+[INFO] Testing typography consistency...
+[PASS] Font size 48px is even (good for scaling)
+[PASS] Font size 36px is even (good for scaling)
+[PASS] Font size 20px is even (good for scaling)
+[PASS] Font size 16px is even (good for scaling)
+[PASS] Font size 14px is even (good for scaling)
+
+[INFO] Testing spacing scale...
+[PASS] SPACING_TINY = 4px (follows 4px grid)
+[PASS] SPACING_SMALL = 8px (follows 4px grid)
+[PASS] SPACING_MEDIUM = 16px (follows 4px grid)
+[PASS] SPACING_LARGE = 24px (follows 4px grid)
+[PASS] SPACING_XLARGE = 32px (follows 4px grid)
+[PASS] SPACING_XXLARGE = 48px (follows 4px grid)
+
+============================================================
+  Test Category 2: Component Library
+============================================================
+[INFO] Testing PillButton component...
+[PASS] PillButton(blue) meets 60px minimum height
+[PASS] PillButton(blue) is clickable
+[PASS] PillButton(yellow) meets 60px minimum height
+[PASS] PillButton(yellow) is clickable
+[PASS] PillButton(green) meets 60px minimum height
+[PASS] PillButton(green) is clickable
+[PASS] PillButton(red) meets 60px minimum height
+[PASS] PillButton(red) is clickable
+[PASS] PillButton(outline) meets 60px minimum height
+[PASS] PillButton(outline) is clickable
+
+[INFO] Testing IconButton component...
+[PASS] IconButton(home) meets 44px minimum size
+[PASS] IconButton(home) is circular
+[PASS] IconButton(settings) meets 44px minimum size
+[PASS] IconButton(settings) is circular
+[PASS] IconButton(play) meets 44px minimum size
+[PASS] IconButton(play) is circular
+[PASS] IconButton(pause) meets 44px minimum size
+[PASS] IconButton(pause) is circular
+
+[INFO] Testing badge components...
+[PASS] SourceBadge created successfully
+[PASS] SourceBadge displays correct text
+[PASS] RatingBadge created successfully
+[PASS] RatingBadge displays correct rating
+
+[INFO] Testing ConcertListItem component...
+[PASS] ConcertListItem created successfully
+[PASS] ConcertListItem meets 80px minimum height
+
+============================================================
+  Test Category 3: Browse Functionality
+============================================================
+[INFO] Testing browse mode availability...
+/Users/dave/gitprojects/deadstream/venv/lib/python3.9/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' m
+odule is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020                                                                                   warnings.warn(
+[PASS] BrowseScreen module exists
+[PASS] Browse mode 'top_rated' should be implemented
+[PASS] Browse mode 'by_date' should be implemented
+[PASS] Browse mode 'by_venue' should be implemented
+[PASS] Browse mode 'by_year' should be implemented
+[PASS] Browse mode 'search' should be implemented
+[PASS] Browse mode 'random' should be implemented
+
+[INFO] Testing date browser...
+[PASS] DateBrowser module exists
+
+[INFO] Testing show card widget...
+[PASS] ShowCard module exists
+
+============================================================
+  Test Category 4: Performance
+============================================================
+[INFO] Testing component creation performance...
+[PASS] Created 100 PillButtons in 0.004s (< 1s)
+[PASS] Created 100 IconButtons in 0.003s (< 1s)
+
+[INFO] Testing stylesheet generation performance...
+[PASS] Generated global stylesheet in 0.0000s
+[PASS] Stylesheet has 2627 characters
+
+============================================================
+  Test Category 5: Touch Targets
+============================================================
+[INFO] Testing button touch target sizes...
+[PASS] PillButton height 60px >= 60px (good)
+[PASS] IconButton size 60x60px >= 60x60px (good)
+
+[INFO] Testing button spacing...
+[PASS] Button spacing 16px >= 16px (good)
+
+[INFO] Testing list item touch targets...
+[PASS] ConcertListItem height 80px >= 80px (good)
+
+============================================================
+  TEST RESULTS SUMMARY
+============================================================
+[INFO] Total tests run: 73
+[PASS] Passed: 70
+[FAIL] Failed: 3
+[WARN] Warnings: 0
+[INFO] Pass rate: 95.9%
+============================================================
+[FAIL] 3 test(s) failed. Fix issues before Phase 11.
