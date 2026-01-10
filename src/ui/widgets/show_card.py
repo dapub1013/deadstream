@@ -387,6 +387,76 @@ class ShowCard(QWidget):
 
         self.source_badge.setText(badge_text)
 
+    def _load_setlist(self, identifier):
+        """
+        Fetch and display setlist from Archive.org metadata.
+
+        Args:
+            identifier: Show identifier for Archive.org lookup
+        """
+        if not identifier:
+            self.setlist_label.setText("Setlist not available")
+            return
+
+        try:
+            # Import here to avoid circular imports
+            from src.api.metadata import get_metadata, extract_audio_files
+            from src.audio.playlist import PlaylistBuilder
+
+            # Fetch metadata from Archive.org
+            metadata = get_metadata(identifier)
+
+            # Extract audio files
+            audio_files = extract_audio_files(metadata, format_preference='MP3')
+
+            if not audio_files:
+                self.setlist_label.setText("Setlist not available")
+                return
+
+            # Build setlist organized by sets
+            setlist_text = []
+            current_set = None
+
+            # Sort files by name (usually they're in track order)
+            sorted_files = sorted(audio_files, key=lambda f: f.get('name', ''))
+
+            for file_info in sorted_files:
+                filename = file_info.get('name', '')
+
+                # Detect which set this track belongs to
+                set_name = PlaylistBuilder.detect_set(filename)
+
+                # Add set header if we're starting a new set
+                if set_name != current_set:
+                    if setlist_text:  # Add blank line between sets
+                        setlist_text.append('')
+
+                    # Format set header
+                    if set_name == 'Set I':
+                        setlist_text.append('SET 1')
+                    elif set_name == 'Set II':
+                        setlist_text.append('SET 2')
+                    elif set_name == 'Encore':
+                        setlist_text.append('ENCORE')
+                    else:
+                        setlist_text.append(set_name.upper())
+
+                    current_set = set_name
+
+                # Clean up track title
+                track_title = PlaylistBuilder.clean_title(filename)
+                setlist_text.append(f"  {track_title}")
+
+            # Display the formatted setlist
+            if setlist_text:
+                self.setlist_label.setText('\n'.join(setlist_text))
+            else:
+                self.setlist_label.setText("Setlist not available")
+
+        except Exception as e:
+            print(f"[ERROR] Failed to load setlist for {identifier}: {e}")
+            self.setlist_label.setText("Setlist not available")
+
     def _format_setlist(self, setlist):
         """
         Format setlist with SET 1, SET 2, E (Encore) labels.

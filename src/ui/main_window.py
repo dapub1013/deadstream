@@ -18,6 +18,7 @@ from src.ui.screens.welcome_screen import WelcomeScreen
 from src.ui.screens.player_screen import PlayerScreen
 from src.ui.screens.browse_screen import BrowseScreen
 from src.ui.screens.settings_screen import SettingsScreen
+from src.ui.screens.findashow_screen import FindAShowScreen
 from src.ui.transitions import TransitionType
 from src.settings import get_settings
 
@@ -134,6 +135,7 @@ class MainWindow(QMainWindow):
             self.player_screen = PlayerScreen()
             self.browse_screen = BrowseScreen()
             self.settings_screen = SettingsScreen()
+            self.findashow_screen = FindAShowScreen()
 
             # Add to screen manager
             self.screen_manager.add_screen(
@@ -152,6 +154,10 @@ class MainWindow(QMainWindow):
                 ScreenManager.SETTINGS_SCREEN,
                 self.settings_screen
             )
+            self.screen_manager.add_screen(
+                ScreenManager.FINDASHOW_SCREEN,
+                self.findashow_screen
+            )
 
             print("[INFO] All screens created and added")
 
@@ -162,7 +168,7 @@ class MainWindow(QMainWindow):
         """Connect navigation signals from screens to screen manager"""
         try:
             # Welcome screen navigation
-            self.welcome_screen.browse_requested.connect(self.show_browse)
+            self.welcome_screen.browse_requested.connect(self.show_findashow)
             self.welcome_screen.random_show_requested.connect(self.on_random_show_requested)
             self.welcome_screen.settings_requested.connect(self.show_settings)
 
@@ -178,6 +184,11 @@ class MainWindow(QMainWindow):
             # Settings screen navigation
             self.settings_screen.browse_requested.connect(self.show_browse)
             self.settings_screen.back_clicked.connect(self.show_welcome)
+
+            # Find a Show screen navigation
+            self.findashow_screen.date_selected.connect(self.on_date_selected)
+            self.findashow_screen.back_requested.connect(self.show_welcome)
+            self.findashow_screen.settings_requested.connect(self.show_settings)
 
             # Screen manager change signal
             self.screen_manager.screen_changed.connect(self.on_screen_changed)
@@ -232,6 +243,10 @@ class MainWindow(QMainWindow):
         """Navigate to settings screen with fade transition"""
         self.screen_manager.show_screen(ScreenManager.SETTINGS_SCREEN, transition_type=TransitionType.FADE)
 
+    def show_findashow(self):
+        """Navigate to find a show screen with fade transition"""
+        self.screen_manager.show_screen(ScreenManager.FINDASHOW_SCREEN, transition_type=TransitionType.FADE)
+
     def on_random_show_requested(self):
         """Handle random show request from welcome screen"""
         print("[INFO] Random show requested - selecting random show from database")
@@ -248,7 +263,30 @@ class MainWindow(QMainWindow):
 
         # Navigate to player screen
         self.show_player()
-    
+
+    def on_date_selected(self, date_str):
+        """Handle date selection from find a show screen"""
+        print(f"[INFO] Date selected from find a show screen: {date_str}")
+
+        # Query database for shows on this date
+        from src.database.queries import get_show_by_date
+        shows = get_show_by_date(date_str)
+
+        if not shows:
+            print(f"[WARNING] No shows found for date: {date_str}")
+            # Could show a message to the user here
+            return
+
+        if len(shows) == 1:
+            # Single show found - load it directly
+            print(f"[INFO] Found 1 show for {date_str}, loading it")
+            self.on_show_selected(shows[0])
+        else:
+            # Multiple shows found - for now, load the first one
+            # TODO: In the future, could show a selection dialog
+            print(f"[INFO] Found {len(shows)} shows for {date_str}, loading first one")
+            self.on_show_selected(shows[0])
+
     def on_screen_changed(self, screen_name):
         """
         Handle screen change events
@@ -273,7 +311,8 @@ class MainWindow(QMainWindow):
             ScreenManager.WELCOME_SCREEN: "DeadStream - Grateful Dead Concert Player",
             ScreenManager.PLAYER_SCREEN: "DeadStream - Now Playing",
             ScreenManager.BROWSE_SCREEN: "DeadStream - Browse Shows",
-            ScreenManager.SETTINGS_SCREEN: "DeadStream - Settings"
+            ScreenManager.SETTINGS_SCREEN: "DeadStream - Settings",
+            ScreenManager.FINDASHOW_SCREEN: "DeadStream - Find a Show"
         }
 
         if screen_name in titles:

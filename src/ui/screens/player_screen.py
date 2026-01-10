@@ -705,6 +705,24 @@ class PlayerScreen(QWidget):
             # Get track info
             track_name = track.get('title', track.get('name', 'Unknown Track'))
 
+            # Parse duration from MM:SS or seconds format
+            duration = 0
+            length_str = track.get('length', '0')
+            if isinstance(length_str, str) and ':' in length_str:
+                # Format is MM:SS or HH:MM:SS
+                parts = length_str.split(':')
+                if len(parts) == 2:  # MM:SS
+                    duration = int(parts[0]) * 60 + int(parts[1])
+                elif len(parts) == 3:  # HH:MM:SS
+                    duration = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+            elif isinstance(length_str, (int, float)):
+                duration = int(length_str)
+            else:
+                try:
+                    duration = int(float(length_str))
+                except (ValueError, TypeError):
+                    duration = 0
+
             # Call existing load_track_url method
             self.load_track_url(
                 url=url,
@@ -712,7 +730,7 @@ class PlayerScreen(QWidget):
                 set_name="",  # TODO: Determine set from track metadata
                 track_num=index + 1,
                 total_tracks=self.total_tracks,
-                duration=int(track.get('length', 0))
+                duration=duration
             )
 
             # Update current track index
