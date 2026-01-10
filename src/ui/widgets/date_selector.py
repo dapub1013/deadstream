@@ -52,37 +52,35 @@ class DateSelectorWidget(QWidget):
 
     def setup_ui(self):
         """Set up the three-column layout"""
+        # Make widget background transparent so app background shows through
+        self.setStyleSheet("DateSelectorWidget { background-color: transparent; }")
+
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(16)
+        main_layout.setContentsMargins(
+            Theme.SPACING_LARGE,
+            Theme.SPACING_LARGE,
+            Theme.SPACING_LARGE,
+            Theme.SPACING_LARGE
+        )
+        main_layout.setSpacing(Theme.SPACING_SMALL)
 
-        # Header
-        header = QLabel("Browse by Date")
-        header.setStyleSheet(f"""
-            QLabel {{
-                font-size: {Theme.HEADER_MEDIUM}px;
-                font-weight: {Theme.WEIGHT_BOLD};
-                color: {Theme.TEXT_PRIMARY};
-                padding-bottom: {Theme.SPACING_SMALL}px;
-                border-bottom: 2px solid {Theme.BORDER_SUBTLE};
-            }}
-        """)
-        main_layout.addWidget(header)
-
-        # Instructions
-        instructions = QLabel("Choose Year, then Month, then Day")
+        # Title/Instructions (matching mockup: "choose year, then month, then day")
+        instructions = QLabel("choose year, then month, then day")
+        instructions.setAlignment(Qt.AlignCenter)
         instructions.setStyleSheet(f"""
             QLabel {{
-                font-size: {Theme.BODY_SMALL}px;
+                font-size: {Theme.HEADER_MEDIUM}px;
                 font-weight: {Theme.WEIGHT_NORMAL};
-                color: {Theme.TEXT_SECONDARY};
+                color: {Theme.TEXT_PRIMARY};
+                padding: {Theme.SPACING_LARGE}px 0px;
+                background-color: transparent;
             }}
         """)
         main_layout.addWidget(instructions)
 
         # Three-column layout
         columns_layout = QHBoxLayout()
-        columns_layout.setSpacing(12)
+        columns_layout.setSpacing(Theme.SPACING_MEDIUM)
 
         # Year column
         year_column, year_layout = self.create_column("Year")
@@ -110,55 +108,47 @@ class DateSelectorWidget(QWidget):
 
         main_layout.addLayout(columns_layout)
 
-        # Status/selection display
-        self.status_label = QLabel("Select a year to begin")
-        self.status_label.setAlignment(Qt.AlignCenter)
-        self.status_label.setStyleSheet(f"""
-            QLabel {{
-                font-size: {Theme.BODY_MEDIUM}px;
-                color: {Theme.TEXT_SECONDARY};
-                padding: {Theme.SPACING_MEDIUM}px;
-                background-color: {Theme.BG_CARD};
-                border-radius: 8px;
-                min-height: {Theme.BUTTON_HEIGHT}px;
-            }}
-        """)
-        main_layout.addWidget(self.status_label)
+        # Add spacer before action button
+        main_layout.addSpacing(Theme.SPACING_MEDIUM)
 
-        # Action button
-        self.select_button = QPushButton("Load Shows for Selected Date")
-        self.select_button.setStyleSheet(Theme.get_button_style(Theme.ACCENT_BLUE, Theme.TEXT_PRIMARY))
-        self.select_button.setMinimumHeight(Theme.BUTTON_HEIGHT)
+        # Action button with right margin to avoid scrollbar overlap
+        button_layout = QHBoxLayout()
+        button_layout.setContentsMargins(0, 0, Theme.SPACING_LARGE, 0)  # Right margin
+
+        self.select_button = QPushButton("Load Show")
+        self.select_button.setStyleSheet(Theme.get_button_style(Theme.ACCENT_YELLOW, Theme.TEXT_DARK))
+        self.select_button.setMinimumHeight(Theme.BUTTON_HEIGHT + 20)  # Larger for prominence
         self.select_button.setEnabled(False)
         self.select_button.clicked.connect(self.on_select_clicked)
-        main_layout.addWidget(self.select_button)
+
+        button_layout.addWidget(self.select_button)
+        main_layout.addLayout(button_layout)
 
     def create_column(self, title):
         """Create a column container with title. Returns (widget, layout) tuple."""
         column = QFrame()
         column.setStyleSheet(f"""
             QFrame {{
-                background-color: {Theme.BG_CARD};
-                border-radius: 8px;
-                border: 2px solid {Theme.BORDER_SUBTLE};
+                background-color: transparent;
+                border: none;
             }}
         """)
 
         layout = QVBoxLayout(column)
-        layout.setContentsMargins(12, 12, 12, 12)
-        layout.setSpacing(8)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(Theme.SPACING_SMALL)
 
         # Column title
         title_label = QLabel(title)
         title_label.setAlignment(Qt.AlignCenter)
+        title_label.setFixedHeight(60)
         title_label.setStyleSheet(f"""
             QLabel {{
-                font-size: {Theme.BODY_LARGE}px;
+                font-size: {Theme.HEADER_SMALL}px;
                 font-weight: {Theme.WEIGHT_BOLD};
                 color: {Theme.TEXT_PRIMARY};
-                padding: {Theme.SPACING_SMALL}px;
                 background-color: {Theme.BG_PANEL_DARK};
-                border-radius: 6px;
+                border-radius: 8px;
             }}
         """)
         layout.addWidget(title_label)
@@ -167,27 +157,58 @@ class DateSelectorWidget(QWidget):
 
     def style_list_widget(self, list_widget):
         """Apply consistent styling to list widgets"""
+        # Use object name to make selector more specific than global theme
+        list_widget.setObjectName("datePickerList")
         list_widget.setStyleSheet(f"""
-            QListWidget {{
+            QListWidget#datePickerList {{
                 background-color: {Theme.BG_PANEL_DARK};
                 color: {Theme.TEXT_PRIMARY};
                 border: none;
-                border-radius: 6px;
-                padding: 4px;
-                font-size: {Theme.BODY_LARGE}px;
+                border-radius: 8px;
+                padding: {Theme.SPACING_SMALL}px;
+                font-size: {Theme.HEADER_MEDIUM}px;
             }}
-            QListWidget::item {{
-                padding: 14px 8px;
-                border-radius: 4px;
-                margin: 2px 0px;
+            QListWidget#datePickerList::item {{
+                padding: {Theme.SPACING_MEDIUM}px {Theme.SPACING_SMALL}px;
+                border-radius: 8px;
+                margin: {Theme.SPACING_TINY // 2}px 0px;
+                min-height: {Theme.BUTTON_HEIGHT}px;
             }}
-            QListWidget::item:hover {{
-                background-color: {Theme._lighten_color(Theme.BG_PANEL_DARK, 10)};
+            QListWidget#datePickerList::item:hover {{
+                background-color: rgba(255, 255, 255, 0.05);
             }}
-            QListWidget::item:selected {{
-                background-color: {Theme.ACCENT_BLUE};
+            QListWidget#datePickerList::item:selected {{
+                background-color: {Theme.ACCENT_GREEN};
                 color: {Theme.TEXT_PRIMARY};
                 font-weight: {Theme.WEIGHT_BOLD};
+            }}
+            QListWidget#datePickerList QScrollBar:vertical {{
+                background-color: {Theme.BG_PANEL_DARK} !important;
+                background: {Theme.BG_PANEL_DARK} !important;
+                width: 16px;
+                margin: 0px;
+                border: none;
+            }}
+            QListWidget#datePickerList QScrollBar::handle:vertical {{
+                background-color: rgba(255, 255, 255, 0.3);
+                background: rgba(255, 255, 255, 0.3);
+                border-radius: 8px;
+                min-height: 30px;
+            }}
+            QListWidget#datePickerList QScrollBar::handle:vertical:hover {{
+                background-color: rgba(255, 255, 255, 0.5);
+                background: rgba(255, 255, 255, 0.5);
+            }}
+            QListWidget#datePickerList QScrollBar::add-line:vertical,
+            QListWidget#datePickerList QScrollBar::sub-line:vertical {{
+                height: 0px;
+                background-color: {Theme.BG_PANEL_DARK};
+                background: {Theme.BG_PANEL_DARK};
+            }}
+            QListWidget#datePickerList QScrollBar::add-page:vertical,
+            QListWidget#datePickerList QScrollBar::sub-page:vertical {{
+                background-color: {Theme.BG_PANEL_DARK};
+                background: {Theme.BG_PANEL_DARK};
             }}
         """)
 
@@ -302,72 +323,12 @@ class DateSelectorWidget(QWidget):
     def update_status(self):
         """Update the status label and enable/disable select button"""
         if self.selected_year and self.selected_month and self.selected_day:
-            # Full date selected
-            date_str = f"{self.selected_year}-{self.selected_month:02d}-{self.selected_day:02d}"
-            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-            formatted = date_obj.strftime("%B %d, %Y")
-
-            self.status_label.setText(f"Selected: {formatted}")
-            self.status_label.setStyleSheet(f"""
-                QLabel {{
-                    font-size: {Theme.BODY_LARGE}px;
-                    font-weight: {Theme.WEIGHT_BOLD};
-                    color: {Theme.TEXT_PRIMARY};
-                    padding: {Theme.SPACING_MEDIUM}px;
-                    background-color: {Theme.ACCENT_BLUE};
-                    border-radius: 8px;
-                    min-height: {Theme.BUTTON_HEIGHT}px;
-                }}
-            """)
+            # Full date selected - enable button
             self.select_button.setEnabled(True)
-
-        elif self.selected_year and self.selected_month:
-            # Year and month selected
-            month_names = [
-                "January", "February", "March", "April",
-                "May", "June", "July", "August",
-                "September", "October", "November", "December"
-            ]
-            self.status_label.setText(f"{month_names[self.selected_month-1]} {self.selected_year} - Select a day")
-            self.status_label.setStyleSheet(f"""
-                QLabel {{
-                    font-size: {Theme.BODY_MEDIUM}px;
-                    color: {Theme.TEXT_SECONDARY};
-                    padding: {Theme.SPACING_MEDIUM}px;
-                    background-color: {Theme.BG_CARD};
-                    border-radius: 8px;
-                    min-height: {Theme.BUTTON_HEIGHT}px;
-                }}
-            """)
-            self.select_button.setEnabled(False)
-
-        elif self.selected_year:
-            # Only year selected
-            self.status_label.setText(f"{self.selected_year} - Select a month")
-            self.status_label.setStyleSheet(f"""
-                QLabel {{
-                    font-size: {Theme.BODY_MEDIUM}px;
-                    color: {Theme.TEXT_SECONDARY};
-                    padding: {Theme.SPACING_MEDIUM}px;
-                    background-color: {Theme.BG_CARD};
-                    border-radius: 8px;
-                    min-height: {Theme.BUTTON_HEIGHT}px;
-                }}
-            """)
-            self.select_button.setEnabled(False)
+            # Change button color to green when ready
+            self.select_button.setStyleSheet(Theme.get_button_style(Theme.ACCENT_YELLOW, Theme.TEXT_DARK))
         else:
-            # Nothing selected
-            self.status_label.setText("Select a year to begin")
-            self.status_label.setStyleSheet(f"""
-                QLabel {{
-                    font-size: {Theme.BODY_MEDIUM}px;
-                    color: {Theme.TEXT_SECONDARY};
-                    padding: {Theme.SPACING_MEDIUM}px;
-                    background-color: {Theme.BG_CARD};
-                    border-radius: 8px;
-                    min-height: {Theme.BUTTON_HEIGHT}px;
-                }}
-            """)
+            # Incomplete selection - disable button
             self.select_button.setEnabled(False)
 
     def on_select_clicked(self):

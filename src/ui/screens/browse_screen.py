@@ -141,21 +141,8 @@ class BrowseScreen(QWidget):
             Theme.SPACING_LARGE
         )
         layout.setSpacing(Theme.SPACING_MEDIUM)
-        
-        # Title
-        title = QLabel("Browse Shows")
-        title.setStyleSheet(f"""
-            QLabel {{
-                font-size: {Theme.HEADER_MEDIUM}px;
-                font-weight: {Theme.WEIGHT_BOLD};
-                color: {Theme.TEXT_PRIMARY};
-                padding-bottom: {Theme.SPACING_SMALL}px;
-                border-bottom: 2px solid {Theme.BORDER_PANEL};
-            }}
-        """)
-        layout.addWidget(title)
-        
-        # Add browse mode buttons
+
+        # Add browse mode buttons (removed "Browse Shows" title)
         browse_buttons = self.create_browse_mode_buttons()
         layout.addLayout(browse_buttons)
         
@@ -314,10 +301,23 @@ class BrowseScreen(QWidget):
         self.date_browser.date_selected.connect(self.on_date_browser_selected)
         self.content_stack.addWidget(self.date_browser)
         
-        # Page 3: Date Selector (Phase 10A compact date picker)
+        # Page 3: Date Selector (Phase 10A compact date picker) - Centered
+        date_selector_container = QWidget()
+        date_selector_container.setStyleSheet("background-color: transparent;")
+        date_container_layout = QHBoxLayout(date_selector_container)
+        date_container_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Add stretchers on both sides to center the date selector
+        date_container_layout.addStretch()
+
         self.date_selector = DateSelectorWidget()
         self.date_selector.date_selected.connect(self.on_date_selector_selected)
-        self.content_stack.addWidget(self.date_selector)
+        self.date_selector.setMaximumWidth(1000)  # Limit width for better appearance
+        date_container_layout.addWidget(self.date_selector)
+
+        date_container_layout.addStretch()
+
+        self.content_stack.addWidget(date_selector_container)
         
         # Page 4: Year Browser
         self.year_browser = YearBrowser()
@@ -370,20 +370,30 @@ class BrowseScreen(QWidget):
             }}
         """)
         layout.addWidget(self.header_subtitle)
-        
+
         # Divider
-        divider = QFrame()
-        divider.setFrameShape(QFrame.HLine)
-        divider.setStyleSheet(f"background-color: {Theme.BORDER_SUBTLE};")
-        divider.setFixedHeight(1)
-        layout.addWidget(divider)
-        
+        self.header_divider = QFrame()
+        self.header_divider.setFrameShape(QFrame.HLine)
+        self.header_divider.setStyleSheet(f"background-color: {Theme.BORDER_SUBTLE};")
+        self.header_divider.setFixedHeight(1)
+        layout.addWidget(self.header_divider)
+
         return layout
     
     def update_header(self, title, subtitle=""):
         """Update header title and subtitle"""
         self.header_title.setText(title)
         self.header_subtitle.setText(subtitle)
+        # Ensure header and divider are visible when updating
+        self.header_title.show()
+        self.header_subtitle.show()
+        self.header_divider.show()
+
+    def hide_header(self):
+        """Hide header title, subtitle, and divider"""
+        self.header_title.hide()
+        self.header_subtitle.hide()
+        self.header_divider.hide()
     
     # ========================================================================
     # BROWSE MODE HANDLERS
@@ -432,16 +442,15 @@ class BrowseScreen(QWidget):
     def show_date_browser(self):
         """Show date browser (Task 7.2) - Phase 10A uses compact selector"""
         print("[INFO] Showing date selector...")
-        
-        # Update header
-        self.update_header(
-            "Browse by Date",
-            "Select a date to find shows"
-        )
-        
+
+        # Hide header and divider - date selector has its own title
+        self.header_title.hide()
+        self.header_subtitle.hide()
+        self.header_divider.hide()
+
         # Switch to date selector (page 3 in Phase 10A)
         self.content_stack.setCurrentIndex(3)
-        
+
         print("[OK] Date selector displayed")
 
     def show_venue_browser(self):
@@ -498,17 +507,14 @@ class BrowseScreen(QWidget):
             show = get_random_show()
             
             if not show:
-                self.update_header("Error", "No shows available")
+                self.hide_header()
                 self.content_stack.setCurrentIndex(0)
                 self._show_card_error("Database is empty")
                 return
             
-            # Update header
-            self.update_header(
-                "Random Show",
-                "Surprise me!"
-            )
-            
+            # Hide header when showing ShowCard
+            self.hide_header()
+
             # Switch to ShowCard view (page 0)
             self.content_stack.setCurrentIndex(0)
             self.current_mode = 'random'
@@ -524,24 +530,17 @@ class BrowseScreen(QWidget):
             print(f"[ERROR] Failed to load random show: {e}")
             import traceback
             traceback.print_exc()
-            self.update_header("Error", "Failed to load random show")
+            self.hide_header()
             self.content_stack.setCurrentIndex(0)
             self._show_card_error("Error loading random show")
             self.toast_manager.show_error("Database error: Unable to load random show")
 
     def load_default_state(self):
-        """Load default welcome state"""
-        self.update_header(
-            "Welcome to DeadStream",
-            "Select a browse mode to find shows"
-        )
-        
-        # Show ShowCard in default mode (page 0)
-        self.content_stack.setCurrentIndex(0)
-        
-        # Call show_welcome if method exists
-        if hasattr(self.show_card, 'show_welcome') and callable(self.show_card.show_welcome):
-            self.show_card.show_welcome()
+        """Load default state - show date selector (browse by date)"""
+        print("[INFO] Loading default state - showing date selector...")
+
+        # Show date selector by default (browse by date is primary action)
+        self.show_date_browser()
     
     # ========================================================================
     # SHOWCARD HELPER METHODS (safe wrappers for optional methods)
@@ -588,10 +587,7 @@ class BrowseScreen(QWidget):
             
             if not shows:
                 # No shows found
-                self.update_header(
-                    "No Shows Found",
-                    f"No shows on {date_str}"
-                )
+                self.hide_header()
                 self.content_stack.setCurrentIndex(0)
                 self._show_card_error(f"No show found for {date_str}")
                 return
@@ -602,16 +598,13 @@ class BrowseScreen(QWidget):
                 show = max(shows, key=lambda s: s.get('recording_score', 0))
                 print(f"[INFO] Multiple recordings, selected best: score={show.get('recording_score', 0)}")
             
+            # Hide header when showing ShowCard
+            self.hide_header()
+
             # Switch to ShowCard view
             self.content_stack.setCurrentIndex(0)
             self.current_mode = 'date_selected'
-            
-            # Update header
-            self.update_header(
-                f"Show on {date_str}",
-                show.get('venue', 'Unknown Venue')
-            )
-            
+
             # Load show in ShowCard
             self._show_card_fade_in(show)
             self._show_card_set_mode('date_selected')
@@ -623,7 +616,7 @@ class BrowseScreen(QWidget):
             print(f"[ERROR] Failed to load date selection: {e}")
             import traceback
             traceback.print_exc()
-            self.update_header("Error", f"Failed to load show for {date_str}")
+            self.hide_header()
             self.content_stack.setCurrentIndex(0)
             self._show_card_error(f"Error loading show for {date_str}")
             self.toast_manager.show_error(f"Database error: Unable to load show for {date_str}")
@@ -808,6 +801,7 @@ class BrowseScreen(QWidget):
             
             if not shows:
                 # No shows found - show error in ShowCard
+                self.hide_header()
                 self.content_stack.setCurrentIndex(0)
                 self._show_card_error(f"No show found for {date_str}")
                 print(f"[WARN] No shows found for {date_str}")
@@ -819,27 +813,25 @@ class BrowseScreen(QWidget):
                 show = max(shows, key=lambda s: s.get('recording_score', 0))
                 print(f"[INFO] Multiple recordings, selected best: score={show.get('recording_score', 0)}")
             
+            # Hide header when showing ShowCard
+            self.hide_header()
+
             # Switch to ShowCard view
             self.content_stack.setCurrentIndex(0)
             self.current_mode = 'date_selected'
-            
-            # Update header
-            self.update_header(
-                f"Show on {date_str}",
-                show.get('venue', 'Unknown Venue')
-            )
-            
+
             # Load show in ShowCard with fade animation
             self._show_card_fade_in(show)
             self._show_card_set_mode('date_selected')
             self._show_card_enable_play(True)
-            
+
             print(f"[OK] Date selection loaded in ShowCard: {show['date']} - {show['venue']}")
             
         except Exception as e:
             print(f"[ERROR] Failed to load date selection: {e}")
             import traceback
             traceback.print_exc()
+            self.hide_header()
             self.content_stack.setCurrentIndex(0)
             self._show_card_error(f"Error loading show for {date_str}")
             self.toast_manager.show_error(f"Database error: Unable to load show for {date_str}")

@@ -323,9 +323,11 @@ class PlayerScreen(QWidget):
         self.settings_btn = None  # CornerButton (minimal)
         
         # Playlist state
+        self.current_show = None
+        self.playlist = []
         self.current_track_index = 0
         self.total_tracks = 0
-        
+
         # UI update timer
         self.update_timer = None
         
@@ -627,11 +629,105 @@ class PlayerScreen(QWidget):
         else:
             self.play_pause_btn.set_icon('play')
     
-    def load_track_url(self, url, track_name="Unknown Track", set_name="", 
+    def load_show(self, show):
+        """
+        Load a complete show and start playing
+
+        Args:
+            show (dict): Show dictionary with keys: identifier, date, venue, etc.
+        """
+        try:
+            print(f"[INFO] Loading show: {show.get('date')} - {show.get('venue')}")
+
+            # Import metadata utilities
+            from src.api.metadata import get_metadata, extract_audio_files
+
+            # Get show metadata from Internet Archive
+            identifier = show.get('identifier')
+            if not identifier:
+                print("[ERROR] Show missing identifier")
+                return
+
+            metadata = get_metadata(identifier)
+            if not metadata:
+                print(f"[ERROR] Failed to fetch metadata for {identifier}")
+                return
+
+            # Extract audio files
+            audio_files = extract_audio_files(metadata)
+            if not audio_files:
+                print(f"[ERROR] No audio files found for {identifier}")
+                return
+
+            print(f"[INFO] Found {len(audio_files)} tracks")
+
+            # Store show info and playlist
+            self.current_show = show
+            self.playlist = audio_files
+            self.current_track_index = 0
+            self.total_tracks = len(audio_files)
+
+            # Update left panel with show info
+            # TODO: Update concert details and setlist when left panel is implemented
+
+            # Load and play first track
+            self.play_track_at_index(0)
+
+            print(f"[INFO] Show loaded successfully: {len(audio_files)} tracks")
+
+        except Exception as e:
+            print(f"[ERROR] Failed to load show: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def play_track_at_index(self, index):
+        """
+        Play the track at the given index in the playlist
+
+        Args:
+            index (int): Index of track to play
+        """
+        if not hasattr(self, 'playlist') or not self.playlist:
+            print("[ERROR] No playlist loaded")
+            return
+
+        if index < 0 or index >= len(self.playlist):
+            print(f"[ERROR] Invalid track index: {index}")
+            return
+
+        try:
+            track = self.playlist[index]
+            identifier = self.current_show.get('identifier')
+
+            # Build streaming URL
+            url = f"https://archive.org/download/{identifier}/{track['name']}"
+
+            # Get track info
+            track_name = track.get('title', track.get('name', 'Unknown Track'))
+
+            # Call existing load_track_url method
+            self.load_track_url(
+                url=url,
+                track_name=track_name,
+                set_name="",  # TODO: Determine set from track metadata
+                track_num=index + 1,
+                total_tracks=self.total_tracks,
+                duration=int(track.get('length', 0))
+            )
+
+            # Update current track index
+            self.current_track_index = index
+
+        except Exception as e:
+            print(f"[ERROR] Failed to play track at index {index}: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def load_track_url(self, url, track_name="Unknown Track", set_name="",
                       track_num=1, total_tracks=1, duration=0):
         """
         Load and play a track URL
-        
+
         Args:
             url (str): Streaming URL for the track
             track_name (str): Name of the track
@@ -644,26 +740,26 @@ class PlayerScreen(QWidget):
             # Update track info display
             self.song_title_label.setText(track_name)
             self.track_counter_label.setText(f"{track_num} of {total_tracks}")
-            
+
             # Set progress bar duration
             if duration > 0:
                 self.progress_bar.set_duration(duration)
-            
+
             # Load URL into player
             success = self.player.load_url(url)
-            
+
             if success:
                 # Start playback
                 self.player.play()
-                
+
                 # Store current track info
                 self.current_track_index = track_num - 1
                 self.total_tracks = total_tracks
-                
+
                 print(f"[INFO] Loaded track: {track_name} ({set_name})")
             else:
                 print(f"[ERROR] Failed to load track: {track_name}")
-        
+
         except Exception as e:
             print(f"[ERROR] Failed to load track: {e}")
     
@@ -684,11 +780,31 @@ class PlayerScreen(QWidget):
     
     def on_previous_track(self):
         """Handle previous track request"""
-        print("[INFO] Previous track clicked (playlist navigation not yet implemented)")
-    
+        if not hasattr(self, 'playlist') or not self.playlist:
+            print("[WARN] No playlist loaded")
+            return
+
+        # Go to previous track (wrap around to end if at beginning)
+        prev_index = self.current_track_index - 1
+        if prev_index < 0:
+            prev_index = self.total_tracks - 1
+
+        print(f"[INFO] Previous track: {prev_index + 1}/{self.total_tracks}")
+        self.play_track_at_index(prev_index)
+
     def on_next_track(self):
         """Handle next track request"""
-        print("[INFO] Next track clicked (playlist navigation not yet implemented)")
+        if not hasattr(self, 'playlist') or not self.playlist:
+            print("[WARN] No playlist loaded")
+            return
+
+        # Go to next track (wrap around to beginning if at end)
+        next_index = self.current_track_index + 1
+        if next_index >= self.total_tracks:
+            next_index = 0
+
+        print(f"[INFO] Next track: {next_index + 1}/{self.total_tracks}")
+        self.play_track_at_index(next_index)
     
     def on_skip_backward(self):
         """Handle 30s backward skip"""

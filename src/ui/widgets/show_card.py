@@ -8,8 +8,8 @@ Features:
 - Large vintage-style date display (48pt)
 - Venue and location information (24pt)
 - Scrollable setlist for long tracklists
-- Quality badge with color coding (Soundboard/Score-based)
-- Large PLAY button (always visible)
+- Source badge (SBD/AUD/MATRIX/FM) with yellow background
+- Large PLAY button (gradient style, always visible)
 - Optional "Try Another" button (Random Show mode)
 - 400ms fade-in animation using QPropertyAnimation
 - Loading state with animation
@@ -128,23 +128,35 @@ class ShowCard(QWidget):
         self.location_label.setAlignment(Qt.AlignCenter)
         content_layout.addWidget(self.location_label)
 
-        # Quality badge - Color-coded
-        self.quality_badge = QLabel()
-        self.quality_badge.setAlignment(Qt.AlignCenter)
-        self.quality_badge.setMinimumHeight(40)
-        content_layout.addWidget(self.quality_badge)
+        # Source badge - Small pill-shaped badge
+        self.source_badge = QLabel()
+        self.source_badge.setAlignment(Qt.AlignCenter)
+        self.source_badge.setFixedHeight(32)
+        self.source_badge.setMaximumWidth(120)
+        self.source_badge.setStyleSheet(f"""
+            QLabel {{
+                background-color: {Theme.ACCENT_YELLOW};
+                color: {Theme.TEXT_DARK};
+                padding: {Theme.SPACING_SMALL}px {Theme.SPACING_MEDIUM}px;
+                border-radius: 16px;
+                font-weight: {Theme.WEIGHT_BOLD};
+                font-size: {Theme.BODY_SMALL}px;
+            }}
+        """)
+        content_layout.addWidget(self.source_badge, alignment=Qt.AlignCenter)
 
-        # Setlist container - Scrollable
+        # Setlist container - Scrollable (remove border)
         setlist_container = QFrame()
         setlist_container.setStyleSheet(f"""
             QFrame {{
                 background-color: {Theme.BG_PANEL_DARK};
                 border-radius: {Theme.BUTTON_RADIUS}px;
-                border: 1px solid {Theme.BORDER_SUBTLE};
+                border: none;
             }}
         """)
         setlist_layout = QVBoxLayout(setlist_container)
         setlist_layout.setContentsMargins(Theme.SPACING_MEDIUM, Theme.SPACING_SMALL, Theme.SPACING_MEDIUM, Theme.SPACING_SMALL)
+        setlist_layout.setAlignment(Qt.AlignVCenter)
 
         # Setlist scroll area
         scroll_area = QScrollArea()
@@ -193,10 +205,41 @@ class ShowCard(QWidget):
         button_layout = QHBoxLayout()
         button_layout.setSpacing(Theme.SPACING_MEDIUM)
 
-        # PLAY button - Large, always visible (uses red accent)
+        # PLAY button - Large, always visible (uses gradient style)
         self.play_button = QPushButton("PLAY")
         self.play_button.setMinimumSize(200, Theme.BUTTON_HEIGHT)
-        self.play_button.setStyleSheet(Theme.get_button_style(Theme.ACCENT_RED, Theme.TEXT_PRIMARY))
+        # Use gradient button style
+        self.play_button.setStyleSheet(f"""
+            QPushButton {{
+                background: qlineargradient(
+                    x1:0, y1:0, x2:1, y2:0,
+                    stop:0 {Theme.GRADIENT_START},
+                    stop:1 {Theme.GRADIENT_END}
+                );
+                color: {Theme.TEXT_PRIMARY};
+                border: none;
+                border-radius: {Theme.BUTTON_RADIUS}px;
+                font-size: {Theme.BODY_LARGE}px;
+                font-weight: {Theme.WEIGHT_BOLD};
+                padding: 0px {Theme.SPACING_LARGE}px;
+                min-height: {Theme.BUTTON_HEIGHT}px;
+            }}
+            QPushButton:hover {{
+                background: qlineargradient(
+                    x1:0, y1:0, x2:1, y2:0,
+                    stop:0 {Theme._lighten_color(Theme.GRADIENT_START, 10)},
+                    stop:1 {Theme._lighten_color(Theme.GRADIENT_END, 10)}
+                );
+            }}
+            QPushButton:pressed {{
+                background: qlineargradient(
+                    x1:0, y1:0, x2:1, y2:0,
+                    stop:0 {Theme._darken_color(Theme.GRADIENT_START, 15)},
+                    stop:1 {Theme._darken_color(Theme.GRADIENT_END, 15)}
+                );
+                padding: 2px {Theme.SPACING_LARGE}px 0px {Theme.SPACING_LARGE}px;
+            }}
+        """)
         button_layout.addWidget(self.play_button)
 
         # Try Another button - Hidden by default, shown in random mode
@@ -311,66 +354,38 @@ class ShowCard(QWidget):
         # Quality badge with color coding
         self._update_quality_badge(show_data)
 
-        # Setlist (if available)
-        setlist = show_data.get('setlist', '')
-        if setlist:
-            # Format setlist with SET 1, SET 2, E labels
-            formatted_setlist = self._format_setlist(setlist)
-            self.setlist_label.setText(formatted_setlist)
-        else:
-            self.setlist_label.setText("Setlist not available")
+        # Fetch and display setlist from metadata
+        self._load_setlist(show_data.get('identifier', ''))
 
     def _update_quality_badge(self, show_data):
         """
-        Update quality badge with appropriate color coding.
+        Update source badge with appropriate type.
 
-        Color scheme:
-        - Soundboard: Gold/yellow background (Theme.ACCENT_YELLOW)
-        - Score 9.0+: Green indicator (Theme.ACCENT_GREEN)
-        - Score 8.0-8.9: Blue indicator (Theme.ACCENT_BLUE)
-        - Default: Gray (Theme.BORDER_SUBTLE)
+        Badge shows source type:
+        - SBD: Soundboard recording
+        - AUD: Audience recording
+        - MATRIX: Mixed sources
+        - FM: FM broadcast
 
         Args:
             show_data (dict): Show information
         """
         identifier = show_data.get('identifier', '').lower()
-        score = show_data.get('recording_score', 0)
 
-        # Check if soundboard recording
-        is_sbd = 'sbd' in identifier or 'soundboard' in identifier
-
-        if is_sbd:
-            # Soundboard: Gold background
-            bg_color = Theme.ACCENT_YELLOW
-            text_color = Theme.TEXT_DARK
-            label_text = "SOUNDBOARD"
-        elif score >= 9.0:
-            # Excellent: Green
-            bg_color = Theme.ACCENT_GREEN
-            text_color = Theme.TEXT_PRIMARY
-            label_text = f"EXCELLENT ({score:.1f})"
-        elif score >= 8.0:
-            # Very Good: Blue
-            bg_color = Theme.ACCENT_BLUE
-            text_color = Theme.TEXT_PRIMARY
-            label_text = f"VERY GOOD ({score:.1f})"
+        # Determine source type from identifier
+        if 'sbd' in identifier or 'soundboard' in identifier:
+            badge_text = "SBD"
+        elif 'matrix' in identifier or 'mtx' in identifier:
+            badge_text = "MATRIX"
+        elif 'fm' in identifier or 'broadcast' in identifier:
+            badge_text = "FM"
+        elif 'aud' in identifier or 'audience' in identifier:
+            badge_text = "AUD"
         else:
-            # Good: Gray
-            bg_color = Theme.BORDER_SUBTLE
-            text_color = Theme.TEXT_PRIMARY
-            label_text = f"GOOD ({score:.1f})" if score > 0 else "QUALITY VARIES"
+            # Default to AUD if unclear
+            badge_text = "AUD"
 
-        self.quality_badge.setStyleSheet(f"""
-            QLabel {{
-                background-color: {bg_color};
-                color: {text_color};
-                padding: {Theme.SPACING_SMALL}px {Theme.SPACING_MEDIUM}px;
-                border-radius: 4px;
-                font-weight: {Theme.WEIGHT_BOLD};
-                font-size: {Theme.BODY_SMALL}px;
-            }}
-        """)
-        self.quality_badge.setText(label_text)
+        self.source_badge.setText(badge_text)
 
     def _format_setlist(self, setlist):
         """
