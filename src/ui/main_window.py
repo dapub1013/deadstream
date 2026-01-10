@@ -175,6 +175,7 @@ class MainWindow(QMainWindow):
             # Player screen navigation
             self.player_screen.home_requested.connect(self.show_browse)
             self.player_screen.settings_requested.connect(self.show_settings)
+            self.player_screen.back_requested.connect(self.show_findashow)
 
             # Browse screen navigation
             self.browse_screen.player_requested.connect(self.show_player)

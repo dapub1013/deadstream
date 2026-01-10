@@ -281,6 +281,129 @@ class TrackButton(QWidget):
         super().mousePressEvent(event)
 
 
+class SourceBadge(QWidget):
+    """Small pill-shaped badge showing recording source (SBD/AUD)"""
+
+    def __init__(self, source_type='SBD', parent=None):
+        super().__init__(parent)
+        self.source_type = source_type.upper()
+
+        # Set fixed size
+        self.setFixedSize(60, 28)
+
+        # Style
+        self.bg_color = QColor(Theme.ACCENT_YELLOW)
+        self.text_color = QColor("#2E2870")  # Dark purple for contrast
+
+    def paintEvent(self, event):
+        """Paint badge with rounded corners"""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        # Background pill shape
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(self.bg_color)
+        painter.drawRoundedRect(0, 0, 60, 28, 14, 14)
+
+        # Text
+        painter.setPen(self.text_color)
+        font = QFont(Theme.FONT_FAMILY, 12, QFont.Bold)
+        painter.setFont(font)
+        painter.drawText(self.rect(), Qt.AlignCenter, self.source_type)
+
+
+class TrackWidget(QWidget):
+    """Clickable track item for setlist"""
+
+    clicked = pyqtSignal(int)  # Emits track index
+
+    def __init__(self, track_index, track_name, track_duration="", parent=None):
+        super().__init__(parent)
+        self.track_index = track_index
+        self.track_name = track_name
+        self.track_duration = track_duration
+        self.is_current = False
+        self.hovered = False
+
+        # Set minimum height for touch targets
+        self.setMinimumHeight(48)
+        self.setMouseTracking(True)
+
+        # Create layout
+        layout = QHBoxLayout()
+        layout.setContentsMargins(16, 12, 16, 12)
+        layout.setSpacing(8)
+
+        # Track number
+        self.num_label = QLabel(f"{track_index + 1}.")
+        self.num_label.setStyleSheet(f"""
+            color: {Theme.TEXT_SECONDARY};
+            font-size: 14px;
+            background: transparent;
+        """)
+        self.num_label.setFixedWidth(30)
+        layout.addWidget(self.num_label)
+
+        # Track name
+        self.name_label = QLabel(track_name)
+        self.name_label.setStyleSheet(f"""
+            color: {Theme.TEXT_PRIMARY};
+            font-size: 16px;
+            background: transparent;
+        """)
+        layout.addWidget(self.name_label, 1)
+
+        # Duration
+        if track_duration:
+            self.duration_label = QLabel(track_duration)
+            self.duration_label.setStyleSheet(f"""
+                color: {Theme.TEXT_SECONDARY};
+                font-size: 14px;
+                background: transparent;
+            """)
+            layout.addWidget(self.duration_label)
+
+        self.setLayout(layout)
+
+    def set_current(self, is_current):
+        """Mark this track as currently playing"""
+        self.is_current = is_current
+        self.update()
+
+    def paintEvent(self, event):
+        """Paint background with hover/current state"""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        # Background
+        if self.is_current:
+            # Green highlight for current track
+            painter.fillRect(self.rect(), QColor("#0F9D58"))
+        elif self.hovered:
+            # Subtle highlight on hover
+            painter.fillRect(self.rect(), QColor(255, 255, 255, 20))
+
+        super().paintEvent(event)
+
+    def enterEvent(self, event):
+        """Mouse entered"""
+        self.hovered = True
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        """Mouse left"""
+        self.hovered = False
+        self.update()
+        super().leaveEvent(event)
+
+    def mousePressEvent(self, event):
+        """Handle click"""
+        if event.button() == Qt.LeftButton:
+            self.clicked.emit(self.track_index)
+        super().mousePressEvent(event)
+
+
 class PlayerScreen(QWidget):
     """
     Player screen - Hybrid design.
@@ -300,15 +423,16 @@ class PlayerScreen(QWidget):
     # Signals
     home_requested = pyqtSignal()
     settings_requested = pyqtSignal()
+    back_requested = pyqtSignal()
     
     def __init__(self):
         """Initialize player screen"""
         super().__init__()
-        
+
         # Audio player instance
         self.player = ResilientPlayer()
-        
-        # UI widgets
+
+        # UI widgets - right panel
         self.now_playing_label = None
         self.track_counter_label = None
         self.song_title_label = None
@@ -321,16 +445,27 @@ class PlayerScreen(QWidget):
         self.volume_control = None
         self.home_btn = None  # CornerButton (minimal)
         self.settings_btn = None  # CornerButton (minimal)
-        
+
+        # UI widgets - left panel
+        self.date_label = None
+        self.venue_label = None
+        self.location_label = None
+        self.source_badge = None
+        self.setlist_layout = None  # Layout for track items
+        self.track_widgets = []  # List of track widget references
+
         # Playlist state
         self.current_show = None
         self.playlist = []
         self.current_track_index = 0
         self.total_tracks = 0
 
+        # Auto-play state
+        self._track_ended_handled = False  # Prevent duplicate auto-advance
+
         # UI update timer
         self.update_timer = None
-        
+
         self.init_ui()
         self.init_audio_integration()
     
@@ -385,56 +520,92 @@ class PlayerScreen(QWidget):
     # ========================================================================
     
     def create_left_panel(self):
-        """Create left panel with original placeholder design"""
+        """Create left panel with concert info and setlist"""
         panel = QFrame()
-        panel.setStyleSheet(f"""
-            QFrame {{
+        panel.setStyleSheet("""
+            QFrame {
                 background: transparent;
-            }}
+            }
         """)
-        
+
         layout = QVBoxLayout()
-        layout.setSpacing(Theme.SPACING_MEDIUM)
+        layout.setSpacing(Theme.SPACING_SMALL)
         layout.setContentsMargins(
             Theme.SPACING_LARGE,
             Theme.SPACING_LARGE,
             Theme.SPACING_MEDIUM,
             Theme.SPACING_LARGE
         )
-        
-        # Concert header
-        concert_label = QLabel("Concert Information")
-        concert_label.setStyleSheet(f"""
+
+        # Back button row
+        back_layout = QHBoxLayout()
+        back_button = CornerButton('◀', position='top-left')
+        back_button.setToolTip("Back to Find a Show")
+        back_button.clicked.connect(self.on_back_clicked)
+        back_layout.addWidget(back_button)
+        back_layout.addStretch()
+        layout.addLayout(back_layout)
+
+        layout.addSpacing(8)
+
+        # Concert header row (date + source badge)
+        header_layout = QHBoxLayout()
+        header_layout.setSpacing(12)
+
+        # Date label
+        self.date_label = QLabel("No show loaded")
+        self.date_label.setStyleSheet(f"""
             color: {Theme.TEXT_PRIMARY};
-            font-size: {Theme.HEADER_LARGE}px;
+            font-size: {Theme.BODY_LARGE}px;
             font-weight: bold;
             background: transparent;
         """)
-        layout.addWidget(concert_label)
-        
-        # Show details placeholder
-        details_label = QLabel("No show loaded")
-        details_label.setStyleSheet(f"""
+        header_layout.addWidget(self.date_label)
+
+        # Source badge (initially hidden)
+        self.source_badge = SourceBadge('SBD')
+        self.source_badge.hide()
+        header_layout.addWidget(self.source_badge)
+
+        header_layout.addStretch()
+        layout.addLayout(header_layout)
+
+        # Venue label
+        self.venue_label = QLabel("")
+        self.venue_label.setStyleSheet(f"""
+            color: {Theme.TEXT_PRIMARY};
+            font-size: {Theme.HEADER_MEDIUM}px;
+            font-weight: bold;
+            background: transparent;
+        """)
+        self.venue_label.setWordWrap(True)
+        layout.addWidget(self.venue_label)
+
+        # Location label
+        self.location_label = QLabel("")
+        self.location_label.setStyleSheet(f"""
             color: {Theme.TEXT_SECONDARY};
-            font-size: {Theme.BODY_LARGE}px;
+            font-size: {Theme.BODY_MEDIUM}px;
             background: transparent;
         """)
-        layout.addWidget(details_label)
-        
+        layout.addWidget(self.location_label)
+
+        layout.addSpacing(Theme.SPACING_MEDIUM)
+
         # Setlist header
-        setlist_label = QLabel("Setlist")
-        setlist_label.setStyleSheet(f"""
+        setlist_header = QLabel("Setlist")
+        setlist_header.setStyleSheet(f"""
             color: {Theme.TEXT_PRIMARY};
             font-size: {Theme.BODY_LARGE}px;
             font-weight: bold;
             background: transparent;
-            margin-top: {Theme.SPACING_LARGE}px;
         """)
-        layout.addWidget(setlist_label)
-        
-        # Setlist scroll area (placeholder)
+        layout.addWidget(setlist_header)
+
+        # Setlist scroll area
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         scroll_area.setStyleSheet(f"""
             QScrollArea {{
                 background: transparent;
@@ -442,28 +613,35 @@ class PlayerScreen(QWidget):
             }}
             QScrollBar:vertical {{
                 background: rgba(255, 255, 255, 0.1);
-                width: 12px;
-                border-radius: 6px;
+                width: 10px;
+                border-radius: 5px;
+                margin: 0px;
             }}
             QScrollBar::handle:vertical {{
                 background: rgba(255, 255, 255, 0.3);
-                border-radius: 6px;
+                border-radius: 5px;
+                min-height: 30px;
             }}
             QScrollBar::handle:vertical:hover {{
                 background: rgba(255, 255, 255, 0.5);
             }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+                height: 0px;
+            }}
         """)
-        
-        setlist_content = QLabel("Track list will appear here...")
-        setlist_content.setStyleSheet(f"""
-            color: {Theme.TEXT_SECONDARY};
-            font-size: {Theme.BODY_MEDIUM}px;
-            background: transparent;
-            padding: {Theme.SPACING_MEDIUM}px;
-        """)
+
+        # Setlist content widget
+        setlist_content = QWidget()
+        setlist_content.setStyleSheet("background: transparent;")
+        self.setlist_layout = QVBoxLayout()
+        self.setlist_layout.setSpacing(2)
+        self.setlist_layout.setContentsMargins(0, 0, 0, 0)
+        self.setlist_layout.addStretch()  # Push tracks to top
+        setlist_content.setLayout(self.setlist_layout)
+
         scroll_area.setWidget(setlist_content)
         layout.addWidget(scroll_area, 1)
-        
+
         panel.setLayout(layout)
         return panel
     
@@ -613,19 +791,37 @@ class PlayerScreen(QWidget):
         # Get current position and duration from player
         position_ms = self.player.get_position()
         duration_ms = self.player.get_duration()
-        
+
         # Update progress bar
         if duration_ms > 0:
             position_seconds = position_ms // 1000
             duration_seconds = duration_ms // 1000
             self.progress_bar.update_position(position_seconds, duration_seconds)
-        
+
+            # Auto-advance to next track when current track ends
+            # Check if we're near the end (within last 2 seconds) and not already handled
+            if position_seconds >= duration_seconds - 2 and duration_seconds > 0:
+                if not self._track_ended_handled:
+                    self._track_ended_handled = True
+                    # Check if there's a next track
+                    if self.playlist and self.current_track_index < self.total_tracks - 1:
+                        print(f"[INFO] Track ending, auto-playing next track")
+                        self.on_next_track()
+                    else:
+                        print(f"[INFO] Last track ending, playback complete")
+
         # Update play/pause button icon
         state = self.player.get_state()
         is_playing = (state == PlayerState.PLAYING)
-        
+
         if is_playing:
             self.play_pause_btn.set_icon('pause')
+            # Reset the flag when playing (but only if we're not near the end)
+            if duration_ms > 0:
+                position_seconds = position_ms // 1000
+                duration_seconds = duration_ms // 1000
+                if position_seconds < duration_seconds - 3:
+                    self._track_ended_handled = False
         else:
             self.play_pause_btn.set_icon('play')
     
@@ -667,8 +863,11 @@ class PlayerScreen(QWidget):
             self.current_track_index = 0
             self.total_tracks = len(audio_files)
 
-            # Update left panel with show info
-            # TODO: Update concert details and setlist when left panel is implemented
+            # Update left panel with concert info
+            self.update_concert_info()
+
+            # Populate setlist
+            self.populate_setlist()
 
             # Load and play first track
             self.play_track_at_index(0)
@@ -679,6 +878,105 @@ class PlayerScreen(QWidget):
             print(f"[ERROR] Failed to load show: {e}")
             import traceback
             traceback.print_exc()
+
+    def update_concert_info(self):
+        """Update left panel with current show information"""
+        if not self.current_show:
+            return
+
+        # Format and display date
+        date = self.current_show.get('date', 'Unknown Date')
+        # Convert from YYYY-MM-DD to MM/DD/YYYY
+        if '-' in date:
+            parts = date.split('-')
+            if len(parts) == 3:
+                date = f"{parts[1]}/{parts[2]}/{parts[0]}"
+
+        self.date_label.setText(date)
+
+        # Display venue
+        venue = self.current_show.get('venue', 'Unknown Venue')
+        self.venue_label.setText(venue)
+
+        # Display location
+        location = self.current_show.get('location', '')
+        if not location:
+            # Try to build from coverage field
+            coverage = self.current_show.get('coverage', '')
+            if coverage:
+                location = coverage
+        self.location_label.setText(location)
+
+        # Show source badge if available
+        source = self.current_show.get('source', '')
+        if source:
+            # Extract source type from string (e.g., "SBD", "AUD", "MATRIX")
+            source_upper = source.upper()
+            if 'SBD' in source_upper or 'SOUNDBOARD' in source_upper:
+                source_type = 'SBD'
+            elif 'AUD' in source_upper or 'AUDIENCE' in source_upper:
+                source_type = 'AUD'
+            elif 'MATRIX' in source_upper or 'MTX' in source_upper:
+                source_type = 'MTX'
+            elif 'FM' in source_upper:
+                source_type = 'FM'
+            else:
+                source_type = 'SBD'  # Default
+
+            # Update badge and show it
+            self.source_badge.source_type = source_type
+            self.source_badge.show()
+            self.source_badge.update()
+        else:
+            self.source_badge.hide()
+
+    def populate_setlist(self):
+        """Populate setlist with clickable track widgets"""
+        # Clear existing track widgets
+        for widget in self.track_widgets:
+            widget.deleteLater()
+        self.track_widgets.clear()
+
+        # Clear all items from layout (including widgets and spacers)
+        while self.setlist_layout.count():
+            item = self.setlist_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+            # Spacer items don't need to be deleted, just removed
+
+        # Create track widgets
+        for i, track in enumerate(self.playlist):
+            # Get track info
+            track_name = track.get('title', track.get('name', f'Track {i + 1}'))
+
+            # Format duration
+            duration_str = ""
+            length = track.get('length', '')
+            if length:
+                if isinstance(length, str) and ':' in length:
+                    duration_str = length
+                elif isinstance(length, (int, float)):
+                    # Convert seconds to MM:SS
+                    total_seconds = int(length)
+                    minutes = total_seconds // 60
+                    seconds = total_seconds % 60
+                    duration_str = f"{minutes}:{seconds:02d}"
+
+            # Create track widget
+            track_widget = TrackWidget(i, track_name, duration_str)
+            track_widget.clicked.connect(self.on_track_clicked)
+            self.track_widgets.append(track_widget)
+            self.setlist_layout.addWidget(track_widget)
+
+        # Add stretch at the end to push tracks to top
+        self.setlist_layout.addStretch()
+
+        print(f"[INFO] Populated setlist with {len(self.track_widgets)} tracks")
+
+    def on_track_clicked(self, track_index):
+        """Handle track click from setlist"""
+        print(f"[INFO] Track clicked: {track_index + 1}/{self.total_tracks}")
+        self.play_track_at_index(track_index)
 
     def play_track_at_index(self, index):
         """
@@ -736,10 +1034,18 @@ class PlayerScreen(QWidget):
             # Update current track index
             self.current_track_index = index
 
+            # Update setlist highlighting
+            self.update_setlist_highlight(index)
+
         except Exception as e:
             print(f"[ERROR] Failed to play track at index {index}: {e}")
             import traceback
             traceback.print_exc()
+
+    def update_setlist_highlight(self, current_index):
+        """Update setlist to highlight currently playing track"""
+        for i, widget in enumerate(self.track_widgets):
+            widget.set_current(i == current_index)
 
     def load_track_url(self, url, track_name="Unknown Track", set_name="",
                       track_num=1, total_tracks=1, duration=0):
@@ -863,6 +1169,11 @@ class PlayerScreen(QWidget):
         """Handle settings button click"""
         print("[INFO] Settings button clicked")
         self.settings_requested.emit()
+
+    def on_back_clicked(self):
+        """Handle back button click"""
+        print("[INFO] Back button clicked")
+        self.back_requested.emit()
     
     # ========================================================================
     # LAYOUT MANAGEMENT
