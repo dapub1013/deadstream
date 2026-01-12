@@ -4,7 +4,8 @@ NowPlayingBar - Minimal playback control bar for browse/settings screens.
 Shows track info and essential controls (prev, play/pause, next).
 Appears at bottom of screen when audio is loaded and not on player screen.
 
-Phase 10F - Task 10F.1: Create NowPlayingBar Widget
+Phase 10F - Task 10F.1: Create NowPlayingBar Widget (COMPLETE)
+Phase 10F - Task 10F.2: Integrate with ResilientPlayer (COMPLETE)
 """
 
 import sys
@@ -16,7 +17,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from PyQt5.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 from PyQt5.QtGui import QFont, QCursor
 
 from src.ui.styles.theme import Theme
@@ -60,6 +61,14 @@ class NowPlayingBar(QWidget):
 
         # Player reference (set later)
         self.player = None
+
+        # Timer for UI updates (200ms interval, same as player_screen.py)
+        self.update_timer = None
+
+        # Track info cache
+        self._current_track_name = "No track loaded"
+        self._current_show_date = ""
+        self._current_show_venue = ""
 
         # Fixed height from spec
         self.setFixedHeight(80)
@@ -161,6 +170,62 @@ class NowPlayingBar(QWidget):
 
         return controls_layout
 
+    def set_player(self, player):
+        """
+        Connect to ResilientPlayer instance.
+
+        This method:
+        1. Stores the player reference
+        2. Creates a QTimer for periodic UI updates (200ms interval)
+        3. Connects timer to update_from_player() method
+
+        Args:
+            player: ResilientPlayer instance
+
+        Usage:
+            bar = NowPlayingBar()
+            bar.set_player(resilient_player)
+        """
+        self.player = player
+
+        # Create UI update timer (200ms = 5 updates per second, same as player_screen.py)
+        if self.update_timer is None:
+            self.update_timer = QTimer()
+            self.update_timer.timeout.connect(self.update_from_player)
+            self.update_timer.start(200)  # 200ms interval
+            print("[INFO] NowPlayingBar: Timer-based updates started (200ms)")
+        else:
+            print("[WARN] NowPlayingBar: Update timer already exists")
+
+        print("[INFO] NowPlayingBar: Connected to ResilientPlayer")
+
+    def update_from_player(self):
+        """
+        Update UI from current player state - called by timer every 200ms.
+
+        This method:
+        1. Reads player state (is_playing, is_paused, etc.)
+        2. Updates play/pause button icon based on state
+        3. Updates track info if needed (from cache)
+
+        Note: Track info is set separately via load_track_info().
+        This method only updates the play/pause icon state.
+        """
+        if self.player is None:
+            return
+
+        # Update play/pause button icon based on player state
+        from src.audio.resilient_player import PlayerState
+
+        state = self.player.get_state()
+        is_playing = (state == PlayerState.PLAYING)
+
+        # Update button icon
+        if is_playing:
+            self.play_pause_button.set_icon('pause')
+        else:
+            self.play_pause_button.set_icon('play')
+
     def load_track_info(self, track_name, show_date, show_venue):
         """
         Set track and show information.
@@ -170,6 +235,11 @@ class NowPlayingBar(QWidget):
             show_date (str): Date of the show (e.g., "1977-05-08")
             show_venue (str): Venue name (e.g., "Barton Hall")
         """
+        # Cache track info
+        self._current_track_name = track_name
+        self._current_show_date = show_date
+        self._current_show_venue = show_venue
+
         # Update labels
         self.track_title_label.setText(track_name)
         self.show_info_label.setText(f"{show_date} - {show_venue}")
@@ -188,19 +258,43 @@ class NowPlayingBar(QWidget):
 
         super().mousePressEvent(event)
 
-    # Internal signal handlers (stop propagation to bar click)
+    # Internal signal handlers
 
     def _on_play_pause_clicked(self):
-        """Handle play/pause button click (internal)"""
+        """
+        Handle play/pause button click (internal).
+
+        Emits play_pause_clicked signal which should be connected
+        to player controls by the parent (e.g., MainWindow).
+
+        Example connection in MainWindow:
+            bar.play_pause_clicked.connect(self.toggle_playback)
+        """
         print("[INFO] NowPlayingBar: Play/pause button clicked")
         self.play_pause_clicked.emit()
 
     def _on_next_clicked(self):
-        """Handle next button click (internal)"""
+        """
+        Handle next button click (internal).
+
+        Emits next_clicked signal which should be connected
+        to player controls by the parent (e.g., MainWindow).
+
+        Example connection in MainWindow:
+            bar.next_clicked.connect(self.player_screen.on_next_track)
+        """
         print("[INFO] NowPlayingBar: Next button clicked")
         self.next_clicked.emit()
 
     def _on_previous_clicked(self):
-        """Handle previous button click (internal)"""
+        """
+        Handle previous button click (internal).
+
+        Emits previous_clicked signal which should be connected
+        to player controls by the parent (e.g., MainWindow).
+
+        Example connection in MainWindow:
+            bar.previous_clicked.connect(self.player_screen.on_previous_track)
+        """
         print("[INFO] NowPlayingBar: Previous button clicked")
         self.previous_clicked.emit()
