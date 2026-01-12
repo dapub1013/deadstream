@@ -4,8 +4,8 @@ Main window for DeadStream application.
 Integrates screen manager and navigation system.
 """
 import sys
-from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QMainWindow, QApplication, QPushButton, QWidget, QVBoxLayout
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QPalette, QColor
 
 # Add project root to path
@@ -19,6 +19,7 @@ from src.ui.screens.player_screen import PlayerScreen
 from src.ui.screens.browse_screen import BrowseScreen
 from src.ui.screens.settings_screen import SettingsScreen
 from src.ui.screens.findashow_screen import FindAShowScreen
+from src.ui.widgets.now_playing_bar import NowPlayingBar
 from src.ui.transitions import TransitionType
 from src.settings import get_settings
 
@@ -45,10 +46,10 @@ class MainWindow(QMainWindow):
         
         # Create screens
         self.create_screens()
-        
-        # Set screen manager as central widget
-        self.setCentralWidget(self.screen_manager)
-        
+
+        # Create container widget with screen manager and now playing bar
+        self.create_container_with_bar()
+
         # Connect signals for navigation
         self.connect_navigation()
         
@@ -211,7 +212,58 @@ class MainWindow(QMainWindow):
 
         except Exception as e:
             print(f"[ERROR] Failed to create screens: {e}")
-    
+
+    def create_container_with_bar(self):
+        """
+        Create container widget with ScreenManager and NowPlayingBar.
+
+        Layout structure:
+            Container (QWidget)
+            ├── ScreenManager (expand to fill)
+            └── NowPlayingBar (fixed 80px height)
+
+        The container becomes the central widget instead of ScreenManager directly.
+        """
+        # Create container widget
+        container = QWidget()
+        container_layout = QVBoxLayout(container)
+        container_layout.setContentsMargins(0, 0, 0, 0)
+        container_layout.setSpacing(0)
+
+        # Add screen manager (expand to fill)
+        container_layout.addWidget(self.screen_manager, stretch=1)
+
+        # Create now playing bar
+        self.now_playing_bar = NowPlayingBar()
+        self.now_playing_bar.setVisible(False)  # Initially hidden
+
+        # Connect bar signals
+        self.now_playing_bar.player_requested.connect(self.show_player)
+        self.now_playing_bar.play_pause_clicked.connect(self._handle_bar_play_pause)
+        self.now_playing_bar.next_clicked.connect(self._handle_bar_next)
+        self.now_playing_bar.previous_clicked.connect(self._handle_bar_previous)
+
+        # Add now playing bar (fixed height)
+        container_layout.addWidget(self.now_playing_bar, stretch=0)
+
+        # Set container as central widget
+        self.setCentralWidget(container)
+
+        # Connect player to bar (if player_screen has player)
+        if hasattr(self.player_screen, 'player') and self.player_screen.player:
+            self.now_playing_bar.set_player(self.player_screen.player)
+            print("[INFO] NowPlayingBar connected to ResilientPlayer")
+        else:
+            print("[WARN] player_screen.player not available yet, will connect later")
+
+        # Set up track monitoring timer (checks for track changes every 1 second)
+        self._last_track_name = None
+        self._track_monitor_timer = QTimer()
+        self._track_monitor_timer.timeout.connect(self._check_track_change)
+        self._track_monitor_timer.start(1000)  # Check every 1 second
+
+        print("[INFO] Container with NowPlayingBar created")
+
     def connect_navigation(self):
         """Connect navigation signals from screens to screen manager"""
         try:
@@ -310,6 +362,10 @@ class MainWindow(QMainWindow):
         # Load the show into the player screen
         self.player_screen.load_show(show)
 
+        # Update now playing bar with track info and visibility (audio now loaded)
+        self.update_now_playing_bar_track_info()
+        self.update_now_playing_bar_visibility()
+
         # Navigate to player screen
         self.show_player()
 
@@ -344,6 +400,9 @@ class MainWindow(QMainWindow):
             screen_name: Name of the new screen
         """
         print(f"[INFO] Screen changed to: {screen_name}")
+
+        # Update now playing bar visibility
+        self.update_now_playing_bar_visibility()
 
         # Save current screen to settings for restoration on next launch
         settings = get_settings()
@@ -488,6 +547,105 @@ class MainWindow(QMainWindow):
             self.show_settings()
         else:
             self.show_player()
+
+    # Now Playing Bar methods
+
+    def update_now_playing_bar_visibility(self):
+        """
+        Show bar only when audio loaded and not on player screen.
+
+        Visibility logic:
+            - Show: has_audio AND current_screen != player
+            - Hide: no_audio OR current_screen == player
+        """
+        current_screen = self.screen_manager.current_screen_name
+
+        # Check if player has media loaded (current_url is set when media is loaded)
+        has_audio = False
+        if hasattr(self.player_screen, 'player') and self.player_screen.player:
+            has_audio = self.player_screen.player.current_url is not None
+
+        # Show bar only if audio loaded AND not on player screen
+        show_bar = has_audio and current_screen != ScreenManager.PLAYER_SCREEN
+
+        self.now_playing_bar.setVisible(show_bar)
+
+        if show_bar:
+            print(f"[INFO] NowPlayingBar visible (audio loaded, on {current_screen})")
+        else:
+            print(f"[INFO] NowPlayingBar hidden (audio={has_audio}, screen={current_screen})")
+
+    def update_now_playing_bar_track_info(self):
+        """
+        Update the now playing bar with current track information.
+
+        Reads track info from player_screen and updates the bar display.
+        Call this whenever a new track is loaded.
+        """
+        if not hasattr(self.player_screen, 'current_show') or not self.player_screen.current_show:
+            print("[DEBUG] NowPlayingBar: No show loaded")
+            return
+
+        if not hasattr(self.player_screen, 'current_track_name'):
+            print("[DEBUG] NowPlayingBar: No track name available")
+            return
+
+        # Get track info from player_screen
+        track_name = self.player_screen.current_track_name
+        show_date = self.player_screen.current_show.get('date', 'Unknown Date')
+        show_venue = self.player_screen.current_show.get('venue', 'Unknown Venue')
+
+        # Update the bar
+        self.now_playing_bar.load_track_info(track_name, show_date, show_venue)
+        print(f"[INFO] NowPlayingBar updated: {track_name} - {show_date}")
+
+    def _check_track_change(self):
+        """
+        Monitor for track changes and update now playing bar accordingly.
+
+        Called by timer every 1 second to detect track changes from:
+        - Next/Previous buttons on player screen
+        - Auto-advance when track ends
+        - Any other track change mechanism
+        """
+        if not hasattr(self.player_screen, 'current_track_name'):
+            return
+
+        current_track = self.player_screen.current_track_name
+
+        # Check if track has changed
+        if current_track != self._last_track_name:
+            self._last_track_name = current_track
+            # Update bar with new track info
+            self.update_now_playing_bar_track_info()
+
+    def _handle_bar_play_pause(self):
+        """Handle play/pause button click from now playing bar"""
+        print("[INFO] NowPlayingBar: Play/pause clicked")
+        if hasattr(self.player_screen, 'on_play_pause'):
+            self.player_screen.on_play_pause()
+        else:
+            print("[WARN] player_screen.on_play_pause not available")
+
+    def _handle_bar_next(self):
+        """Handle next button click from now playing bar"""
+        print("[INFO] NowPlayingBar: Next clicked")
+        if hasattr(self.player_screen, 'on_next_track'):
+            self.player_screen.on_next_track()
+            # Update bar after track changes (give it a moment to load)
+            QTimer.singleShot(500, self.update_now_playing_bar_track_info)
+        else:
+            print("[WARN] player_screen.on_next_track not available")
+
+    def _handle_bar_previous(self):
+        """Handle previous button click from now playing bar"""
+        print("[INFO] NowPlayingBar: Previous clicked")
+        if hasattr(self.player_screen, 'on_previous_track'):
+            self.player_screen.on_previous_track()
+            # Update bar after track changes (give it a moment to load)
+            QTimer.singleShot(500, self.update_now_playing_bar_track_info)
+        else:
+            print("[WARN] player_screen.on_previous_track not available")
 
 
 def main():

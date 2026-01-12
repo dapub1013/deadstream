@@ -1079,6 +1079,7 @@ class PlayerScreen(QWidget):
                 # Store current track info
                 self.current_track_index = track_num - 1
                 self.total_tracks = total_tracks
+                self.current_track_name = track_name  # Store for NowPlayingBar
 
                 print(f"[INFO] Loaded track: {track_name} ({set_name})")
             else:
