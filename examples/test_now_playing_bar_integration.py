@@ -99,7 +99,7 @@ def test_player_integration():
             color: {Theme.TEXT_SECONDARY};
             font-size: {Theme.BODY_SMALL}px;
             padding: {Theme.SPACING_MEDIUM}px;
-            background-color: {Theme.BG_GRAY_800};
+            background-color: {Theme.BG_CARD};
         }}
     """)
     layout.addWidget(instructions)
