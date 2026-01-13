@@ -52,12 +52,9 @@ class MainWindow(QMainWindow):
 
         # Connect signals for navigation
         self.connect_navigation()
-        
+
         # Initialize keyboard handler
         self._setup_keyboard_handler()
-
-        # Add fullscreen toggle button for testing
-        self._setup_fullscreen_toggle()
 
         # Show welcome screen on app launch (always start here)
         print("[INFO] Starting at welcome screen")
@@ -130,32 +127,6 @@ class MainWindow(QMainWindow):
         self.move(x, y)
 
         print(f"[INFO] Window size set to {window_width}x{window_height}")
-
-    def _setup_fullscreen_toggle(self):
-        """Create a floating fullscreen toggle button for testing"""
-        self.fullscreen_toggle_btn = QPushButton("Toggle Fullscreen", self)
-        self.fullscreen_toggle_btn.setGeometry(10, 10, 160, 40)
-        self.fullscreen_toggle_btn.clicked.connect(self._toggle_fullscreen)
-        self.fullscreen_toggle_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #1F2937;
-                color: #9CA3AF;
-                border: 1px solid #374151;
-                border-radius: 6px;
-                padding: 8px;
-                font-size: 12px;
-                font-weight: normal;
-            }
-            QPushButton:hover {
-                background-color: #374151;
-                color: white;
-            }
-            QPushButton:pressed {
-                background-color: #4B5563;
-            }
-        """)
-        self.fullscreen_toggle_btn.raise_()
-        print("[INFO] Fullscreen toggle button created")
 
     def _toggle_fullscreen(self):
         """Toggle between fullscreen and windowed mode"""

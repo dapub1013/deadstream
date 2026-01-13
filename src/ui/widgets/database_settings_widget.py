@@ -173,17 +173,28 @@ class DatabaseSettingsWidget(QWidget):
     
     def create_stat_row(self, label_text, value_text):
         """Create a statistics row with label and value
-        
+
         Returns:
             tuple: (row_widget, value_label) for easy reference
         """
         row = QWidget()
+        row.setMinimumHeight(36)
+        row.setMaximumHeight(36)
+        row.setStyleSheet(f"""
+            QWidget {{
+                background-color: {Theme._darken_color(Theme.BG_CARD, 5)};
+                border-radius: 4px;
+                padding: 8px 12px;
+            }}
+        """)
+
         row_layout = QHBoxLayout()
-        row_layout.setContentsMargins(0, 0, 0, 0)
-        
+        row_layout.setContentsMargins(12, 0, 12, 0)
+        row_layout.setSpacing(0)
+
         # Label
         label = QLabel(label_text)
-        label.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 16px;")
+        label.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 16px; background: transparent;")
         row_layout.addWidget(label)
 
         # Spacer
@@ -191,9 +202,9 @@ class DatabaseSettingsWidget(QWidget):
 
         # Value
         value = QLabel(value_text)
-        value.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 16px; font-weight: bold;")
+        value.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 16px; font-weight: bold; background: transparent;")
         row_layout.addWidget(value)
-        
+
         row.setLayout(row_layout)
         return row, value  # Return both the row and the value label
     

@@ -87,7 +87,7 @@ class SettingsScreen(QWidget):
         layout.setContentsMargins(Theme.SPACING_LARGE, 0, Theme.SPACING_LARGE, 0)
 
         # Back button
-        back_btn = QPushButton("< Back to Browse")
+        back_btn = QPushButton("Back to Browse")
         back_btn.setFixedSize(200, Theme.BUTTON_HEIGHT)
         back_btn.setStyleSheet(Theme.get_button_style(Theme.ACCENT_BLUE))
         back_btn.clicked.connect(self.back_clicked.emit)
@@ -163,7 +163,42 @@ class SettingsScreen(QWidget):
     
     def _create_content_area(self):
         """Create the right content area with stacked widgets"""
-        # Use QStackedWidget instead of clearing/recreating widgets
+        # Wrapper container for scroll area
+        container = QWidget()
+        container.setStyleSheet(f"background-color: {Theme.BG_PRIMARY};")
+        container_layout = QVBoxLayout(container)
+        container_layout.setContentsMargins(0, 0, 0, 0)
+        container_layout.setSpacing(0)
+
+        # Scroll area to handle tall content
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll_area.setStyleSheet(f"""
+            QScrollArea {{
+                background-color: {Theme.BG_PRIMARY};
+                border: none;
+            }}
+            QScrollBar:vertical {{
+                background-color: {Theme.BG_PANEL_BLACK};
+                width: 12px;
+                border-radius: 6px;
+            }}
+            QScrollBar::handle:vertical {{
+                background-color: {Theme.BORDER_SUBTLE};
+                border-radius: 6px;
+                min-height: 30px;
+            }}
+            QScrollBar::handle:vertical:hover {{
+                background-color: {Theme.TEXT_SECONDARY};
+            }}
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+                height: 0px;
+            }}
+        """)
+
+        # Use QStackedWidget for switching between settings categories
         self.content_stack = QStackedWidget()
         self.content_stack.setStyleSheet(f"""
             QStackedWidget {{
@@ -171,7 +206,7 @@ class SettingsScreen(QWidget):
                 border: none;
             }}
         """)
-        
+
         # Create all setting widgets upfront
         # Network settings (implemented - Task 8.2)
         self.network_widget = NetworkSettingsWidget()
@@ -188,16 +223,20 @@ class SettingsScreen(QWidget):
         # Display settings (implemented)
         self.display_widget = DisplaySettingsWidget()
         self.content_stack.addWidget(self.display_widget)
-        
+
         # Date & Time settings (implemented - Task 8.7)
         self.datetime_widget = DateTimeSettingsWidget()
         self.content_stack.addWidget(self.datetime_widget)
-        
+
         # About page (implemented)
         self.about_widget = AboutWidget()
         self.content_stack.addWidget(self.about_widget)
-        
-        return self.content_stack
+
+        # Add stack to scroll area
+        scroll_area.setWidget(self.content_stack)
+        container_layout.addWidget(scroll_area)
+
+        return container
     
     def _create_placeholder_widget(self, title, description):
         """Create a placeholder widget for settings not yet implemented"""

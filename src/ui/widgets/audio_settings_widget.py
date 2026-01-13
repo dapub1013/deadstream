@@ -61,7 +61,7 @@ class AudioSettingsWidget(QWidget):
         
         # Header
         header = self._create_header()
-        main_layout.addWidget(header)
+        main_layout.addLayout(header)
         
         # Volume settings card
         volume_card = self._create_volume_card()
@@ -79,19 +79,19 @@ class AudioSettingsWidget(QWidget):
         main_layout.addStretch()
     
     def _create_header(self):
-        """Create the header section"""
-        header = QWidget()
-        layout = QVBoxLayout(header)
+        """Create the header with title and subtitle"""
+        layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
-        
+
         # Title
         title = QLabel("Audio Settings")
-        title_font = QFont()
-        title_font.setPointSize(24)
-        title_font.setBold(True)
-        title.setFont(title_font)
-        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY};")
+        title.setStyleSheet(f"""
+            color: {Theme.TEXT_PRIMARY};
+            font-size: 28px;
+            font-weight: bold;
+            background-color: transparent;
+        """)
         layout.addWidget(title)
 
         # Subtitle
@@ -99,10 +99,11 @@ class AudioSettingsWidget(QWidget):
         subtitle.setStyleSheet(f"""
             color: {Theme.TEXT_SECONDARY};
             font-size: 14px;
+            background-color: transparent;
         """)
         layout.addWidget(subtitle)
-        
-        return header
+
+        return layout
     
     def _create_volume_card(self):
         """Create the volume settings card"""
@@ -110,7 +111,7 @@ class AudioSettingsWidget(QWidget):
         card.setStyleSheet(f"""
             QFrame {{
                 background-color: {Theme.BG_CARD};
-                border: 1px solid {Theme.BORDER_SUBTLE};
+                border: none;
                 border-radius: 12px;
             }}
         """)
@@ -146,6 +147,7 @@ class AudioSettingsWidget(QWidget):
             color: {Theme.TEXT_PRIMARY};
             font-size: 14px;
             font-weight: 500;
+            background-color: transparent;
         """)
         slider_layout.addWidget(vol_label)
         
@@ -156,26 +158,31 @@ class AudioSettingsWidget(QWidget):
         self.volume_slider.setValue(self.default_volume)
         self.volume_slider.setTickPosition(QSlider.TicksBelow)
         self.volume_slider.setTickInterval(25)
-        self.volume_slider.setStyleSheet("""
-            QSlider::groove:horizontal {
-                background: #333333;
+        self.volume_slider.setStyleSheet(f"""
+            QSlider {{
+                background-color: transparent;
+            }}
+            QSlider::groove:horizontal {{
+                background: {Theme._darken_color(Theme.BG_CARD, 15)};
                 height: 8px;
+                border: none;
                 border-radius: 4px;
-            }
-            QSlider::handle:horizontal {
-                background: #8b5cf6;
+            }}
+            QSlider::handle:horizontal {{
+                background: {Theme.ACCENT_GREEN};
                 width: 24px;
                 height: 24px;
                 margin: -8px 0;
+                border: none;
                 border-radius: 12px;
-            }
-            QSlider::handle:horizontal:hover {
-                background: #a78bfa;
-            }
-            QSlider::sub-page:horizontal {
-                background: #8b5cf6;
+            }}
+            QSlider::handle:horizontal:hover {{
+                background: {Theme._lighten_color(Theme.ACCENT_GREEN, 15)};
+            }}
+            QSlider::sub-page:horizontal {{
+                background: {Theme.ACCENT_GREEN};
                 border-radius: 4px;
-            }
+            }}
         """)
         self.volume_slider.valueChanged.connect(self._on_volume_changed)
         slider_layout.addWidget(self.volume_slider, stretch=1)
@@ -187,6 +194,7 @@ class AudioSettingsWidget(QWidget):
             color: {Theme.TEXT_PRIMARY};
             font-size: 16px;
             font-weight: bold;
+            background-color: transparent;
         """)
         slider_layout.addWidget(self.volume_value_label)
         
@@ -211,7 +219,7 @@ class AudioSettingsWidget(QWidget):
         card.setStyleSheet(f"""
             QFrame {{
                 background-color: {Theme.BG_CARD};
-                border: 1px solid {Theme.BORDER_SUBTLE};
+                border: none;
                 border-radius: 12px;
             }}
         """)
@@ -248,19 +256,20 @@ class AudioSettingsWidget(QWidget):
                 color: {Theme.TEXT_PRIMARY};
                 font-size: 14px;
                 spacing: 10px;
+                background-color: transparent;
             }}
             QRadioButton::indicator {{
                 width: 20px;
                 height: 20px;
             }}
             QRadioButton::indicator:unchecked {{
-                background: {Theme.BORDER_SUBTLE};
-                border: 2px solid {Theme.TEXT_SECONDARY};
+                background: {Theme._darken_color(Theme.BG_CARD, 15)};
+                border: none;
                 border-radius: 10px;
             }}
             QRadioButton::indicator:checked {{
-                background: {Theme.ACCENT_BLUE};
-                border: 2px solid {Theme.ACCENT_BLUE};
+                background: {Theme.ACCENT_GREEN};
+                border: none;
                 border-radius: 10px;
             }}
         """)
@@ -273,6 +282,7 @@ class AudioSettingsWidget(QWidget):
         flac_desc.setStyleSheet(f"""
             color: {Theme.TEXT_SECONDARY};
             font-size: 12px;
+            background-color: transparent;
         """)
         layout.addWidget(flac_desc)
         
@@ -283,19 +293,20 @@ class AudioSettingsWidget(QWidget):
                 color: {Theme.TEXT_PRIMARY};
                 font-size: 14px;
                 spacing: 10px;
+                background-color: transparent;
             }}
             QRadioButton::indicator {{
                 width: 20px;
                 height: 20px;
             }}
             QRadioButton::indicator:unchecked {{
-                background: {Theme.BORDER_SUBTLE};
-                border: 2px solid {Theme.TEXT_SECONDARY};
+                background: {Theme._darken_color(Theme.BG_CARD, 15)};
+                border: none;
                 border-radius: 10px;
             }}
             QRadioButton::indicator:checked {{
-                background: {Theme.ACCENT_BLUE};
-                border: 2px solid {Theme.ACCENT_BLUE};
+                background: {Theme.ACCENT_GREEN};
+                border: none;
                 border-radius: 10px;
             }}
         """)
@@ -307,6 +318,7 @@ class AudioSettingsWidget(QWidget):
         mp3_desc.setStyleSheet(f"""
             color: {Theme.TEXT_SECONDARY};
             font-size: 12px;
+            background-color: transparent;
         """)
         layout.addWidget(mp3_desc)
         
@@ -333,7 +345,7 @@ class AudioSettingsWidget(QWidget):
         card.setStyleSheet(f"""
             QFrame {{
                 background-color: {Theme.BG_CARD};
-                border: 1px solid {Theme.BORDER_SUBTLE};
+                border: none;
                 border-radius: 12px;
             }}
         """)

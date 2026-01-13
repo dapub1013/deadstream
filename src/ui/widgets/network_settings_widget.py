@@ -114,19 +114,19 @@ class NetworkSettingsWidget(QWidget):
         advanced_btn = QPushButton("Advanced Settings")
         advanced_btn.setStyleSheet(f"""
             QPushButton {{
-                background-color: {Theme.BG_CARD};
+                background-color: {Theme._darken_color(Theme.BG_CARD, 15)};
                 color: {Theme.TEXT_PRIMARY};
-                border: 2px solid {Theme.BORDER_SUBTLE};
+                border: none;
                 border-radius: 10px;
                 font-size: 16px;
                 font-weight: 600;
                 padding: 15px 30px;
             }}
             QPushButton:hover {{
-                background-color: {Theme._lighten_color(Theme.BG_CARD, 10)};
+                background-color: {Theme._darken_color(Theme.BG_CARD, 10)};
             }}
             QPushButton:pressed {{
-                background-color: {Theme._lighten_color(Theme.BG_CARD, 20)};
+                background-color: {Theme._darken_color(Theme.BG_CARD, 20)};
             }}
         """)
         advanced_btn.clicked.connect(self._show_advanced_settings)
@@ -139,15 +139,6 @@ class NetworkSettingsWidget(QWidget):
         """Create the header with title and icon"""
         layout = QHBoxLayout()
         
-        # WiFi icon (using text representation)
-        icon_label = QLabel("[WiFi]")
-        icon_label.setStyleSheet(f"""
-            color: {Theme.ACCENT_BLUE};
-            font-size: 28px;
-            font-weight: bold;
-        """)
-        layout.addWidget(icon_label)
-
         # Title and subtitle
         text_layout = QVBoxLayout()
         text_layout.setSpacing(5)
@@ -178,7 +169,7 @@ class NetworkSettingsWidget(QWidget):
         card.setStyleSheet(f"""
             QFrame {{
                 background-color: {Theme.BG_CARD};
-                border: 2px solid {Theme.BORDER_SUBTLE};
+                border: none;
                 border-radius: 15px;
                 padding: 20px;
             }}
@@ -378,20 +369,20 @@ class NetworkSettingsWidget(QWidget):
         if network['active']:
             card.setStyleSheet(f"""
                 QFrame {{
-                    background-color: {Theme._darken_color(Theme.ACCENT_BLUE, 30)};
-                    border: 2px solid {Theme.ACCENT_BLUE};
+                    background-color: {Theme._darken_color(Theme.ACCENT_GREEN, 30)};
+                    border: 2px solid {Theme.ACCENT_GREEN};
                     border-radius: 10px;
                     padding: 15px;
                 }}
                 QFrame:hover {{
-                    background-color: {Theme._darken_color(Theme.ACCENT_BLUE, 20)};
+                    background-color: {Theme._darken_color(Theme.ACCENT_GREEN, 20)};
                 }}
             """)
         else:
             card.setStyleSheet(f"""
                 QFrame {{
                     background-color: {Theme.BG_CARD};
-                    border: 2px solid {Theme.BORDER_SUBTLE};
+                    border: none;
                     border-radius: 10px;
                     padding: 15px;
                 }}
