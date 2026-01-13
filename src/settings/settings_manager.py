@@ -2,9 +2,16 @@
 """
 DeadStream Settings Manager
 Phase 8, Task 8.4: Settings data persistence
+Theme Integration: Phase 10 - UI theming support added
 
 Centralized settings management for all application configuration.
 Handles loading, saving, and validation of user preferences.
+
+Theme Support:
+- Manages UI color scheme preferences
+- Validates hex color values
+- Supports custom theme colors
+- Integrates with src/ui/styles/theme.py
 """
 
 import os
@@ -40,6 +47,17 @@ class SettingsManager:
             'auto_brightness': False,
             'screen_timeout': 300,  # seconds (5 minutes)
             'theme': 'dark',  # dark or light (future)
+        },
+        'theme': {
+            'color_scheme': 'default',  # default, custom
+            'primary_bg': '#2E2870',    # Deep purple
+            'accent_yellow': '#FFD700',  # Gold
+            'accent_blue': '#1976D2',    # Blue
+            'accent_green': '#0F9D58',   # Green
+            'text_primary': '#FFFFFF',   # White
+            'text_secondary': '#B0B0B0', # Gray
+            'font_family': 'sans-serif',
+            'font_size_multiplier': 1.0,  # Scale all fonts
         },
         'datetime': {
             'timezone': 'America/New_York',
@@ -365,28 +383,149 @@ class SettingsManager:
         
         # Validate display settings
         brightness = self.get('display', 'brightness', 80)
-        if not (0 <= brightness <= 100):
-            warnings.append(f"Invalid brightness: {brightness} (must be 0-100)")
-        
+        try:
+            brightness = int(brightness)
+            if not (0 <= brightness <= 100):
+                warnings.append(f"Invalid brightness: {brightness} (must be 0-100)")
+        except (ValueError, TypeError):
+            warnings.append(f"Invalid brightness value: {brightness} (must be numeric)")
+
         timeout = self.get('display', 'screen_timeout', 300)
-        if timeout < 0:
-            warnings.append(f"Invalid screen timeout: {timeout} (must be >= 0)")
+        try:
+            # Handle both integer and string values
+            if isinstance(timeout, str):
+                # Skip validation for string values like "10 minutes" (legacy format)
+                pass
+            else:
+                timeout = int(timeout)
+                if timeout < 0:
+                    warnings.append(f"Invalid screen timeout: {timeout} (must be >= 0)")
+        except (ValueError, TypeError):
+            warnings.append(f"Invalid screen timeout value: {timeout}")
         
         # Validate app settings
         last_screen = self.get('app', 'last_screen', 'browse')
         valid_screens = ['player', 'browse', 'settings']
         if last_screen not in valid_screens:
             warnings.append(f"Invalid last_screen: {last_screen}")
-        
+
+        # Validate theme settings
+        color_scheme = self.get('theme', 'color_scheme', 'default')
+        valid_schemes = ['default', 'custom']
+        if color_scheme not in valid_schemes:
+            warnings.append(f"Invalid color_scheme: {color_scheme}")
+
+        font_multiplier = self.get('theme', 'font_size_multiplier', 1.0)
+        if not (0.5 <= font_multiplier <= 2.0):
+            warnings.append(f"Invalid font_size_multiplier: {font_multiplier} (must be 0.5-2.0)")
+
+        # Validate hex colors
+        for color_key in ['primary_bg', 'accent_yellow', 'accent_blue', 'accent_green', 'text_primary', 'text_secondary']:
+            color_value = self.get('theme', color_key)
+            if color_value and not self._is_valid_hex_color(color_value):
+                warnings.append(f"Invalid hex color for theme.{color_key}: {color_value}")
+
         return warnings
-    
+
+    @staticmethod
+    def _is_valid_hex_color(color: str) -> bool:
+        """
+        Validate hex color format.
+
+        Args:
+            color: Color string to validate
+
+        Returns:
+            True if valid hex color format, False otherwise
+        """
+        if not isinstance(color, str):
+            return False
+
+        # Remove # if present
+        color = color.lstrip('#')
+
+        # Must be 6 characters
+        if len(color) != 6:
+            return False
+
+        # All characters must be valid hex
+        try:
+            int(color, 16)
+            return True
+        except ValueError:
+            return False
+
+    def get_theme_colors(self) -> Dict[str, str]:
+        """
+        Get all theme colors as a dictionary.
+
+        Returns:
+            Dictionary of theme color settings
+
+        Example:
+            >>> manager = SettingsManager()
+            >>> colors = manager.get_theme_colors()
+            >>> print(colors['accent_yellow'])
+            #FFD700
+        """
+        return {
+            'primary_bg': self.get('theme', 'primary_bg', '#2E2870'),
+            'accent_yellow': self.get('theme', 'accent_yellow', '#FFD700'),
+            'accent_blue': self.get('theme', 'accent_blue', '#1976D2'),
+            'accent_green': self.get('theme', 'accent_green', '#0F9D58'),
+            'text_primary': self.get('theme', 'text_primary', '#FFFFFF'),
+            'text_secondary': self.get('theme', 'text_secondary', '#B0B0B0'),
+        }
+
+    def apply_custom_theme(self, colors: Dict[str, str]) -> bool:
+        """
+        Apply custom color theme.
+
+        Args:
+            colors: Dictionary of color values (hex format)
+
+        Returns:
+            True if successful, False otherwise
+
+        Example:
+            >>> manager = SettingsManager()
+            >>> custom = {
+            ...     'primary_bg': '#1A1A2E',
+            ...     'accent_yellow': '#FFA500',
+            ... }
+            >>> manager.apply_custom_theme(custom)
+            True
+        """
+        # Validate all colors
+        for key, value in colors.items():
+            if not self._is_valid_hex_color(value):
+                print(f"[ERROR] Invalid hex color for {key}: {value}")
+                return False
+
+        # Update theme settings
+        self.set('theme', 'color_scheme', 'custom')
+
+        for key, value in colors.items():
+            self.set('theme', key, value)
+
+        return True
+
+    def reset_theme_to_default(self) -> bool:
+        """
+        Reset theme colors to default values.
+
+        Returns:
+            True if successful, False otherwise
+        """
+        return self.reset_category('theme')
+
     def display_current_settings(self):
         """Print current settings in a formatted way (for debugging)"""
         print("\n" + "=" * 60)
         print("CURRENT SETTINGS")
         print("=" * 60)
         
-        for category in ['network', 'audio', 'display', 'datetime', 'app']:
+        for category in ['network', 'audio', 'display', 'theme', 'datetime', 'app']:
             if category in self.settings and isinstance(self.settings[category], dict):
                 print(f"\n[{category.upper()}]")
                 for key, value in self.settings[category].items():
