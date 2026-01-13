@@ -19,6 +19,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 
 from src.settings import get_settings
+from src.ui.styles.theme import Theme
 
 
 class DisplaySettingsWidget(QWidget):
@@ -64,12 +65,12 @@ class DisplaySettingsWidget(QWidget):
         
         # Title
         title = QLabel("Display Settings")
-        title.setStyleSheet("color: #ffffff; font-size: 28px; font-weight: bold;")
+        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 28px; font-weight: bold;")
         header_layout.addWidget(title)
-        
+
         # Subtitle
         subtitle = QLabel("Brightness, screen timeout, and theme preferences")
-        subtitle.setStyleSheet("color: #999999; font-size: 16px;")
+        subtitle.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 16px;")
         header_layout.addWidget(subtitle)
         
         return header
@@ -83,35 +84,35 @@ class DisplaySettingsWidget(QWidget):
         
         # Section title
         title = QLabel("Screen Brightness")
-        title.setStyleSheet("color: #ffffff; font-size: 20px; font-weight: 600;")
+        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 20px; font-weight: 600;")
         section_layout.addWidget(title)
-        
+
         # Brightness card
         card = QFrame()
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #1a1a1a;
+        card.setStyleSheet(f"""
+            QFrame {{
+                background-color: {Theme.BG_CARD};
                 border-radius: 10px;
                 padding: 20px;
-            }
+            }}
         """)
         card_layout = QVBoxLayout(card)
         card_layout.setSpacing(15)
-        
+
         # Current brightness label
         self.brightness_label = QLabel("Brightness: 75%")
-        self.brightness_label.setStyleSheet("color: #ffffff; font-size: 18px;")
+        self.brightness_label.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 18px;")
         card_layout.addWidget(self.brightness_label)
-        
+
         # Brightness slider
         slider_container = QWidget()
         slider_layout = QHBoxLayout(slider_container)
         slider_layout.setContentsMargins(0, 0, 0, 0)
         slider_layout.setSpacing(15)
-        
+
         # Low icon/label
         low_label = QLabel("Low")
-        low_label.setStyleSheet("color: #999999; font-size: 14px;")
+        low_label.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 14px;")
         slider_layout.addWidget(low_label)
         
         # Slider
@@ -121,42 +122,42 @@ class DisplaySettingsWidget(QWidget):
         self.brightness_slider.setValue(75)
         self.brightness_slider.setTickPosition(QSlider.TicksBelow)
         self.brightness_slider.setTickInterval(10)
-        self.brightness_slider.setStyleSheet("""
-            QSlider::groove:horizontal {
-                border: 1px solid #333333;
+        self.brightness_slider.setStyleSheet(f"""
+            QSlider::groove:horizontal {{
+                border: 1px solid {Theme.BORDER_SUBTLE};
                 height: 8px;
-                background: #262626;
+                background: {Theme._darken_color(Theme.BG_CARD, 10)};
                 border-radius: 4px;
-            }
-            QSlider::handle:horizontal {
-                background: #2563eb;
-                border: 2px solid #1e40af;
+            }}
+            QSlider::handle:horizontal {{
+                background: {Theme.ACCENT_BLUE};
+                border: 2px solid {Theme._darken_color(Theme.ACCENT_BLUE, 10)};
                 width: 20px;
                 height: 20px;
                 margin: -7px 0;
                 border-radius: 10px;
-            }
-            QSlider::handle:horizontal:hover {
-                background: #3b82f6;
-            }
-            QSlider::sub-page:horizontal {
-                background: #2563eb;
+            }}
+            QSlider::handle:horizontal:hover {{
+                background: {Theme._lighten_color(Theme.ACCENT_BLUE, 10)};
+            }}
+            QSlider::sub-page:horizontal {{
+                background: {Theme.ACCENT_BLUE};
                 border-radius: 4px;
-            }
+            }}
         """)
         self.brightness_slider.valueChanged.connect(self._on_brightness_changed)
         slider_layout.addWidget(self.brightness_slider)
-        
+
         # High icon/label
         high_label = QLabel("High")
-        high_label.setStyleSheet("color: #999999; font-size: 14px;")
+        high_label.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 14px;")
         slider_layout.addWidget(high_label)
-        
+
         card_layout.addWidget(slider_container)
-        
+
         # Auto-brightness option (placeholder for future)
         auto_brightness_label = QLabel("Auto-brightness based on ambient light (not available)")
-        auto_brightness_label.setStyleSheet("color: #666666; font-size: 14px; font-style: italic;")
+        auto_brightness_label.setStyleSheet(f"color: {Theme._darken_color(Theme.TEXT_SECONDARY, 30)}; font-size: 14px; font-style: italic;")
         card_layout.addWidget(auto_brightness_label)
         
         section_layout.addWidget(card)
@@ -172,34 +173,34 @@ class DisplaySettingsWidget(QWidget):
         
         # Section title
         title = QLabel("Screen Timeout")
-        title.setStyleSheet("color: #ffffff; font-size: 20px; font-weight: 600;")
+        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 20px; font-weight: 600;")
         section_layout.addWidget(title)
-        
+
         # Timeout card
         card = QFrame()
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #1a1a1a;
+        card.setStyleSheet(f"""
+            QFrame {{
+                background-color: {Theme.BG_CARD};
                 border-radius: 10px;
                 padding: 20px;
-            }
+            }}
         """)
         card_layout = QVBoxLayout(card)
         card_layout.setSpacing(15)
-        
+
         # Description
         desc = QLabel("Turn off display after period of inactivity")
-        desc.setStyleSheet("color: #999999; font-size: 16px;")
+        desc.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 16px;")
         card_layout.addWidget(desc)
-        
+
         # Timeout selector
         timeout_container = QWidget()
         timeout_layout = QHBoxLayout(timeout_container)
         timeout_layout.setContentsMargins(0, 0, 0, 0)
         timeout_layout.setSpacing(15)
-        
+
         timeout_label = QLabel("Timeout after:")
-        timeout_label.setStyleSheet("color: #ffffff; font-size: 16px;")
+        timeout_label.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 16px;")
         timeout_layout.addWidget(timeout_label)
         
         self.timeout_combo = QComboBox()
@@ -212,37 +213,37 @@ class DisplaySettingsWidget(QWidget):
             "15 minutes",
             "30 minutes"
         ])
-        self.timeout_combo.setStyleSheet("""
-            QComboBox {
-                background-color: #262626;
-                color: #ffffff;
-                border: 2px solid #333333;
+        self.timeout_combo.setStyleSheet(f"""
+            QComboBox {{
+                background-color: {Theme._darken_color(Theme.BG_CARD, 10)};
+                color: {Theme.TEXT_PRIMARY};
+                border: 2px solid {Theme.BORDER_SUBTLE};
                 border-radius: 8px;
                 padding: 10px 15px;
                 font-size: 16px;
                 min-width: 200px;
-            }
-            QComboBox:hover {
-                border-color: #2563eb;
-            }
-            QComboBox::drop-down {
+            }}
+            QComboBox:hover {{
+                border-color: {Theme.ACCENT_BLUE};
+            }}
+            QComboBox::drop-down {{
                 border: none;
                 width: 30px;
-            }
-            QComboBox::down-arrow {
+            }}
+            QComboBox::down-arrow {{
                 image: none;
                 border-left: 5px solid transparent;
                 border-right: 5px solid transparent;
-                border-top: 7px solid #ffffff;
+                border-top: 7px solid {Theme.TEXT_PRIMARY};
                 margin-right: 10px;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #262626;
-                color: #ffffff;
-                border: 2px solid #333333;
-                selection-background-color: #2563eb;
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: {Theme._darken_color(Theme.BG_CARD, 10)};
+                color: {Theme.TEXT_PRIMARY};
+                border: 2px solid {Theme.BORDER_SUBTLE};
+                selection-background-color: {Theme.ACCENT_BLUE};
                 outline: none;
-            }
+            }}
         """)
         self.timeout_combo.currentTextChanged.connect(self._on_timeout_changed)
         timeout_layout.addWidget(self.timeout_combo)
@@ -264,33 +265,33 @@ class DisplaySettingsWidget(QWidget):
         
         # Section title
         title = QLabel("Theme Preferences")
-        title.setStyleSheet("color: #ffffff; font-size: 20px; font-weight: 600;")
+        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 20px; font-weight: 600;")
         section_layout.addWidget(title)
-        
+
         # Theme card
         card = QFrame()
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #1a1a1a;
+        card.setStyleSheet(f"""
+            QFrame {{
+                background-color: {Theme.BG_CARD};
                 border-radius: 10px;
                 padding: 20px;
-            }
+            }}
         """)
         card_layout = QVBoxLayout(card)
         card_layout.setSpacing(15)
-        
+
         # Current theme info
         current_theme = QLabel("Current Theme: Dark (default)")
-        current_theme.setStyleSheet("color: #ffffff; font-size: 16px;")
+        current_theme.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 16px;")
         card_layout.addWidget(current_theme)
-        
+
         # Theme note
         theme_note = QLabel(
             "DeadStream uses a dark theme optimized for viewing concerts in low-light "
             "environments. Additional themes may be added in future versions."
         )
         theme_note.setWordWrap(True)
-        theme_note.setStyleSheet("color: #999999; font-size: 14px;")
+        theme_note.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 14px;")
         card_layout.addWidget(theme_note)
         
         section_layout.addWidget(card)
@@ -301,7 +302,7 @@ class DisplaySettingsWidget(QWidget):
         """Create a visual divider line"""
         divider = QFrame()
         divider.setFrameShape(QFrame.HLine)
-        divider.setStyleSheet("background-color: #333333; max-height: 1px;")
+        divider.setStyleSheet(f"background-color: {Theme.BORDER_SUBTLE}; max-height: 1px;")
         return divider
     
     def _create_action_buttons(self):
@@ -313,20 +314,20 @@ class DisplaySettingsWidget(QWidget):
         
         # Reset to defaults button
         reset_btn = QPushButton("Reset to Defaults")
-        reset_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #262626;
-                color: #ffffff;
-                border: 2px solid #333333;
+        reset_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {Theme._darken_color(Theme.BG_CARD, 10)};
+                color: {Theme.TEXT_PRIMARY};
+                border: 2px solid {Theme.BORDER_SUBTLE};
                 border-radius: 10px;
                 padding: 15px 30px;
                 font-size: 16px;
                 font-weight: 600;
-            }
-            QPushButton:hover {
-                background-color: #333333;
-                border-color: #666666;
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {Theme.BG_CARD};
+                border-color: {Theme.TEXT_SECONDARY};
+            }}
         """)
         reset_btn.clicked.connect(self._reset_to_defaults)
         button_layout.addWidget(reset_btn)
@@ -386,9 +387,9 @@ class DisplaySettingsWidget(QWidget):
 # Standalone test
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    
+
     widget = DisplaySettingsWidget()
-    widget.setStyleSheet("background-color: #121212;")
+    widget.setStyleSheet(f"background-color: {Theme.BG_PRIMARY};")
     widget.setWindowTitle("Display Settings Test")
     widget.setGeometry(100, 100, 1024, 600)
     

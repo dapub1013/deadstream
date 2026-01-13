@@ -25,6 +25,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 
 from src.settings import get_settings
+from src.ui.styles.theme import Theme
 
 
 class AudioSettingsWidget(QWidget):
@@ -90,13 +91,13 @@ class AudioSettingsWidget(QWidget):
         title_font.setPointSize(24)
         title_font.setBold(True)
         title.setFont(title_font)
-        title.setStyleSheet("color: #ffffff;")
+        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY};")
         layout.addWidget(title)
-        
+
         # Subtitle
         subtitle = QLabel("Configure volume and audio quality preferences")
-        subtitle.setStyleSheet("""
-            color: #9ca3af;
+        subtitle.setStyleSheet(f"""
+            color: {Theme.TEXT_SECONDARY};
             font-size: 14px;
         """)
         layout.addWidget(subtitle)
@@ -106,12 +107,12 @@ class AudioSettingsWidget(QWidget):
     def _create_volume_card(self):
         """Create the volume settings card"""
         card = QFrame()
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #1f1f1f;
-                border: 1px solid #333333;
+        card.setStyleSheet(f"""
+            QFrame {{
+                background-color: {Theme.BG_CARD};
+                border: 1px solid {Theme.BORDER_SUBTLE};
                 border-radius: 12px;
-            }
+            }}
         """)
         
         layout = QVBoxLayout(card)
@@ -124,13 +125,13 @@ class AudioSettingsWidget(QWidget):
         title_font.setPointSize(16)
         title_font.setBold(True)
         title.setFont(title_font)
-        title.setStyleSheet("color: #ffffff;")
+        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY};")
         layout.addWidget(title)
-        
+
         # Description
         desc = QLabel("Set the initial volume level when starting playback")
-        desc.setStyleSheet("""
-            color: #9ca3af;
+        desc.setStyleSheet(f"""
+            color: {Theme.TEXT_SECONDARY};
             font-size: 13px;
         """)
         layout.addWidget(desc)
@@ -141,8 +142,8 @@ class AudioSettingsWidget(QWidget):
         
         # Volume icon/label
         vol_label = QLabel("Volume:")
-        vol_label.setStyleSheet("""
-            color: #ffffff;
+        vol_label.setStyleSheet(f"""
+            color: {Theme.TEXT_PRIMARY};
             font-size: 14px;
             font-weight: 500;
         """)
@@ -182,8 +183,8 @@ class AudioSettingsWidget(QWidget):
         # Volume percentage label
         self.volume_value_label = QLabel(f"{self.default_volume}%")
         self.volume_value_label.setFixedWidth(50)
-        self.volume_value_label.setStyleSheet("""
-            color: #ffffff;
+        self.volume_value_label.setStyleSheet(f"""
+            color: {Theme.TEXT_PRIMARY};
             font-size: 16px;
             font-weight: bold;
         """)
@@ -195,8 +196,8 @@ class AudioSettingsWidget(QWidget):
         note = QLabel("[INFO] This sets the volume when you first start playing a show. "
                      "You can adjust volume during playback.")
         note.setWordWrap(True)
-        note.setStyleSheet("""
-            color: #6b7280;
+        note.setStyleSheet(f"""
+            color: {Theme.TEXT_SECONDARY};
             font-size: 12px;
             font-style: italic;
         """)
@@ -207,32 +208,32 @@ class AudioSettingsWidget(QWidget):
     def _create_quality_card(self):
         """Create the audio quality preference card"""
         card = QFrame()
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #1f1f1f;
-                border: 1px solid #333333;
+        card.setStyleSheet(f"""
+            QFrame {{
+                background-color: {Theme.BG_CARD};
+                border: 1px solid {Theme.BORDER_SUBTLE};
                 border-radius: 12px;
-            }
+            }}
         """)
-        
+
         layout = QVBoxLayout(card)
         layout.setContentsMargins(25, 25, 25, 25)
         layout.setSpacing(20)
-        
+
         # Card title
         title = QLabel("Preferred Audio Quality")
         title_font = QFont()
         title_font.setPointSize(16)
         title_font.setBold(True)
         title.setFont(title_font)
-        title.setStyleSheet("color: #ffffff;")
+        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY};")
         layout.addWidget(title)
-        
+
         # Description
         desc = QLabel("Choose which audio format to prefer when multiple versions are available")
         desc.setWordWrap(True)
-        desc.setStyleSheet("""
-            color: #9ca3af;
+        desc.setStyleSheet(f"""
+            color: {Theme.TEXT_SECONDARY};
             font-size: 13px;
         """)
         layout.addWidget(desc)
@@ -242,69 +243,69 @@ class AudioSettingsWidget(QWidget):
         
         # FLAC option
         flac_radio = QRadioButton("FLAC (Lossless)")
-        flac_radio.setStyleSheet("""
-            QRadioButton {
-                color: #ffffff;
+        flac_radio.setStyleSheet(f"""
+            QRadioButton {{
+                color: {Theme.TEXT_PRIMARY};
                 font-size: 14px;
                 spacing: 10px;
-            }
-            QRadioButton::indicator {
+            }}
+            QRadioButton::indicator {{
                 width: 20px;
                 height: 20px;
-            }
-            QRadioButton::indicator:unchecked {
-                background: #333333;
-                border: 2px solid #6b7280;
+            }}
+            QRadioButton::indicator:unchecked {{
+                background: {Theme.BORDER_SUBTLE};
+                border: 2px solid {Theme.TEXT_SECONDARY};
                 border-radius: 10px;
-            }
-            QRadioButton::indicator:checked {
-                background: #8b5cf6;
-                border: 2px solid #8b5cf6;
+            }}
+            QRadioButton::indicator:checked {{
+                background: {Theme.ACCENT_BLUE};
+                border: 2px solid {Theme.ACCENT_BLUE};
                 border-radius: 10px;
-            }
+            }}
         """)
         flac_radio.setChecked(True)  # Default
         self.quality_group.addButton(flac_radio, 0)
         layout.addWidget(flac_radio)
-        
+
         # FLAC description
         flac_desc = QLabel("    Highest quality, larger file size, may use more bandwidth")
-        flac_desc.setStyleSheet("""
-            color: #6b7280;
+        flac_desc.setStyleSheet(f"""
+            color: {Theme.TEXT_SECONDARY};
             font-size: 12px;
         """)
         layout.addWidget(flac_desc)
         
         # MP3 option
         mp3_radio = QRadioButton("MP3 (Compressed)")
-        mp3_radio.setStyleSheet("""
-            QRadioButton {
-                color: #ffffff;
+        mp3_radio.setStyleSheet(f"""
+            QRadioButton {{
+                color: {Theme.TEXT_PRIMARY};
                 font-size: 14px;
                 spacing: 10px;
-            }
-            QRadioButton::indicator {
+            }}
+            QRadioButton::indicator {{
                 width: 20px;
                 height: 20px;
-            }
-            QRadioButton::indicator:unchecked {
-                background: #333333;
-                border: 2px solid #6b7280;
+            }}
+            QRadioButton::indicator:unchecked {{
+                background: {Theme.BORDER_SUBTLE};
+                border: 2px solid {Theme.TEXT_SECONDARY};
                 border-radius: 10px;
-            }
-            QRadioButton::indicator:checked {
-                background: #8b5cf6;
-                border: 2px solid #8b5cf6;
+            }}
+            QRadioButton::indicator:checked {{
+                background: {Theme.ACCENT_BLUE};
+                border: 2px solid {Theme.ACCENT_BLUE};
                 border-radius: 10px;
-            }
+            }}
         """)
         self.quality_group.addButton(mp3_radio, 1)
         layout.addWidget(mp3_radio)
-        
+
         # MP3 description
         mp3_desc = QLabel("    Good quality, smaller file size, faster streaming")
-        mp3_desc.setStyleSheet("""
-            color: #6b7280;
+        mp3_desc.setStyleSheet(f"""
+            color: {Theme.TEXT_SECONDARY};
             font-size: 12px;
         """)
         layout.addWidget(mp3_desc)
@@ -316,8 +317,8 @@ class AudioSettingsWidget(QWidget):
         note = QLabel("[INFO] DeadStream's smart selection already considers quality. "
                      "This preference applies when multiple high-quality versions exist.")
         note.setWordWrap(True)
-        note.setStyleSheet("""
-            color: #6b7280;
+        note.setStyleSheet(f"""
+            color: {Theme.TEXT_SECONDARY};
             font-size: 12px;
             font-style: italic;
             margin-top: 10px;
@@ -329,25 +330,25 @@ class AudioSettingsWidget(QWidget):
     def _create_output_info_card(self):
         """Create the audio output information card"""
         card = QFrame()
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #1f1f1f;
-                border: 1px solid #333333;
+        card.setStyleSheet(f"""
+            QFrame {{
+                background-color: {Theme.BG_CARD};
+                border: 1px solid {Theme.BORDER_SUBTLE};
                 border-radius: 12px;
-            }
+            }}
         """)
-        
+
         layout = QVBoxLayout(card)
         layout.setContentsMargins(25, 25, 25, 25)
         layout.setSpacing(15)
-        
+
         # Card title
         title = QLabel("Audio Output Information")
         title_font = QFont()
         title_font.setPointSize(16)
         title_font.setBold(True)
         title.setFont(title_font)
-        title.setStyleSheet("color: #ffffff;")
+        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY};")
         layout.addWidget(title)
         
         # Info rows
@@ -363,15 +364,15 @@ class AudioSettingsWidget(QWidget):
             row.setSpacing(10)
             
             label = QLabel(label_text)
-            label.setStyleSheet("""
-                color: #9ca3af;
+            label.setStyleSheet(f"""
+                color: {Theme.TEXT_SECONDARY};
                 font-size: 13px;
             """)
             row.addWidget(label)
-            
+
             value = QLabel(value_text)
-            value.setStyleSheet("""
-                color: #ffffff;
+            value.setStyleSheet(f"""
+                color: {Theme.TEXT_PRIMARY};
                 font-size: 13px;
                 font-weight: 500;
             """)
@@ -383,8 +384,8 @@ class AudioSettingsWidget(QWidget):
         note = QLabel("[INFO] Advanced audio configuration (DAC output) will be available "
                      "in a future update.")
         note.setWordWrap(True)
-        note.setStyleSheet("""
-            color: #6b7280;
+        note.setStyleSheet(f"""
+            color: {Theme.TEXT_SECONDARY};
             font-size: 12px;
             font-style: italic;
             margin-top: 10px;

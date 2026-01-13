@@ -27,6 +27,7 @@ from PyQt5.QtCore import Qt, pyqtSignal, QTimer
 from PyQt5.QtGui import QFont
 
 from src.settings import get_settings
+from src.ui.styles.theme import Theme
 
 try:
     import pytz
@@ -97,13 +98,13 @@ class DateTimeSettingsWidget(QWidget):
         title_font.setPointSize(24)
         title_font.setBold(True)
         title.setFont(title_font)
-        title.setStyleSheet("color: #ffffff;")
+        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY};")
         layout.addWidget(title)
-        
+
         # Subtitle
         subtitle = QLabel("Configure timezone and display format preferences")
-        subtitle.setStyleSheet("""
-            color: #9ca3af;
+        subtitle.setStyleSheet(f"""
+            color: {Theme.TEXT_SECONDARY};
             font-size: 14px;
         """)
         layout.addWidget(subtitle)
@@ -113,55 +114,55 @@ class DateTimeSettingsWidget(QWidget):
     def _create_current_time_card(self):
         """Create the current time display card"""
         card = QFrame()
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #1f1f1f;
-                border: 1px solid #333333;
+        card.setStyleSheet(f"""
+            QFrame {{
+                background-color: {Theme.BG_CARD};
+                border: 1px solid {Theme.BORDER_SUBTLE};
                 border-radius: 12px;
-            }
+            }}
         """)
-        
+
         layout = QVBoxLayout(card)
         layout.setContentsMargins(25, 25, 25, 25)
         layout.setSpacing(15)
-        
+
         # Card title
         title = QLabel("Current Time")
         title_font = QFont()
         title_font.setPointSize(16)
         title_font.setBold(True)
         title.setFont(title_font)
-        title.setStyleSheet("color: #ffffff;")
+        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY};")
         layout.addWidget(title)
-        
+
         # Current time display (large)
         self.current_time_label = QLabel("--:--:--")
         time_font = QFont()
         time_font.setPointSize(36)
         time_font.setBold(True)
         self.current_time_label.setFont(time_font)
-        self.current_time_label.setStyleSheet("""
-            color: #f59e0b;
-            background-color: #262626;
+        self.current_time_label.setStyleSheet(f"""
+            color: {Theme.ACCENT_YELLOW};
+            background-color: {Theme._darken_color(Theme.BG_CARD, 10)};
             border-radius: 8px;
             padding: 20px;
         """)
         self.current_time_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.current_time_label)
-        
+
         # Current date display
         self.current_date_label = QLabel("--/--/----")
         date_font = QFont()
         date_font.setPointSize(18)
         self.current_date_label.setFont(date_font)
-        self.current_date_label.setStyleSheet("color: #9ca3af;")
+        self.current_date_label.setStyleSheet(f"color: {Theme.TEXT_SECONDARY};")
         self.current_date_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.current_date_label)
-        
+
         # Timezone info
         self.timezone_info_label = QLabel("Timezone: America/New_York (EST)")
-        self.timezone_info_label.setStyleSheet("""
-            color: #6b7280;
+        self.timezone_info_label.setStyleSheet(f"""
+            color: {Theme._darken_color(Theme.TEXT_SECONDARY, 20)};
             font-size: 13px;
         """)
         self.timezone_info_label.setAlignment(Qt.AlignCenter)
@@ -172,12 +173,12 @@ class DateTimeSettingsWidget(QWidget):
     def _create_timezone_card(self):
         """Create the timezone selection card"""
         card = QFrame()
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #1f1f1f;
-                border: 1px solid #333333;
+        card.setStyleSheet(f"""
+            QFrame {{
+                background-color: {Theme.BG_CARD};
+                border: 1px solid {Theme.BORDER_SUBTLE};
                 border-radius: 12px;
-            }
+            }}
         """)
         
         layout = QVBoxLayout(card)
@@ -190,25 +191,25 @@ class DateTimeSettingsWidget(QWidget):
         title_font.setPointSize(16)
         title_font.setBold(True)
         title.setFont(title_font)
-        title.setStyleSheet("color: #ffffff;")
+        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY};")
         layout.addWidget(title)
-        
+
         # Description
         desc = QLabel("Select your timezone for accurate show dates and times")
         desc.setWordWrap(True)
-        desc.setStyleSheet("""
-            color: #9ca3af;
+        desc.setStyleSheet(f"""
+            color: {Theme.TEXT_SECONDARY};
             font-size: 13px;
         """)
         layout.addWidget(desc)
-        
+
         # Timezone selector
         tz_layout = QHBoxLayout()
         tz_layout.setSpacing(15)
-        
+
         tz_label = QLabel("Timezone:")
-        tz_label.setStyleSheet("""
-            color: #ffffff;
+        tz_label.setStyleSheet(f"""
+            color: {Theme.TEXT_PRIMARY};
             font-size: 14px;
             font-weight: 500;
         """)
@@ -239,49 +240,49 @@ class DateTimeSettingsWidget(QWidget):
         for tz_id, tz_name in timezones:
             self.timezone_combo.addItem(tz_name, tz_id)
         
-        self.timezone_combo.setStyleSheet("""
-            QComboBox {
-                background-color: #262626;
-                color: #ffffff;
-                border: 2px solid #333333;
+        self.timezone_combo.setStyleSheet(f"""
+            QComboBox {{
+                background-color: {Theme._darken_color(Theme.BG_CARD, 10)};
+                color: {Theme.TEXT_PRIMARY};
+                border: 2px solid {Theme.BORDER_SUBTLE};
                 border-radius: 8px;
                 padding: 10px 15px;
                 font-size: 14px;
                 min-width: 300px;
-            }
-            QComboBox:hover {
-                border-color: #f59e0b;
-            }
-            QComboBox::drop-down {
+            }}
+            QComboBox:hover {{
+                border-color: {Theme.ACCENT_YELLOW};
+            }}
+            QComboBox::drop-down {{
                 border: none;
                 width: 30px;
-            }
-            QComboBox::down-arrow {
+            }}
+            QComboBox::down-arrow {{
                 image: none;
                 border-left: 5px solid transparent;
                 border-right: 5px solid transparent;
-                border-top: 7px solid #ffffff;
+                border-top: 7px solid {Theme.TEXT_PRIMARY};
                 margin-right: 10px;
-            }
-            QComboBox QAbstractItemView {
-                background-color: #262626;
-                color: #ffffff;
-                border: 2px solid #333333;
-                selection-background-color: #f59e0b;
+            }}
+            QComboBox QAbstractItemView {{
+                background-color: {Theme._darken_color(Theme.BG_CARD, 10)};
+                color: {Theme.TEXT_PRIMARY};
+                border: 2px solid {Theme.BORDER_SUBTLE};
+                selection-background-color: {Theme.ACCENT_YELLOW};
                 outline: none;
-            }
+            }}
         """)
         self.timezone_combo.currentIndexChanged.connect(self._on_timezone_changed)
         tz_layout.addWidget(self.timezone_combo, stretch=1)
-        
+
         layout.addLayout(tz_layout)
-        
+
         # Info note
         note = QLabel("[INFO] Changing timezone affects how show dates are displayed. "
                      "Recordings are always stored with their original venue timezone.")
         note.setWordWrap(True)
-        note.setStyleSheet("""
-            color: #6b7280;
+        note.setStyleSheet(f"""
+            color: {Theme._darken_color(Theme.TEXT_SECONDARY, 20)};
             font-size: 12px;
             font-style: italic;
         """)
@@ -292,12 +293,12 @@ class DateTimeSettingsWidget(QWidget):
     def _create_format_card(self):
         """Create the format preferences card"""
         card = QFrame()
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #1f1f1f;
-                border: 1px solid #333333;
+        card.setStyleSheet(f"""
+            QFrame {{
+                background-color: {Theme.BG_CARD};
+                border: 1px solid {Theme.BORDER_SUBTLE};
                 border-radius: 12px;
-            }
+            }}
         """)
         
         layout = QVBoxLayout(card)
@@ -310,7 +311,7 @@ class DateTimeSettingsWidget(QWidget):
         title_font.setPointSize(16)
         title_font.setBold(True)
         title.setFont(title_font)
-        title.setStyleSheet("color: #ffffff;")
+        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY};")
         layout.addWidget(title)
         
         # Time format section
@@ -338,8 +339,8 @@ class DateTimeSettingsWidget(QWidget):
         
         # Section label
         label = QLabel("Time Format:")
-        label.setStyleSheet("""
-            color: #ffffff;
+        label.setStyleSheet(f"""
+            color: {Theme.TEXT_PRIMARY};
             font-size: 15px;
             font-weight: 600;
         """)
@@ -351,25 +352,25 @@ class DateTimeSettingsWidget(QWidget):
         # 12-hour option
         radio_12h = QRadioButton("12-hour (3:45 PM)")
         radio_12h.setStyleSheet("""
-            QRadioButton {
-                color: #ffffff;
+            QRadioButton {{
+                color: {Theme.TEXT_PRIMARY};
                 font-size: 14px;
                 spacing: 10px;
-            }
-            QRadioButton::indicator {
+            }}
+            QRadioButton::indicator {{
                 width: 20px;
                 height: 20px;
-            }
-            QRadioButton::indicator:unchecked {
-                background: #333333;
-                border: 2px solid #6b7280;
+            }}
+            QRadioButton::indicator:unchecked {{
+                background: {Theme.BORDER_SUBTLE};
+                border: 2px solid {Theme.TEXT_SECONDARY};
                 border-radius: 10px;
-            }
-            QRadioButton::indicator:checked {
-                background: #f59e0b;
-                border: 2px solid #f59e0b;
+            }}
+            QRadioButton::indicator:checked {{
+                background: {Theme.ACCENT_YELLOW};
+                border: 2px solid {Theme.ACCENT_YELLOW};
                 border-radius: 10px;
-            }
+            }}
         """)
         radio_12h.setChecked(True)  # Default
         self.time_format_group.addButton(radio_12h, 0)
@@ -378,25 +379,25 @@ class DateTimeSettingsWidget(QWidget):
         # 24-hour option
         radio_24h = QRadioButton("24-hour (15:45)")
         radio_24h.setStyleSheet("""
-            QRadioButton {
-                color: #ffffff;
+            QRadioButton {{
+                color: {Theme.TEXT_PRIMARY};
                 font-size: 14px;
                 spacing: 10px;
-            }
-            QRadioButton::indicator {
+            }}
+            QRadioButton::indicator {{
                 width: 20px;
                 height: 20px;
-            }
-            QRadioButton::indicator:unchecked {
-                background: #333333;
-                border: 2px solid #6b7280;
+            }}
+            QRadioButton::indicator:unchecked {{
+                background: {Theme.BORDER_SUBTLE};
+                border: 2px solid {Theme.TEXT_SECONDARY};
                 border-radius: 10px;
-            }
-            QRadioButton::indicator:checked {
-                background: #f59e0b;
-                border: 2px solid #f59e0b;
+            }}
+            QRadioButton::indicator:checked {{
+                background: {Theme.ACCENT_YELLOW};
+                border: 2px solid {Theme.ACCENT_YELLOW};
                 border-radius: 10px;
-            }
+            }}
         """)
         self.time_format_group.addButton(radio_24h, 1)
         section_layout.addWidget(radio_24h)
@@ -415,8 +416,8 @@ class DateTimeSettingsWidget(QWidget):
         
         # Section label
         label = QLabel("Date Format:")
-        label.setStyleSheet("""
-            color: #ffffff;
+        label.setStyleSheet(f"""
+            color: {Theme.TEXT_PRIMARY};
             font-size: 15px;
             font-weight: 600;
         """)
@@ -428,25 +429,25 @@ class DateTimeSettingsWidget(QWidget):
         # US format option
         radio_us = QRadioButton("US Format (MM/DD/YYYY)")
         radio_us.setStyleSheet("""
-            QRadioButton {
-                color: #ffffff;
+            QRadioButton {{
+                color: {Theme.TEXT_PRIMARY};
                 font-size: 14px;
                 spacing: 10px;
-            }
-            QRadioButton::indicator {
+            }}
+            QRadioButton::indicator {{
                 width: 20px;
                 height: 20px;
-            }
-            QRadioButton::indicator:unchecked {
-                background: #333333;
-                border: 2px solid #6b7280;
+            }}
+            QRadioButton::indicator:unchecked {{
+                background: {Theme.BORDER_SUBTLE};
+                border: 2px solid {Theme.TEXT_SECONDARY};
                 border-radius: 10px;
-            }
-            QRadioButton::indicator:checked {
-                background: #f59e0b;
-                border: 2px solid #f59e0b;
+            }}
+            QRadioButton::indicator:checked {{
+                background: {Theme.ACCENT_YELLOW};
+                border: 2px solid {Theme.ACCENT_YELLOW};
                 border-radius: 10px;
-            }
+            }}
         """)
         radio_us.setChecked(True)  # Default
         self.date_format_group.addButton(radio_us, 0)
@@ -455,25 +456,25 @@ class DateTimeSettingsWidget(QWidget):
         # International format option
         radio_intl = QRadioButton("International Format (DD/MM/YYYY)")
         radio_intl.setStyleSheet("""
-            QRadioButton {
-                color: #ffffff;
+            QRadioButton {{
+                color: {Theme.TEXT_PRIMARY};
                 font-size: 14px;
                 spacing: 10px;
-            }
-            QRadioButton::indicator {
+            }}
+            QRadioButton::indicator {{
                 width: 20px;
                 height: 20px;
-            }
-            QRadioButton::indicator:unchecked {
-                background: #333333;
-                border: 2px solid #6b7280;
+            }}
+            QRadioButton::indicator:unchecked {{
+                background: {Theme.BORDER_SUBTLE};
+                border: 2px solid {Theme.TEXT_SECONDARY};
                 border-radius: 10px;
-            }
-            QRadioButton::indicator:checked {
-                background: #f59e0b;
-                border: 2px solid #f59e0b;
+            }}
+            QRadioButton::indicator:checked {{
+                background: {Theme.ACCENT_YELLOW};
+                border: 2px solid {Theme.ACCENT_YELLOW};
                 border-radius: 10px;
-            }
+            }}
         """)
         self.date_format_group.addButton(radio_intl, 1)
         section_layout.addWidget(radio_intl)
@@ -612,7 +613,7 @@ def test_datetime_settings():
     
     # Create and show widget
     widget = DateTimeSettingsWidget()
-    widget.setStyleSheet("background-color: #121212;")
+    widget.setStyleSheet(f"background-color: {Theme.BG_PRIMARY};")
     widget.resize(700, 700)
     widget.show()
     

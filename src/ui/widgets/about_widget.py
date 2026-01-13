@@ -20,6 +20,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont
 
 from src.database.queries import get_show_count
+from src.ui.styles.theme import Theme
 
 
 class AboutWidget(QWidget):
@@ -51,12 +52,12 @@ class AboutWidget(QWidget):
         
         # Title
         title = QLabel("About")
-        title.setStyleSheet("color: white; font-size: 28px; font-weight: bold;")
+        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 28px; font-weight: bold;")
         header_layout.addWidget(title)
-        
+
         # Subtitle
         subtitle = QLabel("Device information and version")
-        subtitle.setStyleSheet("color: #9ca3af; font-size: 14px;")
+        subtitle.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 14px;")
         header_layout.addWidget(subtitle)
         
         main_layout.addLayout(header_layout)
@@ -151,43 +152,43 @@ class AboutWidget(QWidget):
             QFrame containing the information card
         """
         card = QFrame()
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #111827;
+        card.setStyleSheet(f"""
+            QFrame {{
+                background-color: {Theme.BG_CARD};
                 border-radius: 8px;
                 padding: 20px;
-            }
+            }}
         """)
-        
+
         card_layout = QVBoxLayout(card)
         card_layout.setSpacing(15)
         card_layout.setContentsMargins(20, 20, 20, 20)
-        
+
         # Card title
         title_label = QLabel(title)
-        title_label.setStyleSheet("color: white; font-size: 18px; font-weight: 600;")
+        title_label.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 18px; font-weight: 600;")
         card_layout.addWidget(title_label)
-        
+
         # Separator line
         separator = QFrame()
         separator.setFrameShape(QFrame.HLine)
-        separator.setStyleSheet("background-color: #374151; max-height: 1px;")
+        separator.setStyleSheet(f"background-color: {Theme.BORDER_SUBTLE}; max-height: 1px;")
         card_layout.addWidget(separator)
-        
+
         # Info items
         for key, value in info_items:
             item_layout = QHBoxLayout()
             item_layout.setSpacing(20)
-            
+
             # Key label (left-aligned)
             key_label = QLabel(key)
-            key_label.setStyleSheet("color: #9ca3af; font-size: 14px;")
+            key_label.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 14px;")
             key_label.setMinimumWidth(150)
             item_layout.addWidget(key_label)
-            
+
             # Value label (left-aligned)
             value_label = QLabel(str(value))
-            value_label.setStyleSheet("color: white; font-size: 14px;")
+            value_label.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 14px;")
             value_label.setWordWrap(True)
             item_layout.addWidget(value_label, 1)
             
@@ -206,7 +207,7 @@ if __name__ == "__main__":
     widget = AboutWidget()
     widget.setWindowTitle("About Widget Test")
     widget.setGeometry(100, 100, 600, 700)
-    widget.setStyleSheet("background-color: #000000;")
+    widget.setStyleSheet(f"background-color: {Theme.BG_PRIMARY};")
     widget.show()
     
     sys.exit(app.exec_())

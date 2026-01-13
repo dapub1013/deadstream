@@ -23,6 +23,8 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QFont
 
+from src.ui.styles.theme import Theme
+
 
 class NetworkSettingsWidget(QWidget):
     """Network settings and WiFi management widget"""
@@ -57,8 +59,8 @@ class NetworkSettingsWidget(QWidget):
         
         # Available Networks Section
         networks_header = QLabel("Available Networks")
-        networks_header.setStyleSheet("""
-            color: #ffffff;
+        networks_header.setStyleSheet(f"""
+            color: {Theme.TEXT_PRIMARY};
             font-size: 20px;
             font-weight: bold;
             margin-top: 20px;
@@ -89,43 +91,43 @@ class NetworkSettingsWidget(QWidget):
         button_layout.setSpacing(15)
         
         refresh_btn = QPushButton("Refresh Networks")
-        refresh_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #2563eb;
-                color: #ffffff;
+        refresh_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {Theme.ACCENT_BLUE};
+                color: {Theme.TEXT_PRIMARY};
                 border: none;
                 border-radius: 10px;
                 font-size: 16px;
                 font-weight: 600;
                 padding: 15px 30px;
-            }
-            QPushButton:hover {
-                background-color: #1d4ed8;
-            }
-            QPushButton:pressed {
-                background-color: #1e40af;
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {Theme._lighten_color(Theme.ACCENT_BLUE, 10)};
+            }}
+            QPushButton:pressed {{
+                background-color: {Theme._darken_color(Theme.ACCENT_BLUE, 10)};
+            }}
         """)
         refresh_btn.clicked.connect(self.refresh_network_info)
         button_layout.addWidget(refresh_btn)
         
         advanced_btn = QPushButton("Advanced Settings")
-        advanced_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #1f2937;
-                color: #ffffff;
-                border: 2px solid #374151;
+        advanced_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {Theme.BG_CARD};
+                color: {Theme.TEXT_PRIMARY};
+                border: 2px solid {Theme.BORDER_SUBTLE};
                 border-radius: 10px;
                 font-size: 16px;
                 font-weight: 600;
                 padding: 15px 30px;
-            }
-            QPushButton:hover {
-                background-color: #374151;
-            }
-            QPushButton:pressed {
-                background-color: #4b5563;
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {Theme._lighten_color(Theme.BG_CARD, 10)};
+            }}
+            QPushButton:pressed {{
+                background-color: {Theme._lighten_color(Theme.BG_CARD, 20)};
+            }}
         """)
         advanced_btn.clicked.connect(self._show_advanced_settings)
         button_layout.addWidget(advanced_btn)
@@ -139,28 +141,28 @@ class NetworkSettingsWidget(QWidget):
         
         # WiFi icon (using text representation)
         icon_label = QLabel("[WiFi]")
-        icon_label.setStyleSheet("""
-            color: #2563eb;
+        icon_label.setStyleSheet(f"""
+            color: {Theme.ACCENT_BLUE};
             font-size: 28px;
             font-weight: bold;
         """)
         layout.addWidget(icon_label)
-        
+
         # Title and subtitle
         text_layout = QVBoxLayout()
         text_layout.setSpacing(5)
-        
+
         title = QLabel("Network Settings")
-        title.setStyleSheet("""
-            color: #ffffff;
+        title.setStyleSheet(f"""
+            color: {Theme.TEXT_PRIMARY};
             font-size: 28px;
             font-weight: bold;
         """)
         text_layout.addWidget(title)
-        
+
         subtitle = QLabel("Manage WiFi and network connections")
-        subtitle.setStyleSheet("""
-            color: #9ca3af;
+        subtitle.setStyleSheet(f"""
+            color: {Theme.TEXT_SECONDARY};
             font-size: 14px;
         """)
         text_layout.addWidget(subtitle)
@@ -173,46 +175,46 @@ class NetworkSettingsWidget(QWidget):
     def _create_status_card(self):
         """Create the WiFi status information card"""
         card = QFrame()
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #1f2937;
-                border: 2px solid #374151;
+        card.setStyleSheet(f"""
+            QFrame {{
+                background-color: {Theme.BG_CARD};
+                border: 2px solid {Theme.BORDER_SUBTLE};
                 border-radius: 15px;
                 padding: 20px;
-            }
+            }}
         """)
         card.setFixedHeight(200)
-        
+
         layout = QVBoxLayout(card)
         layout.setSpacing(15)
-        
+
         # WiFi toggle and status
         status_layout = QHBoxLayout()
-        
+
         wifi_label = QLabel("WiFi Status:")
-        wifi_label.setStyleSheet("color: #ffffff; font-size: 18px; font-weight: 600;")
+        wifi_label.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 18px; font-weight: 600;")
         status_layout.addWidget(wifi_label)
-        
+
         self.status_indicator = QLabel("Checking...")
-        self.status_indicator.setStyleSheet("color: #fbbf24; font-size: 18px;")
+        self.status_indicator.setStyleSheet(f"color: {Theme.ACCENT_YELLOW}; font-size: 18px;")
         status_layout.addWidget(self.status_indicator)
-        
+
         status_layout.addStretch()
         layout.addLayout(status_layout)
-        
+
         # Current network
         self.current_network_label = QLabel("Network: --")
-        self.current_network_label.setStyleSheet("color: #d1d5db; font-size: 16px;")
+        self.current_network_label.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 16px;")
         layout.addWidget(self.current_network_label)
-        
+
         # Signal strength
         self.signal_strength_label = QLabel("Signal: --")
-        self.signal_strength_label.setStyleSheet("color: #d1d5db; font-size: 16px;")
+        self.signal_strength_label.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 16px;")
         layout.addWidget(self.signal_strength_label)
-        
+
         # IP address
         self.ip_address_label = QLabel("IP Address: --")
-        self.ip_address_label.setStyleSheet("color: #d1d5db; font-size: 16px;")
+        self.ip_address_label.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 16px;")
         layout.addWidget(self.ip_address_label)
         
         layout.addStretch()
@@ -358,7 +360,7 @@ class NetworkSettingsWidget(QWidget):
         # Add network cards
         if not self.networks:
             no_networks = QLabel("No networks found. Click 'Refresh Networks' to scan.")
-            no_networks.setStyleSheet("color: #9ca3af; font-size: 16px; padding: 20px;")
+            no_networks.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 16px; padding: 20px;")
             self.network_list_layout.addWidget(no_networks)
         else:
             for network in self.networks:
@@ -371,31 +373,31 @@ class NetworkSettingsWidget(QWidget):
     def _create_network_card(self, network):
         """Create a card for a single network"""
         card = QFrame()
-        
+
         # Different styling for active network
         if network['active']:
-            card.setStyleSheet("""
-                QFrame {
-                    background-color: #1e3a8a;
-                    border: 2px solid #2563eb;
+            card.setStyleSheet(f"""
+                QFrame {{
+                    background-color: {Theme._darken_color(Theme.ACCENT_BLUE, 30)};
+                    border: 2px solid {Theme.ACCENT_BLUE};
                     border-radius: 10px;
                     padding: 15px;
-                }
-                QFrame:hover {
-                    background-color: #1e40af;
-                }
+                }}
+                QFrame:hover {{
+                    background-color: {Theme._darken_color(Theme.ACCENT_BLUE, 20)};
+                }}
             """)
         else:
-            card.setStyleSheet("""
-                QFrame {
-                    background-color: #1f2937;
-                    border: 2px solid #374151;
+            card.setStyleSheet(f"""
+                QFrame {{
+                    background-color: {Theme.BG_CARD};
+                    border: 2px solid {Theme.BORDER_SUBTLE};
                     border-radius: 10px;
                     padding: 15px;
-                }
-                QFrame:hover {
-                    background-color: #374151;
-                }
+                }}
+                QFrame:hover {{
+                    background-color: {Theme._lighten_color(Theme.BG_CARD, 10)};
+                }}
             """)
         
         card.setFixedHeight(80)
@@ -415,28 +417,28 @@ class NetworkSettingsWidget(QWidget):
         # Security icon
         if network['security'] != 'Open':
             security_icon = QLabel("[Lock]")
-            security_icon.setStyleSheet("color: #fbbf24; font-size: 16px;")
+            security_icon.setStyleSheet(f"color: {Theme.ACCENT_YELLOW}; font-size: 16px;")
             ssid_layout.addWidget(security_icon)
         else:
             public_label = QLabel("[Public]")
-            public_label.setStyleSheet("color: #10b981; font-size: 14px;")
+            public_label.setStyleSheet(f"color: {Theme.ACCENT_GREEN}; font-size: 14px;")
             ssid_layout.addWidget(public_label)
-        
+
         ssid_label = QLabel(network['ssid'])
-        ssid_label.setStyleSheet("color: #ffffff; font-size: 18px; font-weight: 600;")
+        ssid_label.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 18px; font-weight: 600;")
         ssid_layout.addWidget(ssid_label)
-        
+
         if network['active']:
             checkmark = QLabel("[Connected]")
-            checkmark.setStyleSheet("color: #10b981; font-size: 14px; font-weight: 600;")
+            checkmark.setStyleSheet(f"color: {Theme.ACCENT_GREEN}; font-size: 14px; font-weight: 600;")
             ssid_layout.addWidget(checkmark)
-        
+
         ssid_layout.addStretch()
         info_layout.addLayout(ssid_layout)
-        
+
         # Security type
         security_label = QLabel(f"Security: {network['security']}")
-        security_label.setStyleSheet("color: #9ca3af; font-size: 14px;")
+        security_label.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 14px;")
         info_layout.addWidget(security_label)
         
         layout.addLayout(info_layout, stretch=1)
@@ -444,15 +446,15 @@ class NetworkSettingsWidget(QWidget):
         # Signal strength (right side)
         signal_layout = QVBoxLayout()
         signal_layout.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        
+
         signal_label = QLabel(f"{network['signal']}%")
-        signal_label.setStyleSheet("color: #ffffff; font-size: 20px; font-weight: bold;")
+        signal_label.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 20px; font-weight: bold;")
         signal_layout.addWidget(signal_label, alignment=Qt.AlignRight)
-        
+
         # Visual signal strength indicator
         signal_strength = self._get_signal_strength_text(network['signal'])
         strength_label = QLabel(signal_strength)
-        strength_label.setStyleSheet("color: #9ca3af; font-size: 14px;")
+        strength_label.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 14px;")
         signal_layout.addWidget(strength_label, alignment=Qt.AlignRight)
         
         layout.addLayout(signal_layout)
@@ -497,11 +499,11 @@ if __name__ == "__main__":
     from PyQt5.QtWidgets import QApplication
     
     app = QApplication(sys.argv)
-    
+
     widget = NetworkSettingsWidget()
-    widget.setStyleSheet("background-color: #0a0a0a;")
+    widget.setStyleSheet(f"background-color: {Theme.BG_PRIMARY};")
     widget.setWindowTitle("Network Settings Test")
     widget.setGeometry(100, 100, 800, 600)
     widget.show()
-    
+
     sys.exit(app.exec_())

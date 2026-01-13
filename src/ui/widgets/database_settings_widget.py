@@ -20,12 +20,13 @@ from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtGui import QFont
 
 from src.database.queries import (
-    get_show_count, 
+    get_show_count,
     get_venue_count,
     get_date_range,
     get_years_with_shows,
     get_show_count_by_year
 )
+from src.ui.styles.theme import Theme
 
 
 class DatabaseUpdateThread(QThread):
@@ -104,12 +105,12 @@ class DatabaseSettingsWidget(QWidget):
         
         # Title
         title = QLabel("Database")
-        title.setStyleSheet("color: white; font-size: 28px; font-weight: bold;")
+        title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 28px; font-weight: bold;")
         header_layout.addWidget(title)
-        
+
         # Subtitle
         subtitle = QLabel("Show database information and updates")
-        subtitle.setStyleSheet("color: #9ca3af; font-size: 14px;")
+        subtitle.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 14px;")
         header_layout.addWidget(subtitle)
         
         main_layout.addLayout(header_layout)
@@ -134,20 +135,20 @@ class DatabaseSettingsWidget(QWidget):
     def create_statistics_card(self):
         """Create database statistics display card"""
         card = QFrame()
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #1f2937;
+        card.setStyleSheet(f"""
+            QFrame {{
+                background-color: {Theme.BG_CARD};
                 border-radius: 8px;
                 padding: 20px;
-            }
+            }}
         """)
-        
+
         layout = QVBoxLayout()
         layout.setSpacing(15)
-        
+
         # Card title
         card_title = QLabel("Database Statistics")
-        card_title.setStyleSheet("color: white; font-size: 18px; font-weight: bold;")
+        card_title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 18px; font-weight: bold;")
         layout.addWidget(card_title)
         
         # Statistics rows
@@ -182,15 +183,15 @@ class DatabaseSettingsWidget(QWidget):
         
         # Label
         label = QLabel(label_text)
-        label.setStyleSheet("color: #9ca3af; font-size: 16px;")
+        label.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 16px;")
         row_layout.addWidget(label)
-        
+
         # Spacer
         row_layout.addStretch()
-        
+
         # Value
         value = QLabel(value_text)
-        value.setStyleSheet("color: white; font-size: 16px; font-weight: bold;")
+        value.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 16px; font-weight: bold;")
         row_layout.addWidget(value)
         
         row.setLayout(row_layout)
@@ -199,61 +200,61 @@ class DatabaseSettingsWidget(QWidget):
     def create_update_card(self):
         """Create database update controls card"""
         card = QFrame()
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #1f2937;
+        card.setStyleSheet(f"""
+            QFrame {{
+                background-color: {Theme.BG_CARD};
                 border-radius: 8px;
                 padding: 20px;
-            }
+            }}
         """)
-        
+
         layout = QVBoxLayout()
         layout.setSpacing(15)
-        
+
         # Card title
         card_title = QLabel("Database Updates")
-        card_title.setStyleSheet("color: white; font-size: 18px; font-weight: bold;")
+        card_title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 18px; font-weight: bold;")
         layout.addWidget(card_title)
-        
+
         # Description
         desc = QLabel(
             "Check Internet Archive for new shows and recordings. "
             "This will download new show metadata but won't affect existing data."
         )
         desc.setWordWrap(True)
-        desc.setStyleSheet("color: #9ca3af; font-size: 14px;")
+        desc.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 14px;")
         layout.addWidget(desc)
         
         # Update button
         self.update_btn = QPushButton("Update Database")
         self.update_btn.setMinimumHeight(50)
-        self.update_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #2563eb;
-                color: white;
+        self.update_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: {Theme.ACCENT_BLUE};
+                color: {Theme.TEXT_PRIMARY};
                 border: none;
                 border-radius: 8px;
                 font-size: 16px;
                 font-weight: bold;
                 padding: 12px;
-            }
-            QPushButton:hover {
-                background-color: #1d4ed8;
-            }
-            QPushButton:pressed {
-                background-color: #1e40af;
-            }
-            QPushButton:disabled {
-                background-color: #374151;
-                color: #6b7280;
-            }
+            }}
+            QPushButton:hover {{
+                background-color: {Theme._lighten_color(Theme.ACCENT_BLUE, 10)};
+            }}
+            QPushButton:pressed {{
+                background-color: {Theme._darken_color(Theme.ACCENT_BLUE, 10)};
+            }}
+            QPushButton:disabled {{
+                background-color: {Theme._darken_color(Theme.BG_CARD, 10)};
+                color: {Theme.TEXT_SECONDARY};
+            }}
         """)
         self.update_btn.clicked.connect(self.start_database_update)
         layout.addWidget(self.update_btn)
-        
+
         # Status label (hidden by default)
         self.update_status = QLabel("")
-        self.update_status.setStyleSheet("color: #9ca3af; font-size: 14px;")
+        self.update_status.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 14px;")
         self.update_status.setWordWrap(True)
         self.update_status.hide()
         layout.addWidget(self.update_status)
@@ -264,52 +265,52 @@ class DatabaseSettingsWidget(QWidget):
     def create_maintenance_card(self):
         """Create database maintenance card (placeholder for future)"""
         card = QFrame()
-        card.setStyleSheet("""
-            QFrame {
-                background-color: #1f2937;
+        card.setStyleSheet(f"""
+            QFrame {{
+                background-color: {Theme.BG_CARD};
                 border-radius: 8px;
                 padding: 20px;
-            }
+            }}
         """)
-        
+
         layout = QVBoxLayout()
         layout.setSpacing(15)
-        
+
         # Card title
         card_title = QLabel("Database Maintenance")
-        card_title.setStyleSheet("color: white; font-size: 18px; font-weight: bold;")
+        card_title.setStyleSheet(f"color: {Theme.TEXT_PRIMARY}; font-size: 18px; font-weight: bold;")
         layout.addWidget(card_title)
-        
+
         # Description
         desc = QLabel(
             "Advanced database maintenance options. "
             "These features will be available in a future update."
         )
         desc.setWordWrap(True)
-        desc.setStyleSheet("color: #9ca3af; font-size: 14px;")
+        desc.setStyleSheet(f"color: {Theme.TEXT_SECONDARY}; font-size: 14px;")
         layout.addWidget(desc)
-        
+
         # Placeholder buttons (disabled)
         buttons = [
             ("Rebuild Database", "Rebuild database indexes for better performance"),
             ("Backup Database", "Create a backup of the database"),
             ("Reset Database", "Clear all data and start fresh (requires confirmation)")
         ]
-        
+
         for btn_text, tooltip in buttons:
             btn = QPushButton(btn_text)
             btn.setMinimumHeight(44)
             btn.setEnabled(False)
             btn.setToolTip(tooltip)
-            btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #374151;
-                    color: #6b7280;
+            btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {Theme._darken_color(Theme.BG_CARD, 15)};
+                    color: {Theme._darken_color(Theme.TEXT_SECONDARY, 20)};
                     border: none;
                     border-radius: 8px;
                     font-size: 14px;
                     padding: 10px;
-                }
+                }}
             """)
             layout.addWidget(btn)
         
@@ -411,6 +412,7 @@ if __name__ == "__main__":
     
     # Create test window
     widget = DatabaseSettingsWidget()
+    widget.setStyleSheet(f"background-color: {Theme.BG_PRIMARY};")
     widget.setWindowTitle("Database Settings Test")
     widget.setGeometry(100, 100, 600, 800)
     widget.show()
