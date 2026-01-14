@@ -284,9 +284,9 @@ class MainWindow(QMainWindow):
     def _setup_keyboard_handler(self):
         """Set up keyboard shortcuts"""
         from src.ui.keyboard_handler import KeyboardHandler
-        
+
         self.keyboard_handler = KeyboardHandler()
-        
+
         # Connect navigation signals
         self.keyboard_handler.navigate_up.connect(self._handle_up)
         self.keyboard_handler.navigate_down.connect(self._handle_down)
@@ -294,22 +294,22 @@ class MainWindow(QMainWindow):
         self.keyboard_handler.navigate_right.connect(self._handle_right)
         self.keyboard_handler.page_up.connect(self._handle_page_up)
         self.keyboard_handler.page_down.connect(self._handle_page_down)
-        
+
         # Connect playback signals
         self.keyboard_handler.play_pause.connect(self._handle_play_pause)
         self.keyboard_handler.next_track.connect(self._handle_next)
         self.keyboard_handler.previous_track.connect(self._handle_previous)
         self.keyboard_handler.volume_up.connect(self._handle_volume_up)
         self.keyboard_handler.volume_down.connect(self._handle_volume_down)
-        
+
         # Connect UI action signals
         self.keyboard_handler.back.connect(self._handle_back)
         self.keyboard_handler.select.connect(self._handle_select)
         self.keyboard_handler.menu.connect(self._handle_menu)
         self.keyboard_handler.quit_app.connect(self.close)
-        
+
         print("[INFO] Keyboard handler configured")
-    
+
     def show_welcome(self):
         """Navigate to welcome screen with fade transition"""
         self.screen_manager.show_screen(ScreenManager.WELCOME_SCREEN, transition_type=TransitionType.FADE)

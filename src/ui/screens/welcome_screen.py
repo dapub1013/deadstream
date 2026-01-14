@@ -24,15 +24,14 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QSpacerItem, 
-    QSizePolicy, QHBoxLayout
+    QWidget, QVBoxLayout, QLabel, QSpacerItem,
+    QSizePolicy, QPushButton
 )
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QFont, QPainter, QLinearGradient, QColor
+from PyQt5.QtGui import QFont, QPainter, QLinearGradient, QColor, QIcon, QPixmap
 
 from src.ui.styles.theme import Theme
 from src.ui.components.pill_button import PillButton
-from src.ui.components.icon_button import IconButton
 
 
 class WelcomeScreen(QWidget):
@@ -65,10 +64,13 @@ class WelcomeScreen(QWidget):
         
         # Enable auto-fill background so paintEvent is called
         self.setAutoFillBackground(True)
-        
+
         # Create UI
         self._create_ui()
-        
+
+        # Create settings button (positioned absolutely in upper right)
+        self._create_settings_button()
+
         print("[INFO] Welcome screen initialized with component library")
     
     def paintEvent(self, event):
@@ -101,11 +103,7 @@ class WelcomeScreen(QWidget):
             Theme.SPACING_LARGE
         )
         main_layout.setSpacing(Theme.SPACING_LARGE)
-        
-        # Header with optional settings button
-        header_layout = self._create_header()
-        main_layout.addLayout(header_layout)
-        
+
         # Add vertical spacer to push content to center
         main_layout.addStretch(1)
         
@@ -124,28 +122,7 @@ class WelcomeScreen(QWidget):
         main_layout.addStretch(2)
         
         self.setLayout(main_layout)
-    
-    def _create_header(self):
-        """
-        Create header with optional settings button.
-        
-        Returns:
-            QHBoxLayout with settings button in top-right
-        """
-        layout = QHBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        
-        # Spacer to push settings button to right
-        layout.addStretch()
-        
-        # Settings button (transparent variant, floats in corner)
-        settings_btn = IconButton('settings', variant='transparent')
-        settings_btn.setToolTip("Settings")
-        settings_btn.clicked.connect(self._on_settings_clicked)
-        layout.addWidget(settings_btn)
-        
-        return layout
-    
+
     def _create_logo_section(self):
         """
         Create centered logo/title section.
@@ -221,19 +198,84 @@ class WelcomeScreen(QWidget):
         layout.addWidget(random_btn)
         
         return layout
-    
+
+    def _create_settings_button(self):
+        """
+        Create settings button positioned in upper right corner.
+        Uses absolute positioning with 25px margin from top and right edges.
+        Applies mask to make black gear white and background transparent.
+        """
+        # Get path to settings icon
+        assets_path = os.path.join(PROJECT_ROOT, 'assets', 'settings.png')
+
+        # Create button
+        self.settings_btn = QPushButton(self)
+        self.settings_btn.setFixedSize(80, 80)
+
+        # Load and set icon
+        if os.path.exists(assets_path):
+            # Load original pixmap
+            pixmap = QPixmap(assets_path)
+            print(f"[DEBUG] Original pixmap size: {pixmap.width()}x{pixmap.height()}")
+
+            # Scale to fit the button (with some padding)
+            icon_size = 60  # Slightly smaller than button to add padding
+            scaled_pixmap = pixmap.scaled(
+                icon_size, icon_size,
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation
+            )
+
+            # Set the icon
+            icon = QIcon(scaled_pixmap)
+            self.settings_btn.setIcon(icon)
+            self.settings_btn.setIconSize(scaled_pixmap.size())
+
+            print(f"[DEBUG] Icon set with size: {icon_size}x{icon_size}")
+        else:
+            print(f"[WARN] Settings icon not found at {assets_path}")
+
+        # Style button with transparent background
+        self.settings_btn.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                border: none;
+            }
+            QPushButton:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+            QPushButton:pressed {
+                background-color: rgba(255, 255, 255, 0.2);
+            }
+        """)
+
+        # Connect signal
+        self.settings_btn.clicked.connect(self._on_settings_clicked)
+
+        # Position button (25px from top and right)
+        self.settings_btn.move(self.width() - 80 - 25, 25)
+
+        # Show button
+        self.settings_btn.show()
+
+    def resizeEvent(self, event):
+        """Reposition settings button when window is resized"""
+        super().resizeEvent(event)
+        if hasattr(self, 'settings_btn'):
+            self.settings_btn.move(self.width() - 80 - 25, 25)
+
     # Signal handlers
-    
+
     def _on_browse_clicked(self):
         """Handle Find a Show button click"""
         print("[INFO] Welcome: Browse requested")
         self.browse_requested.emit()
-    
+
     def _on_random_clicked(self):
         """Handle Random Show button click"""
         print("[INFO] Welcome: Random show requested")
         self.random_show_requested.emit()
-    
+
     def _on_settings_clicked(self):
         """Handle Settings button click"""
         print("[INFO] Welcome: Settings requested")
