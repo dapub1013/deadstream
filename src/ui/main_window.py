@@ -336,8 +336,27 @@ class MainWindow(QMainWindow):
 
     def on_random_show_requested(self):
         """Handle random show request from welcome screen"""
-        print("[INFO] Random show requested - navigating to random show screen")
-        self.show_randomshow()
+        print("[INFO] Random show requested - loading random show into player")
+
+        # Get a random show from the database
+        from src.database.queries import get_random_show
+        random_show = get_random_show()
+
+        if not random_show:
+            print("[WARNING] No random show found in database")
+            return
+
+        print(f"[INFO] Random show selected: {random_show.get('date', 'Unknown')} - {random_show.get('venue', 'Unknown')}")
+
+        # Load the show into the player screen (without auto-play)
+        self.player_screen.load_show(random_show, auto_play=False)
+
+        # Update now playing bar with track info and visibility (audio now loaded)
+        self.update_now_playing_bar_track_info()
+        self.update_now_playing_bar_visibility()
+
+        # Navigate to player screen
+        self.show_player()
 
     def on_show_selected(self, show):
         """Handle show selection from browse screen"""

@@ -825,12 +825,13 @@ class PlayerScreen(QWidget):
         else:
             self.play_pause_btn.set_icon('play')
     
-    def load_show(self, show):
+    def load_show(self, show, auto_play=True):
         """
-        Load a complete show and start playing
+        Load a complete show and optionally start playing
 
         Args:
             show (dict): Show dictionary with keys: identifier, date, venue, etc.
+            auto_play (bool): If True, start playing immediately. If False, load in paused state.
         """
         try:
             print(f"[INFO] Loading show: {show.get('date')} - {show.get('venue')}")
@@ -869,10 +870,10 @@ class PlayerScreen(QWidget):
             # Populate setlist
             self.populate_setlist()
 
-            # Load and play first track
-            self.play_track_at_index(0)
+            # Load and optionally play first track
+            self.play_track_at_index(0, auto_play=auto_play)
 
-            print(f"[INFO] Show loaded successfully: {len(audio_files)} tracks")
+            print(f"[INFO] Show loaded successfully: {len(audio_files)} tracks (auto_play={auto_play})")
 
         except Exception as e:
             print(f"[ERROR] Failed to load show: {e}")
@@ -978,12 +979,13 @@ class PlayerScreen(QWidget):
         print(f"[INFO] Track clicked: {track_index + 1}/{self.total_tracks}")
         self.play_track_at_index(track_index)
 
-    def play_track_at_index(self, index):
+    def play_track_at_index(self, index, auto_play=True):
         """
         Play the track at the given index in the playlist
 
         Args:
             index (int): Index of track to play
+            auto_play (bool): If True, start playing immediately. If False, load in paused state.
         """
         if not hasattr(self, 'playlist') or not self.playlist:
             print("[ERROR] No playlist loaded")
@@ -1028,7 +1030,8 @@ class PlayerScreen(QWidget):
                 set_name="",  # TODO: Determine set from track metadata
                 track_num=index + 1,
                 total_tracks=self.total_tracks,
-                duration=duration
+                duration=duration,
+                auto_play=auto_play
             )
 
             # Update current track index
@@ -1048,9 +1051,9 @@ class PlayerScreen(QWidget):
             widget.set_current(i == current_index)
 
     def load_track_url(self, url, track_name="Unknown Track", set_name="",
-                      track_num=1, total_tracks=1, duration=0):
+                      track_num=1, total_tracks=1, duration=0, auto_play=True):
         """
-        Load and play a track URL
+        Load and optionally play a track URL
 
         Args:
             url (str): Streaming URL for the track
@@ -1059,6 +1062,7 @@ class PlayerScreen(QWidget):
             track_num (int): Track number in set
             total_tracks (int): Total tracks in set
             duration (int): Track duration in seconds
+            auto_play (bool): If True, start playing immediately. If False, load in paused state.
         """
         try:
             # Update track info display
@@ -1073,15 +1077,18 @@ class PlayerScreen(QWidget):
             success = self.player.load_url(url)
 
             if success:
-                # Start playback
-                self.player.play()
+                # Start playback if auto_play is True
+                if auto_play:
+                    self.player.play()
+                    print(f"[INFO] Loaded and playing track: {track_name} ({set_name})")
+                else:
+                    # Media is loaded but remains paused
+                    print(f"[INFO] Loaded track (paused): {track_name} ({set_name})")
 
                 # Store current track info
                 self.current_track_index = track_num - 1
                 self.total_tracks = total_tracks
                 self.current_track_name = track_name  # Store for NowPlayingBar
-
-                print(f"[INFO] Loaded track: {track_name} ({set_name})")
             else:
                 print(f"[ERROR] Failed to load track: {track_name}")
 

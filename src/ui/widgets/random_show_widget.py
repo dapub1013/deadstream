@@ -289,82 +289,101 @@ class RandomShowWidget(QWidget):
         header = QFrame()
         header.setStyleSheet(f"""
             QFrame {{
-                background-color: {BG_GRAY_900};
-                border: 2px solid {BG_GRAY_700};
-                border-radius: 8px;
-                padding: 20px;
+                background-color: transparent;
+                border: none;
+                padding: 24px;
             }}
         """)
 
         layout = QVBoxLayout()
-        layout.setSpacing(12)
+        layout.setSpacing(4)
 
-        # Title (Date + Venue)
-        title = QLabel(f"{show['date']} - {show['venue']}")
-        title.setStyleSheet(f"""
+        # Line 1: Date (HEADER_SMALL - 24px)
+        date_label = QLabel(show['date'])
+        date_label.setStyleSheet(f"""
             QLabel {{
-                {TITLE_SECTION_STYLE}
+                color: {TEXT_WHITE};
+                font-size: 24px;
+                font-weight: normal;
+                border: none;
             }}
         """)
-        title.setWordWrap(True)
-        layout.addWidget(title)
+        layout.addWidget(date_label)
 
-        # Location
-        location = QLabel(f"{show['city']}, {show['state']}")
-        location.setStyleSheet(f"""
+        # Line 2: Venue (HEADER_MEDIUM - 36px)
+        venue_label = QLabel(show['venue'])
+        venue_label.setStyleSheet(f"""
             QLabel {{
-                {TEXT_SUPPORTING_STYLE}
-                font-size: 16px;
+                color: {TEXT_WHITE};
+                font-size: 36px;
+                font-weight: normal;
+                border: none;
+                line-height: 1.2;
             }}
         """)
-        layout.addWidget(location)
+        venue_label.setWordWrap(True)
+        layout.addWidget(venue_label)
 
-        # Metadata badges row
+        # Line 3: City (HEADER_MEDIUM - 36px)
+        city_label = QLabel(f"{show['city']}, {show['state']}")
+        city_label.setStyleSheet(f"""
+            QLabel {{
+                color: {TEXT_WHITE};
+                font-size: 36px;
+                font-weight: normal;
+                border: none;
+            }}
+        """)
+        layout.addWidget(city_label)
+
+        # Add spacing before metadata row
+        layout.addSpacing(16)
+
+        # Line 4: Metadata badges row (rating, track count, source badge)
         badges_layout = QHBoxLayout()
-        badges_layout.setSpacing(8)
+        badges_layout.setSpacing(16)
 
         # Rating badge (if available)
         if show.get('avg_rating') and show['avg_rating'] > 0:
-            rating_badge = QLabel(f"[Star] {show['avg_rating']:.1f}/5.0")
-            rating_badge.setStyleSheet("""
-                QLabel {
-                    background-color: #374151;
-                    color: #FCD34D;
-                    padding: 6px 14px;
-                    border-radius: 12px;
-                    font-size: 13px;
-                    font-weight: bold;
-                }
+            rating_badge = QLabel(f"Rating: {show['avg_rating']:.1f}/5.0")
+            rating_badge.setStyleSheet(f"""
+                QLabel {{
+                    background-color: transparent;
+                    color: {TEXT_GRAY_400};
+                    border: none;
+                    font-size: 16px;
+                }}
             """)
             badges_layout.addWidget(rating_badge)
-
-        # Review count badge (if available)
-        if show.get('num_reviews') and show['num_reviews'] > 0:
-            reviews_badge = QLabel(f"{show['num_reviews']} reviews")
-            reviews_badge.setStyleSheet("""
-                QLabel {
-                    background-color: #374151;
-                    color: #9CA3AF;
-                    padding: 6px 14px;
-                    border-radius: 12px;
-                    font-size: 13px;
-                }
-            """)
-            badges_layout.addWidget(reviews_badge)
 
         # Track count badge (if tracks loaded)
         if self.tracks:
             tracks_badge = QLabel(f"{len(self.tracks)} tracks")
-            tracks_badge.setStyleSheet("""
-                QLabel {
-                    background-color: #374151;
-                    color: #9CA3AF;
-                    padding: 6px 14px;
-                    border-radius: 12px;
-                    font-size: 13px;
-                }
+            tracks_badge.setStyleSheet(f"""
+                QLabel {{
+                    background-color: transparent;
+                    color: {TEXT_GRAY_400};
+                    border: none;
+                    font-size: 16px;
+                }}
             """)
             badges_layout.addWidget(tracks_badge)
+
+        # Source badge (if available)
+        if show.get('source'):
+            source_badge = QLabel(show['source'].upper())
+            source_badge.setStyleSheet("""
+                QLabel {
+                    background-color: #FFD700;
+                    color: #2E2870;
+                    padding: 6px 14px;
+                    border-radius: 14px;
+                    font-size: 14px;
+                    font-weight: bold;
+                    border: none;
+                }
+            """)
+            badges_layout.addWidget(source_badge)
 
         badges_layout.addStretch()
         layout.addLayout(badges_layout)
@@ -398,9 +417,8 @@ class RandomShowWidget(QWidget):
         section = QFrame()
         section.setStyleSheet(f"""
             QFrame {{
-                background-color: {BG_GRAY_900};
-                border: 2px solid {BG_GRAY_700};
-                border-radius: 8px;
+                background-color: transparent;
+                border: none;
             }}
         """)
 
@@ -413,10 +431,10 @@ class RandomShowWidget(QWidget):
         header_label.setStyleSheet(f"""
             QLabel {{
                 color: {TEXT_WHITE};
-                font-size: 18px;
+                font-size: 24px;
                 font-weight: bold;
-                padding: 16px 20px;
-                border-bottom: 2px solid {BG_GRAY_700};
+                padding: 24px 24px 16px 24px;
+                border: none;
             }}
         """)
         layout.addWidget(header_label)
@@ -431,12 +449,13 @@ class RandomShowWidget(QWidget):
                     set_header = QLabel(current_set)
                     set_header.setStyleSheet(f"""
                         QLabel {{
-                            background-color: {BG_GRAY_800};
-                            color: #6B7280;
-                            padding: 10px 20px;
-                            font-size: 12px;
+                            background-color: transparent;
+                            color: #9CA3AF;
+                            padding: 16px 24px 8px 24px;
+                            font-size: 14px;
                             font-weight: bold;
                             letter-spacing: 1px;
+                            border: none;
                         }}
                     """)
                     layout.addWidget(set_header)
@@ -453,30 +472,31 @@ class RandomShowWidget(QWidget):
         item = QFrame()
         item.setStyleSheet(f"""
             QFrame {{
-                background-color: {BG_GRAY_900};
-                border-bottom: 1px solid {BG_GRAY_700};
-                padding: 10px 20px;
+                background-color: transparent;
+                border: none;
+                padding: 8px 24px;
             }}
         """)
 
         layout = QHBoxLayout()
-        layout.setSpacing(12)
+        layout.setSpacing(16)
         layout.setContentsMargins(0, 0, 0, 0)
 
         # Track number
         track_num = QLabel(f"{index + 1:02d}")
-        track_num.setFixedWidth(30)
+        track_num.setFixedWidth(36)
         track_num.setStyleSheet(f"""
             color: {TEXT_GRAY_400};
-            font-size: 13px;
+            font-size: 16px;
         """)
         layout.addWidget(track_num)
 
-        # Song name
+        # Song name (BODY_LARGE - 20px)
         song_name = QLabel(track.get('title', 'Unknown Track'))
         song_name.setStyleSheet(f"""
             color: {TEXT_WHITE};
-            font-size: 14px;
+            font-size: 20px;
+            font-weight: normal;
         """)
         layout.addWidget(song_name, 1)
 
@@ -484,7 +504,7 @@ class RandomShowWidget(QWidget):
         duration = QLabel(track.get('duration', '0:00'))
         duration.setStyleSheet(f"""
             color: {TEXT_GRAY_400};
-            font-size: 13px;
+            font-size: 16px;
         """)
         duration.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         layout.addWidget(duration)
