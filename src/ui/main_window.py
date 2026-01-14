@@ -250,9 +250,9 @@ class MainWindow(QMainWindow):
             self.welcome_screen.settings_requested.connect(self.show_settings)
 
             # Player screen navigation
-            self.player_screen.home_requested.connect(self.show_browse)
-            self.player_screen.settings_requested.connect(self.show_settings)
+            self.player_screen.settings_requested.connect(self.show_settings_audio)
             self.player_screen.back_requested.connect(self.show_findashow)
+            self.player_screen.home_requested.connect(self.show_welcome)
 
             # Browse screen navigation
             self.browse_screen.player_requested.connect(self.show_player)
@@ -265,7 +265,7 @@ class MainWindow(QMainWindow):
 
             # Find a Show screen navigation
             self.findashow_screen.date_selected.connect(self.on_date_selected)
-            self.findashow_screen.back_requested.connect(self.show_welcome)
+            self.findashow_screen.home_requested.connect(self.show_welcome)
             self.findashow_screen.settings_requested.connect(self.show_settings)
 
             # Random Show screen navigation
@@ -325,6 +325,13 @@ class MainWindow(QMainWindow):
     def show_settings(self):
         """Navigate to settings screen with fade transition"""
         self.screen_manager.show_screen(ScreenManager.SETTINGS_SCREEN, transition_type=TransitionType.FADE)
+
+    def show_settings_audio(self):
+        """Navigate to settings screen and show audio category"""
+        self.screen_manager.show_screen(ScreenManager.SETTINGS_SCREEN, transition_type=TransitionType.FADE)
+        # Switch to audio category after transition
+        from PyQt5.QtCore import QTimer
+        QTimer.singleShot(350, lambda: self.settings_screen.show_category("audio"))
 
     def show_findashow(self):
         """Navigate to find a show screen with fade transition"""

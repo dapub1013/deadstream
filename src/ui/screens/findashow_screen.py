@@ -25,13 +25,12 @@ if PROJECT_ROOT not in sys.path:
 
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QSpacerItem,
-    QSizePolicy
+    QSizePolicy, QPushButton
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QSize
-from PyQt5.QtGui import QPainter, QLinearGradient, QColor
+from PyQt5.QtGui import QPainter, QLinearGradient, QColor, QPixmap, QIcon
 
 from src.ui.styles.theme import Theme
-from src.ui.components.icon_button import IconButton
 from src.ui.widgets.date_selector import DateSelectorWidget
 
 
@@ -41,20 +40,20 @@ class FindAShowScreen(QWidget):
 
     Features:
     - Centered DateSelectorWidget (3-column date picker)
-    - Settings button (top-right corner)
-    - Back button (returns to welcome screen)
+    - Home button (absolutely positioned in upper left corner)
+    - Settings button (absolutely positioned in upper right corner)
     - Gradient purple background
 
     Signals:
     - date_selected: User selected a complete date (YYYY-MM-DD)
+    - home_requested: User wants to go home
     - settings_requested: User wants to open settings
-    - back_requested: User wants to go back to welcome screen
     """
 
     # Signals
     date_selected = pyqtSignal(str)  # Emits date string (YYYY-MM-DD)
     settings_requested = pyqtSignal()
-    back_requested = pyqtSignal()
+    home_requested = pyqtSignal()
 
     def __init__(self, parent=None):
         """Initialize the find a show screen"""
@@ -68,6 +67,10 @@ class FindAShowScreen(QWidget):
 
         # Create UI
         self._create_ui()
+
+        # Create corner buttons (positioned absolutely)
+        self._create_home_button()
+        self._create_settings_button()
 
         print("[INFO] Find A Show screen initialized")
 
@@ -102,13 +105,6 @@ class FindAShowScreen(QWidget):
         )
         main_layout.setSpacing(0)  # No spacing, we'll control it manually
 
-        # Header with settings button (top-right) and back button (top-left)
-        header_layout = self._create_header()
-        main_layout.addLayout(header_layout)
-
-        # Add minimal vertical spacer above date selector
-        main_layout.addSpacing(Theme.SPACING_MEDIUM)
-
         # Date selector container - takes up most of the screen height
         date_selector_container = QWidget()
         date_selector_container.setStyleSheet("background-color: transparent;")
@@ -130,33 +126,103 @@ class FindAShowScreen(QWidget):
 
         self.setLayout(main_layout)
 
-    def _create_header(self):
+    def _create_home_button(self):
         """
-        Create header with back button (left) and settings button (right).
-        Matches the settings button position from welcome_screen.py.
+        Create home button positioned absolutely in the upper left corner.
 
-        Returns:
-            QHBoxLayout with back and settings buttons
+        Specifications:
+        - Position: 25px from top, 25px from left edge
+        - Size: 80x80px
+        - Icon: assets/home-round.png scaled to 60x60px
+        - Style: Transparent background with semi-transparent hover/press states
         """
-        layout = QHBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
+        # Create button with this widget as parent
+        self.home_btn = QPushButton(self)
+        self.home_btn.setFixedSize(80, 80)
 
-        # Back button (left side)
-        back_btn = IconButton('back', variant='transparent')
-        back_btn.setToolTip("Back to Welcome")
-        back_btn.clicked.connect(self._on_back_clicked)
-        layout.addWidget(back_btn)
+        # Load and scale icon
+        icon_path = os.path.join(PROJECT_ROOT, 'assets', 'home-round.png')
+        if os.path.exists(icon_path):
+            pixmap = QPixmap(icon_path)
+            scaled_pixmap = pixmap.scaled(60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            icon = QIcon(scaled_pixmap)
+            self.home_btn.setIcon(icon)
+            self.home_btn.setIconSize(QSize(60, 60))
+        else:
+            print(f"[WARNING] Home icon not found at {icon_path}")
 
-        # Spacer to push settings button to right
-        layout.addStretch()
+        # Style with transparent background and hover states
+        self.home_btn.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                border: none;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+            QPushButton:pressed {
+                background-color: rgba(255, 255, 255, 0.2);
+            }
+        """)
 
-        # Settings button (right side, exactly matching welcome_screen.py position)
-        settings_btn = IconButton('settings', variant='transparent')
-        settings_btn.setToolTip("Settings")
-        settings_btn.clicked.connect(self._on_settings_clicked)
-        layout.addWidget(settings_btn)
+        # Connect click handler
+        self.home_btn.clicked.connect(self._on_home_clicked)
 
-        return layout
+        # Position button at fixed location (doesn't change with resize)
+        self.home_btn.move(25, 25)
+
+        # Make sure button is on top
+        self.home_btn.raise_()
+
+    def _create_settings_button(self):
+        """
+        Create settings button positioned absolutely in the upper right corner.
+
+        Specifications:
+        - Position: 25px from top, 25px from right edge
+        - Size: 80x80px
+        - Icon: assets/settings.png scaled to 60x60px
+        - Style: Transparent background with semi-transparent hover/press states
+        """
+        # Create button with this widget as parent
+        self.settings_btn = QPushButton(self)
+        self.settings_btn.setFixedSize(80, 80)
+
+        # Load and scale icon
+        icon_path = os.path.join(PROJECT_ROOT, 'assets', 'settings.png')
+        if os.path.exists(icon_path):
+            pixmap = QPixmap(icon_path)
+            scaled_pixmap = pixmap.scaled(60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+            icon = QIcon(scaled_pixmap)
+            self.settings_btn.setIcon(icon)
+            self.settings_btn.setIconSize(QSize(60, 60))
+        else:
+            print(f"[WARNING] Settings icon not found at {icon_path}")
+
+        # Style with transparent background and hover states
+        self.settings_btn.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                border: none;
+                border-radius: 10px;
+            }
+            QPushButton:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+            QPushButton:pressed {
+                background-color: rgba(255, 255, 255, 0.2);
+            }
+        """)
+
+        # Connect click handler
+        self.settings_btn.clicked.connect(self._on_settings_clicked)
+
+        # Position button (will be repositioned in resizeEvent)
+        self._position_settings_button()
+
+        # Make sure button is on top
+        self.settings_btn.raise_()
 
     def _create_date_selector(self):
         """
@@ -185,6 +251,18 @@ class FindAShowScreen(QWidget):
 
         return layout
 
+    def _position_settings_button(self):
+        """Position the settings button in the upper right corner"""
+        if hasattr(self, 'settings_btn'):
+            x = self.width() - 80 - 25  # 25px margin from right
+            y = 25  # 25px margin from top
+            self.settings_btn.move(x, y)
+
+    def resizeEvent(self, event):
+        """Handle window resize to reposition settings button"""
+        super().resizeEvent(event)
+        self._position_settings_button()
+
     # Signal handlers
 
     def _on_date_selected(self, date_str):
@@ -197,10 +275,10 @@ class FindAShowScreen(QWidget):
         print("[INFO] FindAShow: Settings requested")
         self.settings_requested.emit()
 
-    def _on_back_clicked(self):
-        """Handle Back button click"""
-        print("[INFO] FindAShow: Back to welcome requested")
-        self.back_requested.emit()
+    def _on_home_clicked(self):
+        """Handle Home button click"""
+        print("[INFO] FindAShow: Home requested")
+        self.home_requested.emit()
 
     # Public methods
 
@@ -224,14 +302,14 @@ def main():
     # Connect signals for testing
     window.date_selected.connect(lambda date: print(f"[TEST] Date selected: {date}"))
     window.settings_requested.connect(lambda: print("[TEST] Settings requested!"))
-    window.back_requested.connect(lambda: print("[TEST] Back requested!"))
+    window.home_requested.connect(lambda: print("[TEST] Home requested!"))
 
     window.show()
 
     print("[INFO] Find A Show screen test running")
     print("[INFO] Select a date to test date_selected signal")
-    print("[INFO] Click settings button to test settings_requested signal")
-    print("[INFO] Click back button to test back_requested signal")
+    print("[INFO] Click home button (upper left) to test home_requested signal")
+    print("[INFO] Click settings button (upper right) to test settings_requested signal")
     print("[INFO] Close window to exit")
 
     sys.exit(app.exec_())

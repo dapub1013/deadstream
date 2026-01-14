@@ -18,7 +18,7 @@ from PyQt5.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QLabel, QFrame, QScrollArea
 )
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPropertyAnimation, QEasingCurve, QPoint
-from PyQt5.QtGui import QFont, QPainter, QLinearGradient, QColor, QFontMetrics, QPolygon
+from PyQt5.QtGui import QFont, QPainter, QLinearGradient, QColor, QFontMetrics, QPolygon, QPixmap
 
 # Import Theme and Components
 from src.ui.styles.theme import Theme
@@ -32,69 +32,6 @@ from src.ui.widgets.volume_control_widget import VolumeControlWidget
 from src.audio.resilient_player import ResilientPlayer, PlayerState
 
 
-class CornerButton(QWidget):
-    """Minimal, non-intrusive button for corners"""
-    
-    clicked = pyqtSignal()
-    
-    def __init__(self, icon_text, position='top-right', parent=None):
-        super().__init__(parent)
-        self.icon_text = icon_text
-        self.position = position
-        self.hovered = False
-        
-        # Fixed size - small and unobtrusive
-        self.setFixedSize(44, 44)
-        
-        # Enable mouse tracking for hover
-        self.setMouseTracking(True)
-        
-        # Style
-        self.bg_color = QColor(255, 255, 255, 20)  # Very subtle
-        self.hover_color = QColor(255, 255, 255, 40)  # Slightly more visible
-        self.icon_color = QColor(255, 255, 255, 180)  # Semi-transparent white
-        self.hover_icon_color = QColor(255, 255, 255, 255)  # Full white on hover
-        
-        # Tooltip
-        if 'home' in icon_text.lower() or position == 'top-right':
-            self.setToolTip("Home")
-        else:
-            self.setToolTip("Settings")
-    
-    def paintEvent(self, event):
-        """Custom paint for minimal circular button"""
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
-        
-        # Background circle (only visible on hover)
-        if self.hovered:
-            painter.setPen(Qt.NoPen)
-            painter.setBrush(self.hover_color)
-            painter.drawEllipse(2, 2, 40, 40)
-        
-        # Icon
-        painter.setPen(self.hover_icon_color if self.hovered else self.icon_color)
-        font = QFont(Theme.FONT_FAMILY, 18)
-        painter.setFont(font)
-        painter.drawText(self.rect(), Qt.AlignCenter, self.icon_text)
-    
-    def enterEvent(self, event):
-        """Mouse entered - show hover state"""
-        self.hovered = True
-        self.update()
-        super().enterEvent(event)
-    
-    def leaveEvent(self, event):
-        """Mouse left - hide hover state"""
-        self.hovered = False
-        self.update()
-        super().leaveEvent(event)
-    
-    def mousePressEvent(self, event):
-        """Handle click"""
-        if event.button() == Qt.LeftButton:
-            self.clicked.emit()
-        super().mousePressEvent(event)
 
 
 class ElidedLabel(QLabel):
@@ -407,23 +344,24 @@ class TrackWidget(QWidget):
 class PlayerScreen(QWidget):
     """
     Player screen - Hybrid design.
-    
+
     Features:
-    - Left panel: Original placeholder with gradient background
-    - Right panel: Mockup design with pure black background
-    - Yellow home icon (top right)
-    - Settings icon (bottom right)
+    - Left panel: Concert info and setlist with gradient background
+    - Right panel: Player controls with pure black background
+    - Home button (upper left corner)
+    - Settings button (upper right corner)
     - Centered track info and controls
-    
+
     Signals:
-        home_requested: User wants to go home/browse
-        settings_requested: User wants to open settings
+        settings_requested: User wants to open settings (navigates to audio section)
+        back_requested: User wants to go back to browse screen
+        home_requested: User wants to go to welcome screen
     """
-    
+
     # Signals
-    home_requested = pyqtSignal()
     settings_requested = pyqtSignal()
     back_requested = pyqtSignal()
+    home_requested = pyqtSignal()
     
     def __init__(self):
         """Initialize player screen"""
@@ -443,8 +381,8 @@ class PlayerScreen(QWidget):
         self.skip_forward_btn = None  # SkipButton (↻ circular arrow)
         self.progress_bar = None
         self.volume_control = None
-        self.home_btn = None  # CornerButton (minimal)
-        self.settings_btn = None  # CornerButton (minimal)
+        self.settings_btn = None  # Settings button (upper right corner)
+        self.home_btn = None  # Home button (upper left corner)
 
         # UI widgets - left panel
         self.date_label = None
@@ -498,7 +436,7 @@ class PlayerScreen(QWidget):
         main_layout.addWidget(right_panel, 1)
         
         self.setLayout(main_layout)
-        
+
         print("[INFO] PlayerScreen initialized (hybrid design)")
     
     def init_audio_integration(self):
@@ -536,17 +474,6 @@ class PlayerScreen(QWidget):
             Theme.SPACING_MEDIUM,
             Theme.SPACING_LARGE
         )
-
-        # Back button row
-        back_layout = QHBoxLayout()
-        back_button = CornerButton('◀', position='top-left')
-        back_button.setToolTip("Back to Find a Show")
-        back_button.clicked.connect(self.on_back_clicked)
-        back_layout.addWidget(back_button)
-        back_layout.addStretch()
-        layout.addLayout(back_layout)
-
-        layout.addSpacing(8)
 
         # Concert header row (date + source badge)
         header_layout = QHBoxLayout()
@@ -725,23 +652,69 @@ class PlayerScreen(QWidget):
         layout.addStretch(1)
         
         panel.setLayout(layout)
-        
-        # Create corner buttons (positioned absolutely after panel is created)
-        # Home button (top-right corner)
-        self.home_btn = CornerButton('⌂', position='top-right')  # Unicode house symbol
-        self.home_btn.setParent(panel)
-        self.home_btn.move(panel.width() - 56, 12)  # Position in corner
-        self.home_btn.clicked.connect(self.on_home_clicked)
-        
-        # Settings button (bottom-right corner)
-        self.settings_btn = CornerButton('⚙', position='bottom-right')  # Unicode gear
-        self.settings_btn.setParent(panel)
+
+        # Create settings button (positioned absolutely in upper right corner)
+        self.settings_btn = QLabel(panel)
+        self.settings_btn.setFixedSize(80, 80)
+
+        # Load and scale the settings icon
+        settings_icon_path = os.path.join(PROJECT_ROOT, 'assets', 'settings.png')
+        settings_pixmap = QPixmap(settings_icon_path)
+        settings_scaled_pixmap = settings_pixmap.scaled(60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.settings_btn.setPixmap(settings_scaled_pixmap)
+        self.settings_btn.setAlignment(Qt.AlignCenter)
+
+        # Style with transparent background and hover states
+        self.settings_btn.setStyleSheet("""
+            QLabel {
+                background-color: transparent;
+                border-radius: 10px;
+            }
+            QLabel:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+        """)
+
+        # Make it clickable
+        self.settings_btn.mousePressEvent = lambda event: self.on_settings_button_pressed(event)
+        self.settings_btn.mouseReleaseEvent = lambda event: self.on_settings_button_released(event)
+
         # Position will be set in resizeEvent
-        self.settings_btn.clicked.connect(self.on_settings_clicked)
-        
+        self.settings_btn.setToolTip("Audio Settings")
+
+        # Create home button (positioned absolutely in upper left corner)
+        self.home_btn = QLabel(panel)
+        self.home_btn.setFixedSize(80, 80)
+
+        # Load and scale the home icon
+        home_icon_path = os.path.join(PROJECT_ROOT, 'assets', 'home-round.png')
+        home_pixmap = QPixmap(home_icon_path)
+        home_scaled_pixmap = home_pixmap.scaled(60, 60, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        self.home_btn.setPixmap(home_scaled_pixmap)
+        self.home_btn.setAlignment(Qt.AlignCenter)
+
+        # Style with transparent background and hover states
+        self.home_btn.setStyleSheet("""
+            QLabel {
+                background-color: transparent;
+                border-radius: 10px;
+            }
+            QLabel:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+        """)
+
+        # Make it clickable
+        self.home_btn.mousePressEvent = lambda event: self.on_home_button_pressed(event)
+        self.home_btn.mouseReleaseEvent = lambda event: self.on_home_button_released(event)
+
+        # Position at upper left corner (25px from top and left)
+        self.home_btn.move(25, 25)
+        self.home_btn.setToolTip("Home")
+
         # Store panel reference for repositioning buttons on resize
         self._right_panel = panel
-        
+
         return panel
     
     def create_media_controls(self):
@@ -1168,15 +1141,67 @@ class PlayerScreen(QWidget):
             self.player.unmute()
             print("[INFO] Audio unmuted")
     
-    def on_home_clicked(self):
-        """Handle home button click"""
-        print("[INFO] Home button clicked")
-        self.home_requested.emit()
-    
-    def on_settings_clicked(self):
-        """Handle settings button click"""
-        print("[INFO] Settings button clicked")
-        self.settings_requested.emit()
+    def on_settings_button_pressed(self, event):
+        """Handle settings button press (mouse down)"""
+        if event.button() == Qt.LeftButton:
+            # Add press state styling
+            self.settings_btn.setStyleSheet("""
+                QLabel {
+                    background-color: rgba(255, 255, 255, 0.2);
+                    border-radius: 10px;
+                }
+                QLabel:hover {
+                    background-color: rgba(255, 255, 255, 0.2);
+                }
+            """)
+
+    def on_settings_button_released(self, event):
+        """Handle settings button release (mouse up)"""
+        if event.button() == Qt.LeftButton:
+            # Reset to normal styling
+            self.settings_btn.setStyleSheet("""
+                QLabel {
+                    background-color: transparent;
+                    border-radius: 10px;
+                }
+                QLabel:hover {
+                    background-color: rgba(255, 255, 255, 0.1);
+                }
+            """)
+            # Navigate to audio section of settings screen
+            print("[INFO] Settings button clicked - navigating to audio settings")
+            self.settings_requested.emit()
+
+    def on_home_button_pressed(self, event):
+        """Handle home button press (mouse down)"""
+        if event.button() == Qt.LeftButton:
+            # Add press state styling
+            self.home_btn.setStyleSheet("""
+                QLabel {
+                    background-color: rgba(255, 255, 255, 0.2);
+                    border-radius: 10px;
+                }
+                QLabel:hover {
+                    background-color: rgba(255, 255, 255, 0.2);
+                }
+            """)
+
+    def on_home_button_released(self, event):
+        """Handle home button release (mouse up)"""
+        if event.button() == Qt.LeftButton:
+            # Reset to normal styling
+            self.home_btn.setStyleSheet("""
+                QLabel {
+                    background-color: transparent;
+                    border-radius: 10px;
+                }
+                QLabel:hover {
+                    background-color: rgba(255, 255, 255, 0.1);
+                }
+            """)
+            # Navigate to welcome screen
+            print("[INFO] Home button clicked - navigating to welcome screen")
+            self.home_requested.emit()
 
     def on_back_clicked(self):
         """Handle back button click"""
@@ -1188,19 +1213,17 @@ class PlayerScreen(QWidget):
     # ========================================================================
     
     def resizeEvent(self, event):
-        """Reposition corner buttons when window is resized"""
+        """Reposition settings button when window is resized"""
         super().resizeEvent(event)
-        
-        # Reposition buttons if they exist and panel exists
-        if hasattr(self, '_right_panel') and self.home_btn and self.settings_btn:
+
+        # Reposition settings button if it exists and panel exists
+        if hasattr(self, '_right_panel') and self.settings_btn:
             panel_width = self._right_panel.width()
-            panel_height = self._right_panel.height()
-            
-            # Home button (top-right)
-            self.home_btn.move(panel_width - 56, 12)
-            
-            # Settings button (bottom-right)
-            self.settings_btn.move(panel_width - 56, panel_height - 56)
+
+            # Settings button (upper right corner: 25px from top, 25px from right)
+            x = panel_width - 80 - 25
+            y = 25
+            self.settings_btn.move(x, y)
     
     # ========================================================================
     # CLEANUP
@@ -1232,10 +1255,11 @@ if __name__ == "__main__":
     screen = PlayerScreen()
     screen.setGeometry(100, 100, 1024, 600)
     screen.setWindowTitle("DeadStream Player - Hybrid Design")
-    
+
     # Connect signals
-    screen.home_requested.connect(lambda: print("[TEST] Home button signal"))
     screen.settings_requested.connect(lambda: print("[TEST] Settings button signal"))
+    screen.back_requested.connect(lambda: print("[TEST] Back button signal"))
+    screen.home_requested.connect(lambda: print("[TEST] Home button signal"))
     
     # Load test show
     def load_test_show():
@@ -1270,18 +1294,19 @@ if __name__ == "__main__":
     print("\n" + "=" * 70)
     print("HYBRID PLAYER SCREEN TEST")
     print("=" * 70)
-    print("Left Panel (Original):")
+    print("Left Panel:")
     print("  [OK] Purple gradient background")
-    print("  [OK] 'Concert Information' placeholder")
-    print("  [OK] 'Setlist' placeholder")
-    print("\nRight Panel (Mockup):")
+    print("  [OK] Concert information (date, venue, location)")
+    print("  [OK] Setlist with clickable tracks")
+    print("\nRight Panel:")
     print("  [OK] Pure black background")
-    print("  [OK] Yellow home icon (top right)")
+    print("  [OK] Home icon (upper left corner)")
+    print("  [OK] Settings icon (upper right corner)")
     print("  [OK] 'NOW PLAYING' centered label")
     print("  [OK] '1 of 25' track counter")
     print("  [OK] Large centered song title")
-    print("  [OK] 5 circular media controls (90px play button)")
-    print("  [OK] Settings icon (bottom right)")
+    print("  [OK] 5 media controls (90px play button)")
+    print("  [OK] Progress bar and volume control")
     print("\nPress Ctrl+C to exit")
     print("=" * 70 + "\n")
     
