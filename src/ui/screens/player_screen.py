@@ -227,6 +227,43 @@ class SourceBadge(QWidget):
         painter.drawText(self.rect(), Qt.AlignCenter, self.source_type)
 
 
+class RatingBadge(QWidget):
+    """Circular badge showing average rating with star icon"""
+
+    def __init__(self, rating=0.0, parent=None):
+        super().__init__(parent)
+        self.rating = rating
+
+        # Set fixed size (circular)
+        self.setFixedSize(50, 28)
+
+        # Style
+        self.bg_color = QColor(Theme.BADGE_RATING)  # Cyan
+        self.text_color = QColor(Theme.TEXT_PRIMARY)
+
+    def set_rating(self, rating):
+        """Update the rating value"""
+        self.rating = rating
+        self.update()
+
+    def paintEvent(self, event):
+        """Paint badge with rounded corners"""
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        # Background pill shape
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(self.bg_color)
+        painter.drawRoundedRect(0, 0, 50, 28, 14, 14)
+
+        # Text with star
+        painter.setPen(self.text_color)
+        font = QFont(Theme.FONT_FAMILY, 11, QFont.Bold)
+        painter.setFont(font)
+        rating_text = f"{self.rating:.1f}" if self.rating else "--"
+        painter.drawText(self.rect(), Qt.AlignCenter, rating_text)
+
+
 class TrackWidget(QWidget):
     """Clickable track item for setlist"""
 
@@ -367,6 +404,8 @@ class PlayerScreen(QWidget):
         self.venue_label = None
         self.location_label = None
         self.source_badge = None
+        self.rating_badge = None
+        self.metadata_label = None  # Taper and reviews info
         self.setlist_layout = None  # Layout for track items
         self.track_widgets = []  # List of track widget references
 
@@ -445,7 +484,7 @@ class PlayerScreen(QWidget):
         """)
 
         layout = QVBoxLayout()
-        layout.setSpacing(Theme.SPACING_SMALL)
+        layout.setSpacing(Theme.SPACING_TINY)
         layout.setContentsMargins(
             Theme.SPACING_LARGE,
             Theme.SPACING_LARGE,
@@ -453,11 +492,11 @@ class PlayerScreen(QWidget):
             Theme.SPACING_LARGE
         )
 
-        # Concert header row (date + source badge)
+        # Concert header row (date + badges)
         header_layout = QHBoxLayout()
-        header_layout.setSpacing(12)
+        header_layout.setSpacing(10)
 
-        # Date label
+        # Date label (formatted nicely)
         self.date_label = QLabel("No show loaded")
         self.date_label.setStyleSheet(f"""
             color: {Theme.TEXT_PRIMARY};
@@ -467,26 +506,33 @@ class PlayerScreen(QWidget):
         """)
         header_layout.addWidget(self.date_label)
 
-        # Source badge (initially hidden)
+        # Source badge (SBD/AUD/MTX)
         self.source_badge = SourceBadge('SBD')
         self.source_badge.hide()
         header_layout.addWidget(self.source_badge)
 
+        # Rating badge
+        self.rating_badge = RatingBadge(0.0)
+        self.rating_badge.hide()
+        header_layout.addWidget(self.rating_badge)
+
         header_layout.addStretch()
         layout.addLayout(header_layout)
 
-        # Venue label
+        layout.addSpacing(Theme.SPACING_SMALL)
+
+        # Venue label (large, prominent)
         self.venue_label = QLabel("")
         self.venue_label.setStyleSheet(f"""
             color: {Theme.TEXT_PRIMARY};
-            font-size: {Theme.HEADER_MEDIUM}px;
+            font-size: {Theme.HEADER_SMALL}px;
             font-weight: bold;
             background: transparent;
         """)
         self.venue_label.setWordWrap(True)
         layout.addWidget(self.venue_label)
 
-        # Location label
+        # Location label (city, state)
         self.location_label = QLabel("")
         self.location_label.setStyleSheet(f"""
             color: {Theme.TEXT_SECONDARY};
@@ -494,6 +540,19 @@ class PlayerScreen(QWidget):
             background: transparent;
         """)
         layout.addWidget(self.location_label)
+
+        layout.addSpacing(Theme.SPACING_SMALL)
+
+        # Metadata label (taper, reviews)
+        self.metadata_label = QLabel("")
+        self.metadata_label.setStyleSheet(f"""
+            color: {Theme.TEXT_SECONDARY};
+            font-size: {Theme.BODY_SMALL}px;
+            background: transparent;
+            font-style: italic;
+        """)
+        self.metadata_label.setWordWrap(True)
+        layout.addWidget(self.metadata_label)
 
         layout.addSpacing(Theme.SPACING_MEDIUM)
 
@@ -859,37 +918,68 @@ class PlayerScreen(QWidget):
         venue = self.current_show.get('venue', 'Unknown Venue')
         self.venue_label.setText(venue)
 
-        # Display location
-        location = self.current_show.get('location', '')
-        if not location:
-            # Try to build from coverage field
-            coverage = self.current_show.get('coverage', '')
-            if coverage:
-                location = coverage
+        # Display location (city, state)
+        city = self.current_show.get('city', '')
+        state = self.current_show.get('state', '')
+        if city and state:
+            location = f"{city}, {state}"
+        elif city:
+            location = city
+        elif state:
+            location = state
+        else:
+            # Fallback to coverage field
+            location = self.current_show.get('coverage', '')
         self.location_label.setText(location)
 
         # Show source badge if available
-        source = self.current_show.get('source', '')
-        if source:
-            # Extract source type from string (e.g., "SBD", "AUD", "MATRIX")
-            source_upper = source.upper()
+        source_type = self.current_show.get('source_type', '')
+        if source_type:
+            # Normalize source type
+            source_upper = source_type.upper()
             if 'SBD' in source_upper or 'SOUNDBOARD' in source_upper:
-                source_type = 'SBD'
+                badge_type = 'SBD'
             elif 'AUD' in source_upper or 'AUDIENCE' in source_upper:
-                source_type = 'AUD'
+                badge_type = 'AUD'
             elif 'MATRIX' in source_upper or 'MTX' in source_upper:
-                source_type = 'MTX'
+                badge_type = 'MTX'
             elif 'FM' in source_upper:
-                source_type = 'FM'
+                badge_type = 'FM'
             else:
-                source_type = 'SBD'  # Default
+                badge_type = source_type[:3].upper()  # Use first 3 chars
 
             # Update badge and show it
-            self.source_badge.source_type = source_type
+            self.source_badge.source_type = badge_type
             self.source_badge.show()
             self.source_badge.update()
         else:
             self.source_badge.hide()
+
+        # Show rating badge if available
+        avg_rating = self.current_show.get('avg_rating')
+        if avg_rating and avg_rating > 0:
+            self.rating_badge.set_rating(avg_rating)
+            self.rating_badge.show()
+        else:
+            self.rating_badge.hide()
+
+        # Build metadata string (taper and reviews)
+        metadata_parts = []
+
+        taper = self.current_show.get('taper', '')
+        if taper:
+            metadata_parts.append(f"Taper: {taper}")
+
+        num_reviews = self.current_show.get('num_reviews')
+        if num_reviews and num_reviews > 0:
+            review_text = "review" if num_reviews == 1 else "reviews"
+            metadata_parts.append(f"{num_reviews} {review_text}")
+
+        if metadata_parts:
+            self.metadata_label.setText(" | ".join(metadata_parts))
+            self.metadata_label.show()
+        else:
+            self.metadata_label.hide()
 
     def populate_setlist(self):
         """Populate setlist with clickable track widgets"""
