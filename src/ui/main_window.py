@@ -19,6 +19,7 @@ from src.ui.screens.player_screen import PlayerScreen
 from src.ui.screens.browse_screen import BrowseScreen
 from src.ui.screens.settings_screen import SettingsScreen
 from src.ui.screens.findashow_screen import FindAShowScreen
+from src.ui.screens.randomshow_screen import RandomShowScreen
 from src.ui.widgets.now_playing_bar import NowPlayingBar
 from src.ui.transitions import TransitionType
 from src.settings import get_settings
@@ -156,6 +157,7 @@ class MainWindow(QMainWindow):
             self.browse_screen = BrowseScreen()
             self.settings_screen = SettingsScreen()
             self.findashow_screen = FindAShowScreen()
+            self.randomshow_screen = RandomShowScreen()
 
             # Add to screen manager
             self.screen_manager.add_screen(
@@ -177,6 +179,10 @@ class MainWindow(QMainWindow):
             self.screen_manager.add_screen(
                 ScreenManager.FINDASHOW_SCREEN,
                 self.findashow_screen
+            )
+            self.screen_manager.add_screen(
+                ScreenManager.RANDOMSHOW_SCREEN,
+                self.randomshow_screen
             )
 
             print("[INFO] All screens created and added")
@@ -262,6 +268,11 @@ class MainWindow(QMainWindow):
             self.findashow_screen.back_requested.connect(self.show_welcome)
             self.findashow_screen.settings_requested.connect(self.show_settings)
 
+            # Random Show screen navigation
+            self.randomshow_screen.show_selected.connect(self.on_show_selected)
+            self.randomshow_screen.home_requested.connect(self.show_welcome)
+            self.randomshow_screen.settings_requested.connect(self.show_settings)
+
             # Screen manager change signal
             self.screen_manager.screen_changed.connect(self.on_screen_changed)
 
@@ -319,12 +330,14 @@ class MainWindow(QMainWindow):
         """Navigate to find a show screen with fade transition"""
         self.screen_manager.show_screen(ScreenManager.FINDASHOW_SCREEN, transition_type=TransitionType.FADE)
 
+    def show_randomshow(self):
+        """Navigate to random show screen with fade transition"""
+        self.screen_manager.show_screen(ScreenManager.RANDOMSHOW_SCREEN, transition_type=TransitionType.FADE)
+
     def on_random_show_requested(self):
         """Handle random show request from welcome screen"""
-        print("[INFO] Random show requested - selecting random show from database")
-        # TODO: Implement random show selection logic
-        # For now, just go to browse screen
-        self.show_browse()
+        print("[INFO] Random show requested - navigating to random show screen")
+        self.show_randomshow()
 
     def on_show_selected(self, show):
         """Handle show selection from browse screen"""

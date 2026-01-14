@@ -37,6 +37,7 @@ class ScreenManager(QStackedWidget):
     BROWSE_SCREEN = "browse"
     SETTINGS_SCREEN = "settings"
     FINDASHOW_SCREEN = "findashow"
+    RANDOMSHOW_SCREEN = "randomshow"
     
     def __init__(self):
         """Initialize the screen manager"""
