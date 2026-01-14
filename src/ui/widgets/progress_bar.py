@@ -171,18 +171,19 @@ class ProgressBarWidget(QWidget):
     def update_position(self, current_seconds, total_seconds):
         """
         Update progress bar position.
-        
+
         Args:
             current_seconds (int): Current playback position in seconds
             total_seconds (int): Total track duration in seconds
         """
         self.current_time = current_seconds
         self.total_duration = total_seconds
-        
-        # Update labels
+
+        # Update labels - current time on left, time remaining on right
         self.current_label.setText(self.format_time(current_seconds))
-        self.duration_label.setText(self.format_time(total_seconds))
-        
+        remaining_seconds = max(0, total_seconds - current_seconds)
+        self.duration_label.setText(f"-{self.format_time(remaining_seconds)}")
+
         # Update slider (only if user isn't seeking)
         if not self.is_seeking and total_seconds > 0:
             percentage = (current_seconds / total_seconds) * 100
@@ -191,12 +192,13 @@ class ProgressBarWidget(QWidget):
     def set_duration(self, total_seconds):
         """
         Set total duration (when track loads).
-        
+
         Args:
             total_seconds (int): Total track duration in seconds
         """
         self.total_duration = total_seconds
-        self.duration_label.setText(self.format_time(total_seconds))
+        # Show full duration as time remaining initially (with minus sign)
+        self.duration_label.setText(f"-{self.format_time(total_seconds)}")
         self.slider.setMaximum(100)  # Always use percentage
         print(f"[INFO] Duration set to {self.format_time(total_seconds)}")
     

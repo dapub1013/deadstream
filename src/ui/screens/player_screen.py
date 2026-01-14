@@ -17,12 +17,11 @@ if PROJECT_ROOT not in sys.path:
 from PyQt5.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QLabel, QFrame, QScrollArea
 )
-from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPropertyAnimation, QEasingCurve, QPoint
-from PyQt5.QtGui import QFont, QPainter, QLinearGradient, QColor, QFontMetrics, QPolygon, QPixmap
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPoint
+from PyQt5.QtGui import QFont, QPainter, QLinearGradient, QColor, QFontMetrics, QPixmap, QPolygon
 
 # Import Theme and Components
 from src.ui.styles.theme import Theme
-from src.ui.components.icon_button import IconButton  # For media controls
 
 # Import widgets
 from src.ui.widgets.progress_bar import ProgressBarWidget
@@ -72,61 +71,49 @@ class ElidedLabel(QLabel):
         painter.drawText(text_rect, Qt.AlignCenter, elided_text)
 
 
-class SkipButton(QWidget):
-    """Circular button with curved arrow for skip forward/backward 30s"""
-    
+class ImageButton(QWidget):
+    """Simple image-based button without hover effects"""
+
     clicked = pyqtSignal()
-    
-    def __init__(self, direction='forward', parent=None):
+
+    def __init__(self, icon_path, size=60, tooltip="", parent=None):
         super().__init__(parent)
-        self.direction = direction  # 'forward' or 'backward'
-        self.hovered = False
-        
-        # Standard media control size
-        self.setFixedSize(60, 60)
-        self.setMouseTracking(True)
-        
-        # Icon: circular arrows (different from triangular prev/next)
-        if direction == 'backward':
-            self.icon = '↺'  # Counterclockwise arrow
-            self.setToolTip("Skip back 30 seconds")
-        else:
-            self.icon = '↻'  # Clockwise arrow
-            self.setToolTip("Skip forward 30 seconds")
-    
+        self._icon_path = icon_path
+        self._size = size
+        self._pixmap = None
+
+        self.setFixedSize(size, size)
+        self.setToolTip(tooltip)
+        self._load_icon()
+
+    def _load_icon(self):
+        """Load and scale the icon"""
+        if os.path.exists(self._icon_path):
+            pixmap = QPixmap(self._icon_path)
+            self._pixmap = pixmap.scaled(
+                self._size, self._size,
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation
+            )
+
+    def set_icon(self, icon_path):
+        """Change the button icon"""
+        self._icon_path = icon_path
+        self._load_icon()
+        self.update()
+
     def paintEvent(self, event):
-        """Paint circular button with curved arrow"""
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.Antialiasing)
-        
-        # Background circle (outline style)
-        if self.hovered:
-            painter.setPen(QColor(255, 255, 255, 100))
-            painter.setBrush(QColor(255, 255, 255, 30))
-        else:
-            painter.setPen(QColor(255, 255, 255, 60))
-            painter.setBrush(Qt.NoBrush)
-        
-        painter.drawEllipse(2, 2, 56, 56)
-        
-        # Icon (circular arrow)
-        painter.setPen(QColor(255, 255, 255, 255) if self.hovered else QColor(255, 255, 255, 200))
-        font = QFont(Theme.FONT_FAMILY, 24)  # Larger for visibility
-        painter.setFont(font)
-        painter.drawText(self.rect(), Qt.AlignCenter, self.icon)
-    
-    def enterEvent(self, event):
-        """Mouse entered"""
-        self.hovered = True
-        self.update()
-        super().enterEvent(event)
-    
-    def leaveEvent(self, event):
-        """Mouse left"""
-        self.hovered = False
-        self.update()
-        super().leaveEvent(event)
-    
+        """Paint the button icon"""
+        if self._pixmap:
+            painter = QPainter(self)
+            painter.setRenderHint(QPainter.Antialiasing)
+            painter.setRenderHint(QPainter.SmoothPixmapTransform)
+
+            # Center the pixmap
+            x = (self.width() - self._pixmap.width()) // 2
+            y = (self.height() - self._pixmap.height()) // 2
+            painter.drawPixmap(x, y, self._pixmap)
+
     def mousePressEvent(self, event):
         """Handle click"""
         if event.button() == Qt.LeftButton:
@@ -136,81 +123,72 @@ class SkipButton(QWidget):
 
 class TrackButton(QWidget):
     """Button for prev/next track with industry-standard bar+triangle icon"""
-    
+
     clicked = pyqtSignal()
-    
-    def __init__(self, direction='next', parent=None):
+
+    def __init__(self, direction='next', size=60, parent=None):
         super().__init__(parent)
         self.direction = direction  # 'next' or 'previous'
-        self.hovered = False
-        
-        # Standard media control size
-        self.setFixedSize(60, 60)
-        self.setMouseTracking(True)
-        
-        # Tooltip
+        self._size = size
+
+        self.setFixedSize(size, size)
+
         if direction == 'previous':
             self.setToolTip("Previous track")
         else:
             self.setToolTip("Next track")
-    
+
     def paintEvent(self, event):
         """Paint button with bar+triangle icon (industry standard)"""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
-        
-        # Background circle (solid style)
-        if self.hovered:
-            painter.setPen(Qt.NoPen)
-            painter.setBrush(QColor(255, 255, 255, 200))
-        else:
-            painter.setPen(Qt.NoPen)
-            painter.setBrush(QColor(255, 255, 255, 140))
-        
-        painter.drawEllipse(2, 2, 56, 56)
-        
+
+        # Background circle (solid white style)
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QColor(255, 255, 255, 140))
+        margin = 2
+        diameter = self._size - (margin * 2)
+        painter.drawEllipse(margin, margin, diameter, diameter)
+
         # Draw bar + triangle (standard prev/next icon)
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor(0, 0, 0, 255))
-        
+
+        # Scale icon elements based on button size
+        center = self._size // 2
+        icon_scale = self._size / 60.0  # Base scale on 60px reference
+
         if self.direction == 'previous':
-            # Previous: |◀ (bar on left, triangle pointing left)
-            # Bar
-            painter.drawRect(18, 20, 3, 20)
-            
+            # Previous: |< (bar on left, triangle pointing left)
+            bar_x = int(18 * icon_scale)
+            bar_y = int(20 * icon_scale)
+            bar_w = int(3 * icon_scale)
+            bar_h = int(20 * icon_scale)
+            painter.drawRect(bar_x, bar_y, bar_w, bar_h)
+
             # Triangle pointing left
             triangle = QPolygon([
-                QPoint(39, 20),   # Top right
-                QPoint(39, 40),   # Bottom right
-                QPoint(24, 30)    # Left point
+                QPoint(int(39 * icon_scale), int(20 * icon_scale)),
+                QPoint(int(39 * icon_scale), int(40 * icon_scale)),
+                QPoint(int(24 * icon_scale), int(30 * icon_scale))
             ])
             painter.drawPolygon(triangle)
-            
         else:
-            # Next: ▶| (triangle pointing right, bar on right)
-            # Triangle pointing right
+            # Next: >| (triangle pointing right, bar on right)
             triangle = QPolygon([
-                QPoint(21, 20),   # Top left
-                QPoint(21, 40),   # Bottom left
-                QPoint(36, 30)    # Right point
+                QPoint(int(21 * icon_scale), int(20 * icon_scale)),
+                QPoint(int(21 * icon_scale), int(40 * icon_scale)),
+                QPoint(int(36 * icon_scale), int(30 * icon_scale))
             ])
             painter.drawPolygon(triangle)
-            
+
             # Bar
-            painter.drawRect(39, 20, 3, 20)
-    
-    def enterEvent(self, event):
-        """Mouse entered"""
-        self.hovered = True
-        self.update()
-        super().enterEvent(event)
-    
-    def leaveEvent(self, event):
-        """Mouse left"""
-        self.hovered = False
-        self.update()
-        super().leaveEvent(event)
-    
+            bar_x = int(39 * icon_scale)
+            bar_y = int(20 * icon_scale)
+            bar_w = int(3 * icon_scale)
+            bar_h = int(20 * icon_scale)
+            painter.drawRect(bar_x, bar_y, bar_w, bar_h)
+
     def mousePressEvent(self, event):
         """Handle click"""
         if event.button() == Qt.LeftButton:
@@ -374,13 +352,13 @@ class PlayerScreen(QWidget):
         self.now_playing_label = None
         self.track_counter_label = None
         self.song_title_label = None
-        self.play_pause_btn = None  # IconButton (solid, 90px)
-        self.prev_btn = None  # TrackButton (|◀ bar+triangle)
-        self.next_btn = None  # TrackButton (▶| triangle+bar)
-        self.skip_back_btn = None  # SkipButton (↺ circular arrow)
-        self.skip_forward_btn = None  # SkipButton (↻ circular arrow)
+        self.play_pause_btn = None  # ImageButton (play.png/pause.png, 80px)
+        self.prev_btn = None  # TrackButton (painted bar+triangle, 60px)
+        self.next_btn = None  # TrackButton (painted triangle+bar, 60px)
+        self.skip_back_btn = None  # ImageButton (rew-30.png, 60px)
+        self.skip_forward_btn = None  # ImageButton (ffw-30.png, 60px)
         self.progress_bar = None
-        self.volume_control = None
+        self.volume_control = None  # VolumeControlWidget with image-based mute button
         self.settings_btn = None  # Settings button (upper right corner)
         self.home_btn = None  # Home button (upper left corner)
 
@@ -445,12 +423,12 @@ class PlayerScreen(QWidget):
         initial_volume = self.player.get_volume()
         if self.volume_control:
             self.volume_control.set_volume(initial_volume)
-        
+
         # Create UI update timer (200ms = 5 updates per second)
         self.update_timer = QTimer()
         self.update_timer.timeout.connect(self.update_ui_from_player)
         self.update_timer.start(200)
-        
+
         print(f"[INFO] Audio integration initialized - Volume: {initial_volume}%")
     
     # ========================================================================
@@ -641,13 +619,13 @@ class PlayerScreen(QWidget):
         layout.addWidget(controls_widget)
         
         layout.addSpacing(64)
-        
-        # Volume control
+
+        # Volume control (with image-based mute button using sound.png/silent.png)
         self.volume_control = VolumeControlWidget()
         self.volume_control.volume_changed.connect(self.on_volume_changed)
         self.volume_control.mute_toggled.connect(self.on_mute_toggled)
         layout.addWidget(self.volume_control)
-        
+
         # Add stretch at bottom for centering content
         layout.addStretch(1)
         
@@ -718,40 +696,49 @@ class PlayerScreen(QWidget):
         return panel
     
     def create_media_controls(self):
-        """Create 5-button media control layout with industry-standard icons"""
+        """Create 5-button media control layout with mixed PNG and painted buttons"""
         controls_widget = QWidget()
         controls_widget.setStyleSheet("background: transparent;")
-        
+
         layout = QHBoxLayout()
         layout.setSpacing(24)
         layout.setContentsMargins(0, 0, 0, 0)
-        
-        # Skip backward 30s (circular arrow ↺)
-        self.skip_back_btn = SkipButton('backward')
+
+        # Asset paths
+        assets_dir = os.path.join(PROJECT_ROOT, 'assets')
+
+        # Button size for skip buttons (same as track buttons)
+        control_btn_size = 60
+
+        # Skip backward 30s (PNG asset)
+        rew_30_path = os.path.join(assets_dir, 'rew-30.png')
+        self.skip_back_btn = ImageButton(rew_30_path, size=control_btn_size, tooltip="Skip back 30 seconds")
         self.skip_back_btn.clicked.connect(self.on_skip_backward)
         layout.addWidget(self.skip_back_btn)
-        
-        # Previous track (bar + triangle: |◀)
-        self.prev_btn = TrackButton('previous')
+
+        # Previous track (painted bar+triangle)
+        self.prev_btn = TrackButton('previous', size=control_btn_size)
         self.prev_btn.clicked.connect(self.on_previous_track)
         layout.addWidget(self.prev_btn)
-        
-        # Play/Pause (larger, center)
-        self.play_pause_btn = IconButton('play', variant='solid')
-        self.play_pause_btn.setFixedSize(90, 90)  # Larger center button
+
+        # Play/Pause (larger, center) - stores both icon paths for toggling
+        self._play_icon_path = os.path.join(assets_dir, 'play.png')
+        self._pause_icon_path = os.path.join(assets_dir, 'pause.png')
+        self.play_pause_btn = ImageButton(self._play_icon_path, size=80, tooltip="Play/Pause")
         self.play_pause_btn.clicked.connect(self.on_play_pause)
         layout.addWidget(self.play_pause_btn)
-        
-        # Next track (triangle + bar: ▶|)
-        self.next_btn = TrackButton('next')
+
+        # Next track (painted triangle+bar)
+        self.next_btn = TrackButton('next', size=control_btn_size)
         self.next_btn.clicked.connect(self.on_next_track)
         layout.addWidget(self.next_btn)
-        
-        # Skip forward 30s (circular arrow ↻)
-        self.skip_forward_btn = SkipButton('forward')
+
+        # Skip forward 30s (PNG asset)
+        ffw_30_path = os.path.join(assets_dir, 'ffw-30.png')
+        self.skip_forward_btn = ImageButton(ffw_30_path, size=control_btn_size, tooltip="Skip forward 30 seconds")
         self.skip_forward_btn.clicked.connect(self.on_skip_forward)
         layout.addWidget(self.skip_forward_btn)
-        
+
         controls_widget.setLayout(layout)
         return controls_widget
     
@@ -765,7 +752,7 @@ class PlayerScreen(QWidget):
         position_ms = self.player.get_position()
         duration_ms = self.player.get_duration()
 
-        # Update progress bar
+        # Update progress bar (which now shows time remaining on the right)
         if duration_ms > 0:
             position_seconds = position_ms // 1000
             duration_seconds = duration_ms // 1000
@@ -788,7 +775,7 @@ class PlayerScreen(QWidget):
         is_playing = (state == PlayerState.PLAYING)
 
         if is_playing:
-            self.play_pause_btn.set_icon('pause')
+            self.play_pause_btn.set_icon(self._pause_icon_path)
             # Reset the flag when playing (but only if we're not near the end)
             if duration_ms > 0:
                 position_seconds = position_ms // 1000
@@ -796,7 +783,7 @@ class PlayerScreen(QWidget):
                 if position_seconds < duration_seconds - 3:
                     self._track_ended_handled = False
         else:
-            self.play_pause_btn.set_icon('play')
+            self.play_pause_btn.set_icon(self._play_icon_path)
     
     def load_show(self, show, auto_play=True):
         """
@@ -1131,7 +1118,7 @@ class PlayerScreen(QWidget):
         """Handle volume change"""
         self.player.set_volume(volume)
         print(f"[INFO] Volume changed to {volume}%")
-    
+
     def on_mute_toggled(self, muted):
         """Handle mute toggle"""
         if muted:
@@ -1140,7 +1127,7 @@ class PlayerScreen(QWidget):
         else:
             self.player.unmute()
             print("[INFO] Audio unmuted")
-    
+
     def on_settings_button_pressed(self, event):
         """Handle settings button press (mouse down)"""
         if event.button() == Qt.LeftButton:
@@ -1305,7 +1292,7 @@ if __name__ == "__main__":
     print("  [OK] 'NOW PLAYING' centered label")
     print("  [OK] '1 of 25' track counter")
     print("  [OK] Large centered song title")
-    print("  [OK] 5 media controls (90px play button)")
+    print("  [OK] 5 media controls with PNG assets (80px play button)")
     print("  [OK] Progress bar and volume control")
     print("\nPress Ctrl+C to exit")
     print("=" * 70 + "\n")

@@ -17,7 +17,8 @@ from PyQt5.QtWidgets import (
     QWidget, QHBoxLayout, QSlider, QLabel, QPushButton, QVBoxLayout
 )
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QPixmap, QIcon
+from PyQt5.QtCore import QSize
 
 
 class VolumeControlWidget(QWidget):
@@ -61,24 +62,22 @@ class VolumeControlWidget(QWidget):
         layout = QHBoxLayout()
         layout.setSpacing(15)
         layout.setContentsMargins(0, 0, 0, 0)
-        
-        # Mute button (left)
+
+        # Load mute button icons
+        assets_dir = os.path.join(PROJECT_ROOT, 'assets')
+        self._sound_icon_path = os.path.join(assets_dir, 'sound.png')
+        self._silent_icon_path = os.path.join(assets_dir, 'silent.png')
+
+        # Mute button (left) - using PNG icons
         self.mute_button = QPushButton()
         self.mute_button.setFixedSize(50, 50)
+        self.mute_button.setIconSize(QSize(40, 40))
         self._update_mute_button_icon()
         self.mute_button.setStyleSheet("""
             QPushButton {
-                background-color: #1F2937;
+                background-color: transparent;
                 border: none;
                 border-radius: 8px;
-                font-size: 20px;
-                color: #FFFFFF;
-            }
-            QPushButton:hover {
-                background-color: #374151;
-            }
-            QPushButton:pressed {
-                background-color: #4B5563;
             }
         """)
         self.mute_button.clicked.connect(self.on_mute_clicked)
@@ -230,11 +229,13 @@ class VolumeControlWidget(QWidget):
     def _update_mute_button_icon(self):
         """Update mute button icon based on state"""
         if self.is_muted:
-            # Muted - show speaker with X
-            self.mute_button.setText("🔇")
+            # Muted - show silent icon
+            if os.path.exists(self._silent_icon_path):
+                self.mute_button.setIcon(QIcon(self._silent_icon_path))
         else:
-            # Unmuted - show speaker
-            self.mute_button.setText("🔊")
+            # Unmuted - show sound icon
+            if os.path.exists(self._sound_icon_path):
+                self.mute_button.setIcon(QIcon(self._sound_icon_path))
 
 
 if __name__ == "__main__":
