@@ -45,31 +45,44 @@ class PlayerState(Enum):
 
 class ResilientPlayer:
     """
-    Resilient audio streaming player with automatic recovery
-    and platform-aware audio configuration
+    Resilient audio streaming player with automatic recovery,
+    platform-aware audio configuration, and gapless playback support.
+
+    Gapless playback is achieved using VLC's MediaListPlayer which
+    handles seamless transitions between tracks in a playlist.
     """
-    
+
     def __init__(self, debug=False):
         """
         Initialize the player
-        
+
         Args:
             debug: If True, enable verbose VLC output
         """
         # Create platform-aware VLC instance
         self.instance = create_vlc_instance(debug=debug)
 
-        # Create media player
-        self.player = self.instance.media_player_new()
-        
+        # Create media list player for gapless playback
+        self.list_player = self.instance.media_list_player_new()
+        self.media_list = self.instance.media_list_new()
+        self.list_player.set_media_list(self.media_list)
+
+        # Get the underlying media player for position/volume control
+        self.player = self.list_player.get_media_player()
+
         # Playlist management
         self.playlist = []
         self.current_index = 0
-        
+
         # State tracking
         self.state = PlayerState.STOPPED
         self.current_url = None
-        
+
+        # Gapless playback: track URLs for the media list
+        self._playlist_urls = []
+        self._next_media = None
+        self._next_url = None
+
         # Health monitoring
         self.health_thread = None
         self.health_running = False
@@ -84,10 +97,10 @@ class ResilientPlayer:
 
         # Apply default volume
         self.player.audio_set_volume(self._volume)
-        
-        # Track end callback (for auto-play next track)
+
+        # Track end callback (for UI updates when track changes)
         self.on_track_ended = None  # Set by PlayerScreen
-        
+
         # Set up VLC event manager for track end detection
         self.event_manager = self.player.event_manager()
         self.event_manager.event_attach(
@@ -257,117 +270,343 @@ class ResilientPlayer:
     # ========================================================================
     # PLAYBACK CONTROL METHODS
     # ========================================================================
-    
+
+    def load_playlist(self, urls):
+        """
+        Load an entire playlist of URLs for gapless playback.
+
+        Loading the full playlist at once allows VLC's MediaListPlayer
+        to handle seamless transitions between all tracks.
+
+        Args:
+            urls: List of URLs to load
+
+        Returns:
+            bool: True if loaded successfully
+        """
+        try:
+            print(f"[INFO] Loading playlist with {len(urls)} tracks...")
+
+            # Stop any existing playback
+            if self.state != PlayerState.STOPPED:
+                self.stop()
+
+            # Clear the media list
+            self.media_list.lock()
+            while self.media_list.count() > 0:
+                self.media_list.remove_index(0)
+            self.media_list.unlock()
+            self._playlist_urls = []
+
+            # Add all tracks to the media list
+            self.media_list.lock()
+            for url in urls:
+                media = self.instance.media_new(url)
+                media.add_option(':network-caching=8000')
+                self.media_list.add_media(media)
+                self._playlist_urls.append(url)
+            self.media_list.unlock()
+
+            # Store first URL
+            if urls:
+                self.current_url = urls[0]
+
+            print(f"[PASS] Playlist loaded with {self.media_list.count()} tracks")
+            return True
+
+        except Exception as e:
+            print(f"[ERROR] Failed to load playlist: {e}")
+            self.state = PlayerState.ERROR
+            return False
+
+    def preload_next(self, url):
+        """
+        Add the next track URL to the media list for gapless playback.
+
+        The MediaListPlayer will automatically transition to the next
+        track when the current one ends, providing gapless playback.
+
+        Args:
+            url: URL to add to playlist for gapless transition
+
+        Returns:
+            bool: True if added successfully
+        """
+        try:
+            # Check if this URL is already in the playlist
+            if url in self._playlist_urls:
+                print(f"[INFO] Track already in playlist, skipping")
+                self._next_url = url
+                return True
+
+            print(f"[INFO] Adding next track to playlist: {url[:80]}...")
+
+            # Create media object for next track
+            media = self.instance.media_new(url)
+            media.add_option(':network-caching=8000')
+
+            # Add to the media list (locked operation)
+            self.media_list.lock()
+            self.media_list.add_media(media)
+            self.media_list.unlock()
+
+            # Store reference
+            self._next_media = media
+            self._next_url = url
+            self._playlist_urls.append(url)
+
+            print(f"[PASS] Next track added (playlist now has {self.media_list.count()} items)")
+            return True
+
+        except Exception as e:
+            print(f"[ERROR] Failed to add next track: {e}")
+            self._next_media = None
+            self._next_url = None
+            return False
+
+    def play_preloaded(self):
+        """
+        The MediaListPlayer handles gapless transitions automatically.
+        This method is kept for API compatibility but the transition
+        happens automatically via VLC's internal gapless handling.
+
+        Returns:
+            bool: True (transition handled by MediaListPlayer)
+        """
+        # MediaListPlayer handles this automatically
+        # Just update our state tracking
+        if self._next_url:
+            self.current_url = self._next_url
+            self._next_media = None
+            self._next_url = None
+            self.state = PlayerState.PLAYING
+            print("[PASS] Gapless transition (handled by MediaListPlayer)")
+            return True
+        return False
+
+    def has_preloaded(self):
+        """
+        Check if a next track is queued in the playlist.
+
+        Returns:
+            bool: True if next track is queued
+        """
+        return self._next_media is not None or self._next_url is not None
+
+    def clear_preloaded(self):
+        """Clear pre-loaded state."""
+        self._next_media = None
+        self._next_url = None
+
+    def play_item_at_index(self, index):
+        """
+        Play a specific item in the media list by index.
+
+        Args:
+            index: Index of the item to play (0-based)
+
+        Returns:
+            bool: True if playback started
+        """
+        try:
+            if index < 0 or index >= self.media_list.count():
+                print(f"[ERROR] Invalid playlist index: {index}")
+                return False
+
+            result = self.list_player.play_item_at_index(index)
+
+            if result == 0:
+                self.state = PlayerState.PLAYING
+                if index < len(self._playlist_urls):
+                    self.current_url = self._playlist_urls[index]
+                print(f"[PASS] Playing item at index {index}")
+                return True
+            else:
+                print(f"[FAIL] play_item_at_index returned {result}")
+                return False
+
+        except Exception as e:
+            print(f"[ERROR] Failed to play item at index: {e}")
+            return False
+
     def load_url(self, url):
         """
-        Load a URL for playback
-        
+        Load a URL for playback (clears existing playlist).
+
         Args:
             url: URL to audio stream
-            
+
         Returns:
             bool: True if loaded successfully
         """
         try:
             print(f"[INFO] Loading URL: {url}")
-            
+
             # Stop any existing playback
             if self.state != PlayerState.STOPPED:
                 self.stop()
-            
+
+            # Clear the media list
+            self.media_list.lock()
+            while self.media_list.count() > 0:
+                self.media_list.remove_index(0)
+            self.media_list.unlock()
+            self._playlist_urls = []
+
+            # Clear pre-loaded state
+            self.clear_preloaded()
+
             # Create new media
             media = self.instance.media_new(url)
-            
-            # Set media options for streaming
             media.add_option(':network-caching=8000')  # 8 second buffer
-            
+
+            # Add to the media list
+            self.media_list.lock()
+            self.media_list.add_media(media)
+            self.media_list.unlock()
+            self._playlist_urls.append(url)
+
             # Store URL for recovery
             self.current_url = url
-            
-            # Load into player
-            self.player.set_media(media)
-            
-            print("[PASS] URL loaded successfully")
+
+            print(f"[PASS] URL loaded successfully (playlist has {self.media_list.count()} items)")
             return True
-            
+
         except Exception as e:
             print(f"[ERROR] Failed to load URL: {e}")
             self.state = PlayerState.ERROR
             return False
     
     def play(self):
-        """Start or resume playback"""
+        """Start or resume playback using MediaListPlayer for gapless support"""
         try:
-            if self.current_url is None:
+            if self.current_url is None and self.media_list.count() == 0:
                 print("[WARN] No media loaded")
                 return False
-            
+
             # If unmuting on play, restore volume
             if self._muted:
                 self.unmute()
-            
-            result = self.player.play()
-            
-            if result == 0:  # Success
+
+            # Check current VLC state to determine action
+            vlc_state = self.player.get_state()
+
+            if vlc_state == vlc.State.Paused:
+                # Resume from pause - use the underlying media player
+                # MediaListPlayer.pause() toggles, so we use it to unpause
+                self.list_player.pause()
                 self.state = PlayerState.PLAYING
-                
-                # Start health monitoring if not already running
-                if not self.health_running:
-                    self._start_health_monitor()
-                
-                print("[PASS] Playback started")
+                print("[PASS] Playback resumed (from pause)")
+                return True
+            elif vlc_state == vlc.State.Playing:
+                # Already playing
+                self.state = PlayerState.PLAYING
+                print("[INFO] Already playing")
                 return True
             else:
-                print(f"[FAIL] VLC play() returned {result}")
-                return False
-                
+                # Start fresh playback
+                result = self.list_player.play()
+
+                if result == 0:  # Success
+                    self.state = PlayerState.PLAYING
+
+                    # Start health monitoring if not already running
+                    if not self.health_running:
+                        self._start_health_monitor()
+
+                    print("[PASS] Playback started (gapless mode)")
+                    return True
+                else:
+                    print(f"[FAIL] VLC play() returned {result}")
+                    return False
+
         except Exception as e:
             print(f"[ERROR] Playback failed: {e}")
             self.state = PlayerState.ERROR
             return False
-    
+
     def pause(self):
         """Pause playback"""
         try:
-            self.player.pause()
-            self.state = PlayerState.PAUSED
-            print("[INFO] Playback paused")
-            return True
-            
+            # Check if actually playing before pausing
+            vlc_state = self.player.get_state()
+
+            if vlc_state == vlc.State.Playing:
+                # MediaListPlayer.pause() toggles pause state
+                self.list_player.pause()
+                self.state = PlayerState.PAUSED
+                print("[INFO] Playback paused")
+                return True
+            elif vlc_state == vlc.State.Paused:
+                # Already paused
+                self.state = PlayerState.PAUSED
+                print("[INFO] Already paused")
+                return True
+            else:
+                print(f"[INFO] Cannot pause - VLC state is {vlc_state}")
+                return False
+
         except Exception as e:
             print(f"[ERROR] Failed to pause: {e}")
             return False
-    
+
     def stop(self):
         """Stop playback and release resources"""
         try:
             # Stop health monitoring
             self._stop_health_monitor()
-            
+
             # Stop playback
-            self.player.stop()
+            self.list_player.stop()
             self.state = PlayerState.STOPPED
             self.current_url = None
-            
+
             print("[INFO] Playback stopped")
             return True
-            
+
         except Exception as e:
             print(f"[ERROR] Failed to stop: {e}")
             return False
     
     def get_state(self):
-        """Get current player state"""
+        """Get current player state (synced with VLC)"""
+        try:
+            vlc_state = self.player.get_state()
+            # Map VLC state to our PlayerState enum
+            if vlc_state == vlc.State.Playing:
+                self.state = PlayerState.PLAYING
+            elif vlc_state == vlc.State.Paused:
+                self.state = PlayerState.PAUSED
+            elif vlc_state == vlc.State.Stopped:
+                self.state = PlayerState.STOPPED
+            elif vlc_state == vlc.State.Buffering:
+                self.state = PlayerState.BUFFERING
+            elif vlc_state == vlc.State.Error:
+                self.state = PlayerState.ERROR
+            # NothingSpecial and Ended states - keep current state
+        except:
+            pass
         return self.state
     
     def is_playing(self):
         """
         Check if currently playing
-        
+
         Returns:
             bool: True if playing, False otherwise
         """
-        return self.state == PlayerState.PLAYING
+        # Check VLC's actual state to stay in sync
+        try:
+            vlc_state = self.player.get_state()
+            is_playing = vlc_state == vlc.State.Playing
+            # Update internal state to match VLC
+            if is_playing:
+                self.state = PlayerState.PLAYING
+            elif vlc_state == vlc.State.Paused:
+                self.state = PlayerState.PAUSED
+            return is_playing
+        except:
+            return self.state == PlayerState.PLAYING
     
     def get_position(self):
         """
@@ -544,7 +783,8 @@ class ResilientPlayer:
         print("[INFO] Cleaning up player resources...")
         self._stop_health_monitor()
         self.stop()
-        self.player.release()
+        self.list_player.release()
+        self.media_list.release()
         print("[PASS] Cleanup complete")
 
 

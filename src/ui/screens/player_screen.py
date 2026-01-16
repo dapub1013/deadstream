@@ -415,8 +415,9 @@ class PlayerScreen(QWidget):
         self.current_track_index = 0
         self.total_tracks = 0
 
-        # Auto-play state
+        # Gapless playback state
         self._track_ended_handled = False  # Prevent duplicate auto-advance
+        self._next_track_preloaded = False  # Track if next is pre-loaded
 
         # UI update timer
         self.update_timer = None
@@ -462,6 +463,9 @@ class PlayerScreen(QWidget):
         initial_volume = self.player.get_volume()
         if self.volume_control:
             self.volume_control.set_volume(initial_volume)
+
+        # Connect track-ended callback for gapless playback
+        self.player.on_track_ended = self._on_track_ended_callback
 
         # Create UI update timer (200ms = 5 updates per second)
         self.update_timer = QTimer()
@@ -825,17 +829,12 @@ class PlayerScreen(QWidget):
             duration_seconds = duration_ms // 1000
             self.progress_bar.update_position(position_seconds, duration_seconds)
 
-            # Auto-advance to next track when current track ends
-            # Check if we're near the end (within last 2 seconds) and not already handled
-            if position_seconds >= duration_seconds - 2 and duration_seconds > 0:
-                if not self._track_ended_handled:
-                    self._track_ended_handled = True
-                    # Check if there's a next track
-                    if self.playlist and self.current_track_index < self.total_tracks - 1:
-                        print(f"[INFO] Track ending, auto-playing next track")
-                        self.on_next_track()
-                    else:
-                        print(f"[INFO] Last track ending, playback complete")
+            # Pre-load next track for gapless playback when approaching end
+            # Trigger pre-load when ~15 seconds remain (gives time to buffer)
+            if not self._next_track_preloaded and duration_seconds > 0:
+                remaining = duration_seconds - position_seconds
+                if remaining <= 15 and remaining > 0:
+                    self._preload_next_track()
 
         # Update play/pause button icon
         state = self.player.get_state()
@@ -843,15 +842,110 @@ class PlayerScreen(QWidget):
 
         if is_playing:
             self.play_pause_btn.set_icon(self._pause_icon_path)
-            # Reset the flag when playing (but only if we're not near the end)
+            # Reset pre-load flag when we're not near the end
             if duration_ms > 0:
                 position_seconds = position_ms // 1000
                 duration_seconds = duration_ms // 1000
-                if position_seconds < duration_seconds - 3:
+                if position_seconds < duration_seconds - 20:
+                    self._next_track_preloaded = False
                     self._track_ended_handled = False
         else:
             self.play_pause_btn.set_icon(self._play_icon_path)
-    
+
+    def _preload_next_track(self):
+        """
+        Pre-load marker for gapless playback.
+
+        With MediaListPlayer, the entire playlist is already loaded,
+        so this just marks that we're ready for the gapless transition.
+        """
+        if self._next_track_preloaded:
+            return  # Already marked
+
+        # Check if there's a next track
+        next_index = self.current_track_index + 1
+        if next_index >= self.total_tracks:
+            return
+
+        # Mark as ready (MediaListPlayer already has the full playlist)
+        self._next_track_preloaded = True
+
+    def _on_track_ended_callback(self):
+        """
+        Callback from VLC when track ends - handle gapless transition.
+
+        This is called from VLC's event thread, so we use QTimer.singleShot
+        to safely update the UI from the main thread.
+        """
+        if self._track_ended_handled:
+            return  # Prevent duplicate handling
+
+        self._track_ended_handled = True
+        print("[INFO] Track ended - initiating gapless transition")
+
+        # Use QTimer to run UI updates on the main thread
+        QTimer.singleShot(0, self._handle_track_ended)
+
+    def _handle_track_ended(self):
+        """Handle track end on the main thread - update UI for gapless transition"""
+        # Check if there's a next track
+        next_index = self.current_track_index + 1
+        if next_index >= self.total_tracks:
+            print("[INFO] Playlist complete")
+            return
+
+        # MediaListPlayer handles the gapless playback automatically
+        # We just need to update the UI to reflect the new track
+        self.current_track_index = next_index
+        self._update_ui_for_new_track(next_index)
+        self._next_track_preloaded = False
+        print(f"[INFO] Gapless transition to track {next_index + 1}/{self.total_tracks}")
+
+    def _update_ui_for_new_track(self, track_index):
+        """Update UI elements for a new track (used by gapless transition)"""
+        if track_index < 0 or track_index >= len(self.playlist):
+            return
+
+        track = self.playlist[track_index]
+        track_name = track.get('title', track.get('name', 'Unknown Track'))
+
+        # Update song title
+        self.song_title_label.setText(track_name)
+        self.track_counter_label.setText(f"{track_index + 1} of {self.total_tracks}")
+
+        # Reset progress bar
+        self.progress_bar.slider.setValue(0)
+        self.progress_bar.current_label.setText("0:00")
+        self.progress_bar.current_time = 0
+
+        # Parse and set duration
+        length_str = track.get('length', '0')
+        duration = 0
+        if isinstance(length_str, str) and ':' in length_str:
+            parts = length_str.split(':')
+            if len(parts) == 2:
+                duration = int(parts[0]) * 60 + int(parts[1])
+            elif len(parts) == 3:
+                duration = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
+        elif isinstance(length_str, (int, float)):
+            duration = int(length_str)
+        else:
+            try:
+                duration = int(float(length_str))
+            except (ValueError, TypeError):
+                pass
+
+        if duration > 0:
+            self.progress_bar.set_duration(duration)
+
+        # Update setlist highlighting
+        self.update_setlist_highlight(track_index)
+
+        # Store track info
+        self.current_track_name = track_name
+
+        print(f"[INFO] Now playing: {track_name} ({track_index + 1}/{self.total_tracks})")
+
     def load_show(self, show, auto_play=True):
         """
         Load a complete show and optionally start playing
@@ -931,8 +1025,19 @@ class PlayerScreen(QWidget):
             # Populate setlist
             self.populate_setlist()
 
-            # Load and optionally play first track
-            self.play_track_at_index(0, auto_play=auto_play)
+            # Build URLs for all tracks and load entire playlist for gapless playback
+            urls = []
+            for track in audio_files:
+                url = f"https://archive.org/download/{identifier}/{track['name']}"
+                urls.append(url)
+
+            # Load the entire playlist into the player for gapless playback
+            self.player.load_playlist(urls)
+
+            # Update UI for first track and start playback
+            self._update_ui_for_new_track(0)
+            if auto_play:
+                self.player.play()
 
             print(f"[INFO] Show loaded successfully: {len(audio_files)} tracks (auto_play={auto_play})")
 
@@ -1073,12 +1178,19 @@ class PlayerScreen(QWidget):
 
     def on_track_clicked(self, track_index):
         """Handle track click from setlist"""
+        # Clear pre-loaded track (user is manually navigating)
+        self._next_track_preloaded = False
+        self._track_ended_handled = False
+
         print(f"[INFO] Track clicked: {track_index + 1}/{self.total_tracks}")
         self.play_track_at_index(track_index)
 
     def play_track_at_index(self, index, auto_play=True):
         """
-        Play the track at the given index in the playlist
+        Play the track at the given index in the playlist.
+
+        Uses MediaListPlayer's play_item_at_index for seamless navigation
+        within the loaded playlist.
 
         Args:
             index (int): Index of track to play
@@ -1093,49 +1205,21 @@ class PlayerScreen(QWidget):
             return
 
         try:
-            track = self.playlist[index]
-            identifier = self.current_show.get('identifier')
-
-            # Build streaming URL
-            url = f"https://archive.org/download/{identifier}/{track['name']}"
-
-            # Get track info
-            track_name = track.get('title', track.get('name', 'Unknown Track'))
-
-            # Parse duration from MM:SS or seconds format
-            duration = 0
-            length_str = track.get('length', '0')
-            if isinstance(length_str, str) and ':' in length_str:
-                # Format is MM:SS or HH:MM:SS
-                parts = length_str.split(':')
-                if len(parts) == 2:  # MM:SS
-                    duration = int(parts[0]) * 60 + int(parts[1])
-                elif len(parts) == 3:  # HH:MM:SS
-                    duration = int(parts[0]) * 3600 + int(parts[1]) * 60 + int(parts[2])
-            elif isinstance(length_str, (int, float)):
-                duration = int(length_str)
-            else:
-                try:
-                    duration = int(float(length_str))
-                except (ValueError, TypeError):
-                    duration = 0
-
-            # Call existing load_track_url method
-            self.load_track_url(
-                url=url,
-                track_name=track_name,
-                set_name="",  # TODO: Determine set from track metadata
-                track_num=index + 1,
-                total_tracks=self.total_tracks,
-                duration=duration,
-                auto_play=auto_play
-            )
-
             # Update current track index
             self.current_track_index = index
 
-            # Update setlist highlighting
-            self.update_setlist_highlight(index)
+            # Update UI for the new track
+            self._update_ui_for_new_track(index)
+
+            # Use MediaListPlayer to play at the specific index
+            if auto_play:
+                self.player.play_item_at_index(index)
+            else:
+                # Just update state without playing
+                print(f"[INFO] Track {index + 1} loaded (paused)")
+
+            # Reset gapless state flags
+            self._track_ended_handled = False
 
         except Exception as e:
             print(f"[ERROR] Failed to play track at index {index}: {e}")
@@ -1217,6 +1301,10 @@ class PlayerScreen(QWidget):
             print("[WARN] No playlist loaded")
             return
 
+        # Clear pre-loaded track (user is manually navigating)
+        self._next_track_preloaded = False
+        self._track_ended_handled = False
+
         # Go to previous track (wrap around to end if at beginning)
         prev_index = self.current_track_index - 1
         if prev_index < 0:
@@ -1230,6 +1318,10 @@ class PlayerScreen(QWidget):
         if not hasattr(self, 'playlist') or not self.playlist:
             print("[WARN] No playlist loaded")
             return
+
+        # Clear pre-loaded track (user is manually navigating)
+        self._next_track_preloaded = False
+        self._track_ended_handled = False
 
         # Go to next track (wrap around to beginning if at end)
         next_index = self.current_track_index + 1
