@@ -1127,9 +1127,13 @@ class PlayerScreen(QWidget):
             self.song_title_label.setText(track_name)
             self.track_counter_label.setText(f"{track_num} of {total_tracks}")
 
-            # Set progress bar duration
+            # Set progress bar duration and reset position to 0
             if duration > 0:
                 self.progress_bar.set_duration(duration)
+            # Always reset progress bar position to 0 when loading a new track
+            self.progress_bar.slider.setValue(0)
+            self.progress_bar.current_label.setText("0:00")
+            self.progress_bar.current_time = 0
 
             # Load URL into player
             success = self.player.load_url(url)
