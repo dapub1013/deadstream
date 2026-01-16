@@ -885,6 +885,40 @@ class PlayerScreen(QWidget):
 
             print(f"[INFO] Found {len(audio_files)} tracks")
 
+            # Extract additional metadata from API that may not be in database
+            api_metadata = metadata.get('metadata', {})
+
+            # Update show dict with source and taper from API (if not already present)
+            if not show.get('source_type'):
+                # First try API 'source' field
+                if api_metadata.get('source'):
+                    show['source_type'] = api_metadata['source']
+                    print(f"[INFO] Source type from API: {show['source_type']}")
+                else:
+                    # Fallback: infer from identifier (e.g., gd77-05-08.sbd.hicks...)
+                    identifier_lower = identifier.lower()
+                    if '.sbd.' in identifier_lower or 'sbd' in identifier_lower.split('.'):
+                        show['source_type'] = 'SBD'
+                    elif '.aud.' in identifier_lower or 'aud' in identifier_lower.split('.'):
+                        show['source_type'] = 'AUD'
+                    elif '.matrix.' in identifier_lower or 'matrix' in identifier_lower.split('.'):
+                        show['source_type'] = 'Matrix'
+                    elif '.fm.' in identifier_lower:
+                        show['source_type'] = 'FM'
+                    if show.get('source_type'):
+                        print(f"[INFO] Source type inferred from identifier: {show['source_type']}")
+
+            if not show.get('taper') and api_metadata.get('taper'):
+                show['taper'] = api_metadata['taper']
+                print(f"[INFO] Taper from API: {show['taper']}")
+
+            # Also get num_reviews from API if not in database
+            if not show.get('num_reviews') and api_metadata.get('reviews'):
+                try:
+                    show['num_reviews'] = int(api_metadata.get('num_reviews', 0))
+                except (ValueError, TypeError):
+                    pass
+
             # Store show info and playlist
             self.current_show = show
             self.playlist = audio_files
@@ -943,18 +977,23 @@ class PlayerScreen(QWidget):
         # Show source badge if available
         source_type = self.current_show.get('source_type', '')
         if source_type:
-            # Normalize source type
+            # Normalize source type (check matrix first since it may contain SBD/AUD)
             source_upper = source_type.upper()
-            if 'SBD' in source_upper or 'SOUNDBOARD' in source_upper:
+            if 'MATRIX' in source_upper or 'MTX' in source_upper:
+                badge_type = 'MTX'
+            elif 'SBD' in source_upper or 'SOUNDBOARD' in source_upper:
                 badge_type = 'SBD'
             elif 'AUD' in source_upper or 'AUDIENCE' in source_upper:
                 badge_type = 'AUD'
-            elif 'MATRIX' in source_upper or 'MTX' in source_upper:
-                badge_type = 'MTX'
+            elif 'FOB' in source_upper:
+                # FOB = Front of Board (audience recording from front)
+                badge_type = 'AUD'
             elif 'FM' in source_upper:
                 badge_type = 'FM'
             else:
-                badge_type = source_type[:3].upper()  # Use first 3 chars
+                # Skip non-alphanumeric prefix chars for badge
+                cleaned = ''.join(c for c in source_type if c.isalnum())
+                badge_type = cleaned[:3].upper() if cleaned else 'UNK'
 
             # Update badge and show it
             self.source_badge.source_type = badge_type
