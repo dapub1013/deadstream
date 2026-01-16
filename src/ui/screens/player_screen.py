@@ -483,6 +483,10 @@ class PlayerScreen(QWidget):
             }
         """)
 
+        # Set size policy to prevent expansion from long text (keeps 50/50 split)
+        from PyQt5.QtWidgets import QSizePolicy
+        panel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+
         layout = QVBoxLayout()
         layout.setSpacing(Theme.SPACING_TINY)
         layout.setContentsMargins(
@@ -621,6 +625,10 @@ class PlayerScreen(QWidget):
                 background-color: #000000;
             }
         """)
+
+        # Set size policy to prevent expansion from long text
+        from PyQt5.QtWidgets import QSizePolicy
+        panel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
         
         layout = QVBoxLayout()
         layout.setSpacing(0)
