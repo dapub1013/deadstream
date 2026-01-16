@@ -126,14 +126,33 @@ class WelcomeScreen(QWidget):
     def _create_logo_section(self):
         """
         Create centered logo/title section.
-        
+
         Returns:
             QVBoxLayout with centered logo and subtitle
         """
         layout = QVBoxLayout()
         layout.setSpacing(Theme.SPACING_MEDIUM)
         layout.setAlignment(Qt.AlignCenter)
-        
+
+        # Steal Your Face logo image
+        logo_path = os.path.join(PROJECT_ROOT, 'assets', 'syf.png')
+        if os.path.exists(logo_path):
+            logo_label = QLabel()
+            logo_pixmap = QPixmap(logo_path)
+            # Scale to reasonable size while maintaining aspect ratio
+            scaled_pixmap = logo_pixmap.scaled(
+                150, 150,
+                Qt.KeepAspectRatio,
+                Qt.SmoothTransformation
+            )
+            logo_label.setPixmap(scaled_pixmap)
+            logo_label.setAlignment(Qt.AlignCenter)
+            logo_label.setStyleSheet("background: transparent;")
+            layout.addWidget(logo_label)
+            layout.addSpacing(Theme.SPACING_MEDIUM)
+        else:
+            print(f"[WARN] Logo not found at {logo_path}")
+
         # Main title - "DeadStream"
         title = QLabel("DeadStream")
         title.setAlignment(Qt.AlignCenter)
