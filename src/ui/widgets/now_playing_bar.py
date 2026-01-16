@@ -16,9 +16,9 @@ PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(_
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
-from PyQt5.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel
-from PyQt5.QtCore import Qt, pyqtSignal, QTimer
-from PyQt5.QtGui import QFont, QCursor
+from PyQt5.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QSize
+from PyQt5.QtGui import QFont, QCursor, QIcon
 
 from src.ui.styles.theme import Theme
 from src.ui.components.icon_button import IconButton
@@ -54,6 +54,7 @@ class NowPlayingBar(QWidget):
     play_pause_clicked = pyqtSignal()     # User clicked play/pause
     next_clicked = pyqtSignal()           # User clicked next
     previous_clicked = pyqtSignal()       # User clicked previous
+    close_clicked = pyqtSignal()          # User clicked close to unload show
 
     def __init__(self, parent=None):
         """Initialize the now playing bar"""
@@ -83,16 +84,26 @@ class NowPlayingBar(QWidget):
         # Main horizontal layout
         main_layout = QHBoxLayout(self)
         main_layout.setContentsMargins(
-            Theme.SPACING_MEDIUM,  # left
-            Theme.SPACING_SMALL,   # top
+            10,  # left (10px margin-left for close button)
+            10,  # top (10px margin-top for close button)
             Theme.SPACING_MEDIUM,  # right
             Theme.SPACING_SMALL    # bottom
         )
-        main_layout.setSpacing(Theme.SPACING_MEDIUM)
+        main_layout.setSpacing(0)  # We'll handle spacing manually
+
+        # Close button (20x20px) - upper-left with specific margins
+        self.close_button = self._create_close_button()
+        main_layout.addWidget(self.close_button, stretch=0, alignment=Qt.AlignTop)
+
+        # Spacer for 20px margin-right of close button
+        main_layout.addSpacing(20)
 
         # Left section: Track info (expanding)
         self.track_info_widget = self._create_track_info_section()
         main_layout.addWidget(self.track_info_widget, stretch=1)
+
+        # Spacer between track info and controls
+        main_layout.addSpacing(Theme.SPACING_MEDIUM)
 
         # Right section: Playback controls (fixed width)
         controls_layout = self._create_controls_section()
@@ -141,6 +152,49 @@ class NowPlayingBar(QWidget):
         layout.addStretch()
 
         return container
+
+    def _create_close_button(self):
+        """
+        Create the close button (20x20px) using close.png asset.
+
+        Positioned in upper-left with:
+        - 10px margin-top (handled by layout alignment)
+        - 10px margin-left (handled by layout margins)
+        - 20px margin-right (handled by content margins)
+
+        Returns:
+            QPushButton: Close button that emits close_clicked when pressed
+        """
+        close_btn = QPushButton()
+        close_btn.setFixedSize(20, 20)
+
+        # Load the close.png icon from assets
+        icon_path = os.path.join(PROJECT_ROOT, 'assets', 'close.png')
+        icon = QIcon(icon_path)
+        close_btn.setIcon(icon)
+        close_btn.setIconSize(QSize(20, 20))
+
+        # Style: transparent background, no border
+        close_btn.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                border: none;
+                padding: 0px;
+            }
+            QPushButton:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+                border-radius: 10px;
+            }
+            QPushButton:pressed {
+                background-color: rgba(255, 255, 255, 0.2);
+                border-radius: 10px;
+            }
+        """)
+
+        close_btn.setCursor(Qt.PointingHandCursor)
+        close_btn.clicked.connect(self._on_close_clicked)
+
+        return close_btn
 
     def _create_controls_section(self):
         """
@@ -298,3 +352,16 @@ class NowPlayingBar(QWidget):
         """
         print("[INFO] NowPlayingBar: Previous button clicked")
         self.previous_clicked.emit()
+
+    def _on_close_clicked(self):
+        """
+        Handle close button click (internal).
+
+        Emits close_clicked signal which should be connected
+        to unload the current show by the parent (e.g., MainWindow).
+
+        Example connection in MainWindow:
+            bar.close_clicked.connect(self.unload_show)
+        """
+        print("[INFO] NowPlayingBar: Close button clicked - unloading show")
+        self.close_clicked.emit()

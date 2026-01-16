@@ -219,6 +219,7 @@ class MainWindow(QMainWindow):
         self.now_playing_bar.play_pause_clicked.connect(self._handle_bar_play_pause)
         self.now_playing_bar.next_clicked.connect(self._handle_bar_next)
         self.now_playing_bar.previous_clicked.connect(self._handle_bar_previous)
+        self.now_playing_bar.close_clicked.connect(self._handle_bar_close)
 
         # Add now playing bar (fixed height)
         container_layout.addWidget(self.now_playing_bar, stretch=0)
@@ -656,6 +657,38 @@ class MainWindow(QMainWindow):
             QTimer.singleShot(500, self.update_now_playing_bar_track_info)
         else:
             print("[WARN] player_screen.on_previous_track not available")
+
+    def _handle_bar_close(self):
+        """Handle close button click from now playing bar - unload the show"""
+        print("[INFO] NowPlayingBar: Close clicked - unloading show")
+
+        # Stop the player
+        if hasattr(self.player_screen, 'player') and self.player_screen.player:
+            self.player_screen.player.stop()
+            print("[INFO] Player stopped")
+
+        # Clear the current show from player_screen
+        if hasattr(self.player_screen, 'current_show'):
+            self.player_screen.current_show = None
+            print("[INFO] Current show cleared")
+
+        # Clear track list
+        if hasattr(self.player_screen, 'track_list'):
+            self.player_screen.track_list = []
+
+        # Clear current track info
+        if hasattr(self.player_screen, 'current_track_name'):
+            self.player_screen.current_track_name = None
+
+        if hasattr(self.player_screen, 'current_track_index'):
+            self.player_screen.current_track_index = 0
+
+        # Reset the track monitor
+        self._last_track_name = None
+
+        # Hide the now playing bar
+        self.now_playing_bar.setVisible(False)
+        print("[INFO] NowPlayingBar hidden")
 
 
 def main():
